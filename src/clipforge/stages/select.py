@@ -1,11 +1,12 @@
-"""Select stage: Pick and score top viral clips using file prompts or API models, with heuristic signal ranking."""
+"""Select stage: Pick and score top viral clips using Gemini API models or file prompts, with heuristic fallback."""
 
 import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from clipforge.cache import CacheManager
-from clipforge.models import FullTranscript, CandidateWindow, ClipItem, ClipCollection
+from clipforge.models import FullTranscript, CandidateWindow, ClipItem
 from clipforge.llm.prompts import SYSTEM_PROMPT, build_selection_prompt
+from clipforge.llm.selector_api import select_clips_with_gemini, get_api_key
 
 
 def run_select(
@@ -14,7 +15,7 @@ def run_select(
     candidates: List[CandidateWindow],
     target_clips: int = 10,
     min_score: int = 70,
-    selector_mode: str = "file",
+    selector_mode: str = "api",
 ) -> List[ClipItem]:
     """Select and rank viral clips, outputting cache/<video_id>/clips.json."""
     if cache.exists("clips.json"):
@@ -25,39 +26,41 @@ def run_select(
     video_title = info.get("title", "Gaming Stream")
     streamer = info.get("uploader", "Streamer")
 
-    # Format candidate windows summary
-    cand_lines = []
-    for c in candidates[:target_clips * 2]:
-        cand_lines.append(f"- [{c.id}] {c.start:.1f}s -> {c.end:.1f}s (Signal Score: {c.score:.0f}): {c.reason}")
-    candidates_text = "\n".join(cand_lines)
+    clips: List[ClipItem] = []
 
-    # Format transcript summary
-    trans_lines = []
-    for seg in transcript.segments:
-        trans_lines.append(f"[{seg.start:.1f}s - {seg.end:.1f}s] {seg.text}")
-    transcript_text = "\n".join(trans_lines[:300]) # Cap preview for chunk
+    # 1. If API mode is requested or API key exists in .env, attempt Gemini selection
+    api_key = get_api_key()
+    if (selector_mode == "api" or api_key) and selector_mode != "file-only":
+        gemini_clips = select_clips_with_gemini(
+            video_title=video_title,
+            streamer=streamer,
+            target_clips=target_clips,
+            candidates=candidates,
+            transcript=transcript,
+            min_score=min_score,
+        )
+        if gemini_clips:
+            clips = gemini_clips
 
-    prompt_md = build_selection_prompt(video_title, streamer, target_clips, candidates_text, transcript_text)
-
-    # 1. Write file prompt and schema into prompts/
+    # 2. If selector mode is 'file' or result file exists in results/
     prompts_dir = Path("prompts")
     prompts_dir.mkdir(parents=True, exist_ok=True)
     prompt_file = prompts_dir / f"select_{cache.video_id}.md"
     schema_file = prompts_dir / "schema.json"
 
+    # Always generate prompt & schema so the user has the inspection file
+    cand_lines = [f"- [{c.id}] {c.start:.1f}s -> {c.end:.1f}s ({c.loudness_z:.1f}σ): {c.reason}" for c in candidates]
+    trans_lines = [f"[{seg.start:.1f}s - {seg.end:.1f}s] {seg.text}" for seg in transcript.segments]
+    prompt_md = build_selection_prompt(video_title, streamer, target_clips, "\n".join(cand_lines), "\n".join(trans_lines[:300]))
+
     with open(prompt_file, "w", encoding="utf-8") as f:
         f.write(f"# System\n{SYSTEM_PROMPT}\n\n# User\n{prompt_md}")
-
     with open(schema_file, "w", encoding="utf-8") as f:
         json.dump(ClipItem.model_json_schema(), f, indent=2)
 
-    # 2. Check if user or LLM provided results in results/
     results_dir = Path("results")
     result_file = results_dir / f"select_{cache.video_id}.json"
-
-    clips: List[ClipItem] = []
-
-    if result_file.exists():
+    if not clips and result_file.exists():
         try:
             with open(result_file, "r", encoding="utf-8") as f:
                 raw_items = json.load(f)
@@ -66,12 +69,10 @@ def run_select(
         except Exception as e:
             print(f"Warning: Failed to parse user result file {result_file}: {e}")
 
-    # 3. If no LLM result provided, generate high-confidence candidates using multi-signal highlights
+    # 3. Fallback to heuristic selection if neither API nor file gave clips
     if not clips:
-        # Build clips from top candidate windows
         for idx, cand in enumerate(candidates[:target_clips]):
             cid = f"clip_{idx + 1:02d}"
-            # Extract transcript text
             slice_words = []
             for seg in transcript.segments:
                 if seg.end >= cand.start and seg.start <= cand.end:
@@ -79,8 +80,7 @@ def run_select(
 
             transcript_snippet = " ".join(slice_words)
             hook_text = (" ".join(slice_words[:6])) if slice_words else "Watch this crazy moment"
-            
-            # Dynamic punchy title based on spoken words or streamer name
+
             if len(slice_words) >= 4:
                 snippet_title = " ".join(slice_words[:6]).strip(".,!?:;\"'").capitalize()
                 title = f'{streamer}: "{snippet_title}..."'
