@@ -1,0 +1,15 @@
+name: classic-white
+font: Anton
+font_path: assets/fonts/Anton-Regular.ttf
+size: 78
+primary_color: "&H00FFFFFF"
+highlight_color: "&H0020E0FF" # Soft gold highlight
+outline_color: "&H00000000"
+shadow_color: "&H99000000"
+outline: 5
+shadow: 2
+words_per_line: 4
+position:
+  y: 0.65
+animation: pop
+uppercase: true

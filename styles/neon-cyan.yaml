@@ -1,0 +1,15 @@
+name: neon-cyan
+font: Anton
+font_path: assets/fonts/Anton-Regular.ttf
+size: 80
+primary_color: "&H00FFFFFF"
+highlight_color: "&H00FFFF00" # Electric Cyan (&H00FFFF00 BGR)
+outline_color: "&H00201000"
+shadow_color: "&H90000000"
+outline: 5
+shadow: 2
+words_per_line: 3
+position:
+  y: 0.65
+animation: pop
+uppercase: true

@@ -1,0 +1,15 @@
+name: beast-red
+font: Anton
+font_path: assets/fonts/Anton-Regular.ttf
+size: 82
+primary_color: "&H00FFFFFF"   # Bright white
+highlight_color: "&H000022FF" # Vibrant Beast Red (&H000022FF in BGR)
+outline_color: "&H00000000"   # Thick black stroke
+shadow_color: "&H80000000"
+outline: 6
+shadow: 3
+words_per_line: 3
+position:
+  y: 0.65
+animation: pop
+uppercase: true

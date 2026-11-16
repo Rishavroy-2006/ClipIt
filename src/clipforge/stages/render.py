@@ -2,12 +2,12 @@
 
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 from clipforge.cache import CacheManager
 from clipforge.config import VideoConfig
 from clipforge.models import FullTranscript, ClipItem
-from clipforge.stages.layout import get_layout_filter
+from clipforge.stages.layout import get_layout_filter, detect_facecam_box
 from clipforge.stages.captions import generate_clip_ass
 
 
@@ -20,17 +20,19 @@ def render_single_clip(
     video_config: VideoConfig,
     codec: str = "h264_videotoolbox",
     fonts_dir: Path = Path("assets/fonts"),
+    face_box: Optional[Tuple[int, int, int, int]] = None,
+    style_name: str = "bold-yellow",
 ) -> Path:
     """Render a single vertical clip with layout and burned-in animated subtitles."""
     out_mp4 = output_dir / f"{clip.id}.mp4"
     out_json = output_dir / f"{clip.id}.json"
     ass_path = cache.path(f"{clip.id}.ass")
 
-    # Generate ASS subtitles
-    generate_clip_ass(clip, transcript, ass_path)
+    # Generate ASS subtitles with auto-emojis and top hook banner
+    generate_clip_ass(clip, transcript, ass_path, style_path_or_name=style_name, show_hook_banner=True)
 
     # Base layout filter
-    layout_filter = get_layout_filter(clip.layout)
+    layout_filter = get_layout_filter(clip.layout, face_box=face_box)
 
     # Escape path for ffmpeg filter string
     escaped_ass = str(ass_path.resolve()).replace("\\", "/").replace(":", "\\:")
@@ -83,11 +85,28 @@ def run_render(
     clips: List[ClipItem],
     video_config: VideoConfig,
     out_base: Path = Path("out"),
+    style_name: str = "bold-yellow",
 ) -> List[Path]:
     """Render all selected clips with progress bar."""
     source_mp4 = cache.path("source.mp4")
     out_dir = out_base / cache.video_id
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check for facecam box if any clip uses 'stack'
+    face_box: Optional[Tuple[int, int, int, int]] = None
+    if cache.exists("facecam.json"):
+        raw_box = cache.load_json("facecam.json")
+        if raw_box:
+            face_box = tuple(raw_box)
+    elif any(c.layout == "stack" for c in clips):
+        print("Detecting streamer facecam position using OpenCV YuNet...")
+        detected = detect_facecam_box(source_mp4)
+        if detected:
+            face_box = detected
+            cache.save_json("facecam.json", list(detected))
+            print(f"✔ Found stable facecam rectangle: x={detected[0]}, y={detected[1]}, w={detected[2]}, h={detected[3]}")
+        else:
+            print("Notice: No consistent facecam detected, falling back to centered split.")
 
     rendered_files: List[Path] = []
 
@@ -110,6 +129,8 @@ def run_render(
                     cache=cache,
                     video_config=video_config,
                     codec=video_config.draft_codec,
+                    face_box=face_box,
+                    style_name=style_name,
                 )
                 rendered_files.append(mp4_path)
             except subprocess.CalledProcessError as e:
@@ -123,6 +144,8 @@ def run_render(
                     cache=cache,
                     video_config=video_config,
                     codec="libx264",
+                    face_box=face_box,
+                    style_name=style_name,
                 )
                 rendered_files.append(mp4_path)
             progress.advance(task)

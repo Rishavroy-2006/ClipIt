@@ -192,6 +192,7 @@ def run(
         refined_clips,
         config.video,
         out_base=Path("out"),
+        style_name=style,
     )
     console.print(f"✔ Rendered {len(rendered)} MP4 clips in [bold]{out_dir}[/bold]")
 
