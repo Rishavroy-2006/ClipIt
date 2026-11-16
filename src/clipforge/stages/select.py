@@ -79,10 +79,21 @@ def run_select(
 
             transcript_snippet = " ".join(slice_words)
             hook_text = (" ".join(slice_words[:6])) if slice_words else "Watch this crazy moment"
-            title = f"{streamer} Reacts to GTA 6: Highlight #{idx + 1}"
+            
+            # Dynamic punchy title based on spoken words or streamer name
+            if len(slice_words) >= 4:
+                snippet_title = " ".join(slice_words[:6]).strip(".,!?:;\"'").capitalize()
+                title = f'{streamer}: "{snippet_title}..."'
+                alt1 = f"{streamer} Loses His Mind Over GTA 6 Trailer 2"
+                alt2 = f"Speed's Craziest Reaction to GTA 6"
+            else:
+                title = f"{streamer} Reacts to GTA 6: Highlight #{idx + 1}"
+                alt1 = f"Speed Loses It During GTA 6 Trailer"
+                alt2 = f"Insane GTA 6 Trailer Moment"
+
             why_viral = (
-                f"High-energy moment with loudness z-score of {cand.loudness_z:.1f}σ and instant audience hook. "
-                f"The streamer's immediate reaction delivers strong emotional payoff for short-form viewers."
+                f"Explosive highlight with audio loudness spike ({cand.loudness_z:.1f}σ) and immediate visual emotion. "
+                f"The streamer's raw reaction hooks viewers within the opening 2 seconds and delivers strong viral short-form retention."
             )
 
             clip = ClipItem(
@@ -91,10 +102,7 @@ def run_select(
                 end=cand.end,
                 score=min(98, max(min_score, int(cand.score))),
                 title=title,
-                title_alts=[
-                    f"You won't believe what happened to {streamer}",
-                    f"Insane GTA 6 moment #{idx + 1}",
-                ],
+                title_alts=[alt1, alt2],
                 hook_line=hook_text[:40],
                 hooks=["explosive reaction", "unexpected reveal"],
                 why_viral=why_viral,
