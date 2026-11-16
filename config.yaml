@@ -1,0 +1,42 @@
+defaults:
+  target_clips: 10
+  min_score: 70
+  min_length: 15.0
+  max_length: 60.0
+  preferred_min: 25.0
+  preferred_max: 45.0
+  selector: "file" # "file" (offline/no LLM key required) or "api"
+  layout: "blur-fill"
+  style: "bold-yellow"
+  censor_captions: false
+  concurrency: 2
+
+signals:
+  weights:
+    loudness_z: 0.35
+    chat_rate: 0.30
+    speech_rate: 0.15
+    scene_cuts: 0.10
+    keywords: 0.10
+  loudness_window_sec: 300
+  tighten_silence_threshold_sec: 1.2
+  tighten_padding_ms: 100
+
+whisper:
+  model: "mlx-community/whisper-large-v3-turbo"
+  batch_size: 12
+  word_timestamps: true
+  language: null
+
+video:
+  output_width: 1080
+  output_height: 1920
+  target_fps: 60
+  draft_codec: "h264_videotoolbox"
+  final_codec: "libx264"
+  crf: 18
+  audio_lufs: -14.0
+
+safe_zones:
+  bottom_margin: 0.20
+  right_margin: 0.15

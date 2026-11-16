@@ -1,0 +1,16 @@
+name: bold-yellow
+font: Anton
+font_path: assets/fonts/Anton-Regular.ttf
+size: 80
+primary_color: "&H00FFFFFF"   # ASS format &HAABBGGRR
+highlight_color: "&H000AD6FF" # Yellow highlight &H000AD6FF (BGR: FF D6 0A)
+outline_color: "&H00000000"
+shadow_color: "&H80000000"
+outline: 5
+shadow: 2
+words_per_line: 3
+position:
+  x: center
+  y: 0.65                     # fraction of height, safe zone above bottom 20%
+animation: pop
+uppercase: true

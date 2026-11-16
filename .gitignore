@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+cache/
+out/
+results/
+.DS_Store
