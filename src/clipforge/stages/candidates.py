@@ -92,8 +92,8 @@ def run_candidates(
             break
 
     # If video had very few peaks, create default time slices
-    if not candidates and duration > min_length:
-        step = max(min_length, min(preferred_length, duration / max(1, target_clips)))
+    if not candidates and duration >= min_length:
+        step = max(min_length, min(preferred_length, float(duration)))
         curr = 0.0
         while curr + min_length <= duration and len(candidates) < target_clips:
             cid = f"cand_{len(candidates) + 1:02d}"
@@ -102,7 +102,7 @@ def run_candidates(
                     id=cid,
                     start=round(curr, 2),
                     end=round(min(float(duration), curr + step), 2),
-                    score=70.0,
+                    score=75.0,
                     reason="Interval candidate based on steady stream pacing.",
                 )
             )

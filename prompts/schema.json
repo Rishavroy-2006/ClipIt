@@ -1,0 +1,123 @@
+{
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "start": {
+      "title": "Start",
+      "type": "number"
+    },
+    "end": {
+      "title": "End",
+      "type": "number"
+    },
+    "score": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Score",
+      "type": "integer"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "title_alts": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Title Alts",
+      "type": "array"
+    },
+    "hook_line": {
+      "description": "Short hook overlay (max ~8-10 words)",
+      "title": "Hook Line",
+      "type": "string"
+    },
+    "hooks": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Hooks",
+      "type": "array"
+    },
+    "why_viral": {
+      "description": "Specific reason why this moment performs",
+      "title": "Why Viral",
+      "type": "string"
+    },
+    "category": {
+      "default": "reaction",
+      "enum": [
+        "reaction",
+        "funny",
+        "fail",
+        "clutch",
+        "story",
+        "rage",
+        "wholesome",
+        "news",
+        "other"
+      ],
+      "title": "Category",
+      "type": "string"
+    },
+    "signals": {
+      "additionalProperties": true,
+      "title": "Signals",
+      "type": "object"
+    },
+    "risk_flags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Risk Flags",
+      "type": "array"
+    },
+    "trim_notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "",
+      "title": "Trim Notes"
+    },
+    "layout": {
+      "default": "blur-fill",
+      "enum": [
+        "blur-fill",
+        "stack",
+        "face-zoom",
+        "split"
+      ],
+      "title": "Layout",
+      "type": "string"
+    },
+    "source_permission": {
+      "default": "clip-policy",
+      "enum": [
+        "owner",
+        "granted",
+        "clip-policy",
+        "unknown"
+      ],
+      "title": "Source Permission",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "start",
+    "end",
+    "score",
+    "title",
+    "hook_line",
+    "why_viral"
+  ],
+  "title": "ClipItem",
+  "type": "object"
+}
