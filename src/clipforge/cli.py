@@ -20,6 +20,7 @@ from clipforge.stages.select import run_select
 from clipforge.stages.refine import run_refine
 from clipforge.stages.render import run_render
 from clipforge.stages.review import generate_review_html
+from clipforge.stages.export import run_export
 
 app = typer.Typer(
     name="clipforge",
@@ -204,6 +205,33 @@ def run(
         title="ClipForge Ready",
         border_style="green",
     ))
+
+
+@app.command()
+def export(
+    video_id: str = typer.Argument(..., help="Video ID (e.g. yt_E07OTlhncP0)"),
+    manifest: Optional[Path] = typer.Option(
+        None, "--manifest", "-m", help="Path to approved.json (optional, auto-detected)"
+    ),
+):
+    """Package approved clips into ready_to_post/ with viral titles and copy-paste pack."""
+    console.print(f"[bold cyan]Packaging approved clips for:[/bold cyan] {video_id}")
+    try:
+        dest_dir = run_export(video_id, manifest_path=manifest)
+        pack_txt = dest_dir / "copy_paste_pack.txt"
+        csv_file = dest_dir / "schedule.csv"
+
+        console.print(Panel(
+            f"[bold green]✔ Export Staged Successfully![/bold green]\n\n"
+            f"📁 Publishing Folder: [link=file://{dest_dir.resolve()}]{dest_dir}[/link]\n"
+            f"📄 Copy-Paste Pack: [link=file://{pack_txt.resolve()}]{pack_txt}[/link]\n"
+            f"📊 Schedule CSV: [link=file://{csv_file.resolve()}]{csv_file}[/link]\n\n"
+            f"[dim]The videos have been renamed with viral slugs and titles ready for upload.[/dim]",
+            title="ClipForge Export Ready",
+            border_style="green",
+        ))
+    except Exception as e:
+        console.print(f"[red]Export failed:[/red] {e}")
 
 
 @app.command()

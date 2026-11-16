@@ -26,4 +26,10 @@ clipforge --help
 
 # Process a video or YouTube link
 clipforge run "https://www.youtube.com/watch?v=..." --target-clips 5
+
+# Open review dashboard in browser
+clipforge review <video_id>
+
+# Export approved clips into ready_to_post/ with viral titles & copy-paste pack
+clipforge export <video_id>
 ```
