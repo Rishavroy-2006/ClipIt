@@ -80,15 +80,20 @@ def run_candidates(
             if cand_text_snippets:
                 reason += f" Audio: '{cand_text_snippets[0][:60]}...'"
 
+            lz_arr = signals.get("loudness_z", [])
+            cr_arr = signals.get("chat_rate", [])
+            sr_arr = signals.get("speech_rate", [])
+            p_idx = int(peak_sec)
+
             candidates.append(
                 CandidateWindow(
                     id=cid,
                     start=round(start, 2),
                     end=round(end, 2),
                     score=round(score * 100, 1),
-                    loudness_z=signals.get("loudness_z", [0])[int(peak_sec)] if int(peak_sec) < duration else 0.0,
-                    chat_rate=signals.get("chat_rate", [0])[int(peak_sec)] if int(peak_sec) < duration else 0.0,
-                    speech_rate=signals.get("speech_rate", [0])[int(peak_sec)] if int(peak_sec) < duration else 0.0,
+                    loudness_z=float(lz_arr[p_idx]) if p_idx < len(lz_arr) else 0.0,
+                    chat_rate=float(cr_arr[p_idx]) if p_idx < len(cr_arr) else 0.0,
+                    speech_rate=float(sr_arr[p_idx]) if p_idx < len(sr_arr) else 0.0,
                     reason=reason,
                 )
             )

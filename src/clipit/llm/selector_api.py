@@ -135,16 +135,44 @@ def select_clips_with_gemini(
             clips: List[ClipItem] = []
             for item in parsed:
                 try:
+                    # Normalize alternative LLM key names
+                    if "start" not in item and "start_time" in item:
+                        item["start"] = float(item["start_time"])
+                    if "end" not in item and "end_time" in item:
+                        item["end"] = float(item["end_time"])
+                    if "title" not in item and "name" in item:
+                        item["title"] = str(item["name"])
+                    if "hook_line" not in item and "hook" in item:
+                        item["hook_line"] = str(item["hook"])
+                    elif "hook_line" not in item and "hook_tag" in item:
+                        item["hook_line"] = str(item["hook_tag"])
+
                     # Fill defaults if needed
                     if "id" not in item:
                         item["id"] = f"c{len(clips) + 1:02d}"
-                    if "score" not in item:
+                    if "title" not in item or not item["title"]:
+                        item["title"] = f"Viral Highlight #{len(clips) + 1}"
+                    if "hook_line" not in item or not item["hook_line"]:
+                        item["hook_line"] = item["title"]
+
+                    # Scale and normalize score (handle 0-1 or 1-10 scales from smaller models)
+                    raw_score = item.get("score", 85)
+                    try:
+                        f_score = float(raw_score)
+                        if f_score <= 1.0 and f_score > 0.0:
+                            item["score"] = int(round(f_score * 100))
+                        elif f_score <= 10.0 and f_score > 0.0:
+                            item["score"] = int(round(f_score * 10))
+                        else:
+                            item["score"] = int(round(f_score))
+                    except (ValueError, TypeError):
                         item["score"] = 85
+
                     if "layout" not in item:
                         item["layout"] = "blur-fill"
                     if "source_permission" not in item:
                         item["source_permission"] = "clip-policy"
-                    if "why_viral" not in item or len(item["why_viral"].split()) < 5:
+                    if "why_viral" not in item or len(str(item["why_viral"]).split()) < 5:
                         item["why_viral"] = "Strong emotional reaction with instant viewer hook and high short-form completion rate."
                     clip = ClipItem(**item)
                     clips.append(clip)

@@ -128,6 +128,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         if path == "/api/start-pipeline":
             return self.handle_start_pipeline(data)
+        elif path == "/api/rerun-ai":
+            return self.handle_rerun_ai(data)
         elif path == "/api/approve-clip":
             return self.handle_approve_clip(data)
         elif path == "/api/export":
@@ -621,6 +623,59 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         self.send_json({"session_id": session_id, "status": "started"})
 
+    def handle_rerun_ai(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        if not video_id:
+            self.send_error(HTTPStatus.BAD_REQUEST, "Missing video_id")
+            return
+        cache_v = CACHE_DIR / video_id
+        if not cache_v.exists():
+            self.send_error(HTTPStatus.NOT_FOUND, f"Video {video_id} not found in cache")
+            return
+
+        cache = CacheManager(video_id, base_dir=CACHE_DIR)
+        info = cache.load_json("info.json") or {}
+        url = info.get("source") or (f"https://www.youtube.com/watch?v={video_id[3:]}" if video_id.startswith("yt_") else video_id)
+        raw_target = data.get("target_clips", 0)
+        try:
+            target_clips = int(raw_target)
+        except (ValueError, TypeError):
+            target_clips = 0
+        layout = data.get("layout", "stack")
+        style = data.get("style", "bold-yellow")
+        profile = data.get("profile", "ishowspeed")
+        facecam = data.get("facecam", "auto")
+
+        session_id = f"sess_{int(time.time()*1000)}"
+        q = queue.Queue()
+
+        with session_lock:
+            active_sessions[session_id] = {
+                "id": session_id,
+                "url": url,
+                "queue": q,
+                "created_at": time.time(),
+                "status": "starting",
+                "events": [],
+                "video_id": video_id,
+                "done": False,
+            }
+
+        worker = threading.Thread(
+            target=run_agent_pipeline_worker,
+            args=(session_id, q, url, target_clips, layout, style, profile, facecam, True),
+            daemon=True,
+        )
+        worker.start()
+
+        self.send_json({
+            "success": True,
+            "session_id": session_id,
+            "status": "started",
+            "video_id": video_id,
+            "url": url,
+        })
+
     def handle_sse_workflow(self, session_id: Optional[str]):
         """Stream real-time Server-Sent Events (SSE) to the visualizer."""
         if not session_id or session_id not in active_sessions:
@@ -809,6 +864,7 @@ def run_agent_pipeline_worker(
     style: str,
     profile: str,
     facecam: str = "auto",
+    force_rerun_ai: bool = False,
 ):
     """Execute live multi-agent pipeline and stream real-time SSE events."""
     video_id = get_video_id(url)
@@ -977,7 +1033,11 @@ def run_agent_pipeline_worker(
         whisper_engine = "faster-whisper (CUDA/CPU)" if sys.platform != "darwin" else "mlx-whisper (Metal GPU)"
         emit_log("transcribe", f"[TRANSCRIBE] Initializing Whisper acoustic aligner ({whisper_engine})...")
         with StageHeartbeat("transcribe", "[TRANSCRIBE] Aligning acoustic phonemes and word timestamps... ({elapsed}s elapsed)"):
-            transcript = run_transcribe(cache, model_name=config.whisper.model)
+            transcript = run_transcribe(
+                cache,
+                model_name=config.whisper.model,
+                log_cb=lambda msg: emit_log("transcribe", msg),
+            )
         num_segs = len(transcript.segments)
         total_words = sum(len(s.words) for s in transcript.segments)
         emit_log("transcribe", f"[TRANSCRIBE] Transcription complete: {num_segs} segments, {total_words} words, language: {transcript.language}")
@@ -1023,6 +1083,8 @@ def run_agent_pipeline_worker(
         # Stage 5: Director (Select & Refine)
         st5 = stages[4]
         emit_stage_start(5, st5)
+        if force_rerun_ai:
+            emit_log("director", "⚡ [ONLINE AI RERUN] Launching fresh Gemini AI Director (3.1 Flash Lite) analysis...")
         emit_log("director", "[DIRECTOR] Dispatching candidate windows to Virality Director...")
         emit_log("director", "[DIRECTOR] Evaluating Hook Velocity, Narrative Arc, and Retention Potential...")
         with StageHeartbeat("director", "[DIRECTOR] Evaluating viral hook strength & audience retention... ({elapsed}s elapsed)"):
@@ -1033,6 +1095,7 @@ def run_agent_pipeline_worker(
                 target_clips=target_clips,
                 min_score=60,
                 selector_mode="api",
+                force=force_rerun_ai,
             )
         emit_log("director", f"[DIRECTOR] AI Director evaluated and approved {len(raw_clips)} candidate clips")
         emit_log("director", "[DIRECTOR] Refining exact sentence boundaries and speech pauses...")
@@ -1105,6 +1168,7 @@ def run_agent_pipeline_worker(
             style_name=style,
             profile_name=profile,
             progress_cb=on_render_progress,
+            force=force_rerun_ai,
         )
         emit_log("render", f"[RENDER] Render complete: {len(rendered)} MP4 files staged in out/{video_id}")
         emit_stage_complete(7, st7, {"total_renders": len(rendered), "codec": active_codec})

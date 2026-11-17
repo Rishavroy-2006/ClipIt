@@ -2,10 +2,11 @@
 Supports MLX Whisper on Apple Silicon and faster-whisper on Windows / Linux / CUDA / CPU.
 """
 
+import os
 import sys
 import time
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 
 # Dynamic backend import for macOS (Apple Silicon Metal) vs Windows/Linux/CUDA
 try:
@@ -38,6 +39,7 @@ def run_transcribe(
     model_name: str = "mlx-community/whisper-large-v3-turbo",
     glossary: Optional[str] = None,
     language: Optional[str] = None,
+    log_cb: Optional[Callable[[str], None]] = None,
 ) -> FullTranscript:
     """Run local Metal transcription on cache/<video_id>/audio.wav."""
     if cache.exists("transcript.json"):
@@ -57,6 +59,8 @@ def run_transcribe(
 
     if mlx_whisper is not None:
         # 1. Apple Silicon Metal Whisper
+        if log_cb:
+            log_cb(f"[TRANSCRIBE] Loading MLX Whisper '{model_name}' on Apple Silicon Metal GPU...")
         transcribe_kwargs: Dict[str, Any] = {
             "audio": str(audio_path),
             "path_or_hf_repo": model_name,
@@ -102,6 +106,21 @@ def run_transcribe(
 
     elif WhisperModel is not None:
         # 2. Windows / Linux / CUDA / CPU faster-whisper
+        if sys.platform == "win32":
+            # Auto-register torch / nvidia DLLs for cuBLAS and cuDNN if installed
+            for pkg in ("nvidia.cublas", "nvidia.cudnn", "torch"):
+                try:
+                    import importlib.util
+                    spec = importlib.util.find_spec(pkg)
+                    if spec and spec.submodule_search_locations:
+                        for loc in spec.submodule_search_locations:
+                            for sub in ("bin", "lib"):
+                                d = Path(loc) / sub
+                                if d.exists():
+                                    os.add_dll_directory(str(d))
+                except Exception:
+                    pass
+
         fw_model = model_name
         if "mlx-community" in model_name or "/" in model_name:
             if "turbo" in model_name.lower():
@@ -114,9 +133,41 @@ def run_transcribe(
                 fw_model = "base"
 
         # Auto-detect CUDA if available, else CPU
-        device = "auto"
-        compute_type = "auto"
-        model = WhisperModel(fw_model, device=device, compute_type=compute_type)
+        device = "cpu"
+        compute_type = "int8"
+        try:
+            import torch
+            if torch.cuda.is_available():
+                device = "cuda"
+                compute_type = "float16"
+        except Exception:
+            pass
+
+        if log_cb:
+            log_cb(f"[TRANSCRIBE] Loading faster-whisper '{fw_model}' on {device.upper()} ({compute_type})...")
+
+        model = None
+        if device == "cuda":
+            try:
+                model = WhisperModel(fw_model, device="cuda", compute_type="float16")
+                if log_cb:
+                    log_cb(f"[TRANSCRIBE] NVIDIA CUDA acceleration active (float16).")
+            except Exception as cuda_err:
+                if log_cb:
+                    log_cb(f"[TRANSCRIBE] CUDA init notice ({cuda_err}); switching to CPU (int8)...")
+                device = "cpu"
+                compute_type = "int8"
+
+        if model is None:
+            model = WhisperModel(
+                fw_model,
+                device="cpu",
+                compute_type="int8",
+                cpu_threads=min(4, os.cpu_count() or 4),
+            )
+            if log_cb:
+                log_cb(f"[TRANSCRIBE] CPU mode active (int8 quantized, 4 threads).")
+
         transcribe_kwargs = {
             "word_timestamps": True,
             "initial_prompt": initial_prompt,
@@ -126,13 +177,21 @@ def run_transcribe(
 
         seg_gen, info = model.transcribe(str(audio_path), **transcribe_kwargs)
         detected_lang = info.language or "en"
+        total_audio_dur = info.duration or (cache.load_json("info.json") or {}).get("duration", 0.0)
 
+        last_progress_time = time.time()
         for seg in seg_gen:
             text = seg.text.strip()
             start = float(seg.start)
             end = float(seg.end)
-            words_list: List[WordTimestamp] = []
 
+            if total_audio_dur > 0 and (time.time() - last_progress_time > 4.0):
+                pct = min(100, int((end / total_audio_dur) * 100))
+                if log_cb:
+                    log_cb(f"[TRANSCRIBE] Transcribed: {pct}% ({int(end)}s / {int(total_audio_dur)}s)...")
+                last_progress_time = time.time()
+
+            words_list: List[WordTimestamp] = []
             if seg.words:
                 for w in seg.words:
                     w_text = w.word.strip()

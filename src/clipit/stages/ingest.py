@@ -77,6 +77,7 @@ def run_ingest(
             "yt-dlp",
             "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
             "--merge-output-format", "mp4",
+            "--write-info-json",
             "--write-subs",
             "--sub-langs", "live_chat",
             "-o", str(source_mp4),
@@ -86,16 +87,34 @@ def run_ingest(
             cmd.extend(["--download-sections", f"*{start}-{end}"])
         subprocess.run(cmd, check=True)
 
-        # Try to extract video info
-        info_cmd = ["yt-dlp", "--dump-json", "--no-download", url_or_path]
-        try:
-            res = subprocess.run(info_cmd, capture_output=True, text=True, check=True)
-            ytdl_meta = json.loads(res.stdout)
-            meta["title"] = ytdl_meta.get("title", meta["title"])
-            meta["uploader"] = ytdl_meta.get("uploader", "")
-            meta["duration"] = ytdl_meta.get("duration", 0)
-        except Exception:
-            pass
+        # Extract video info from downloaded info.json (fast, zero extra network latency)
+        info_json_file = cache.path("source.info.json")
+        if not info_json_file.exists():
+            for cand in cache.dir.glob("*.info.json"):
+                if cand.name != "info.json":
+                    info_json_file = cand
+                    break
+
+        if info_json_file.exists():
+            try:
+                with open(info_json_file, "r", encoding="utf-8") as f:
+                    ytdl_meta = json.load(f)
+                    meta["title"] = ytdl_meta.get("title", meta["title"])
+                    meta["uploader"] = ytdl_meta.get("uploader", "")
+                    meta["duration"] = ytdl_meta.get("duration", 0)
+            except Exception:
+                pass
+        else:
+            # Fallback to remote metadata query only if info.json was not created
+            info_cmd = ["yt-dlp", "--dump-json", "--no-download", url_or_path]
+            try:
+                res = subprocess.run(info_cmd, capture_output=True, text=True, check=True)
+                ytdl_meta = json.loads(res.stdout)
+                meta["title"] = ytdl_meta.get("title", meta["title"])
+                meta["uploader"] = ytdl_meta.get("uploader", "")
+                meta["duration"] = ytdl_meta.get("duration", 0)
+            except Exception:
+                pass
 
         # Check if live chat file was downloaded
         live_chat_file = cache.path("source.live_chat.json")
@@ -139,19 +158,34 @@ def run_ingest(
     ]
     subprocess.run(wav_cmd, check=True)
 
-    # Get duration if not already set
-    if "duration" not in meta or not meta["duration"]:
-        dur_cmd = [
+    # Probe resolution & duration via ffprobe
+    if "duration" not in meta or not meta.get("duration") or "width" not in meta or "height" not in meta:
+        probe_cmd = [
             "ffprobe", "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "default=noprint_wrappers=1:nokey=1",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height:format=duration",
+            "-of", "json",
             str(source_mp4),
         ]
-        res = subprocess.run(dur_cmd, capture_output=True, text=True)
-        try:
-            meta["duration"] = float(res.stdout.strip())
-        except ValueError:
-            meta["duration"] = 0.0
+        res = subprocess.run(probe_cmd, capture_output=True, text=True)
+        if res.returncode == 0:
+            try:
+                p_data = json.loads(res.stdout)
+                streams = p_data.get("streams", [])
+                if streams:
+                    meta.setdefault("width", int(streams[0].get("width", 1920)))
+                    meta.setdefault("height", int(streams[0].get("height", 1080)))
+                fmt = p_data.get("format", {})
+                if "duration" not in meta or not meta["duration"]:
+                    meta["duration"] = float(fmt.get("duration", 0.0))
+            except Exception:
+                meta.setdefault("duration", 0.0)
+                meta.setdefault("width", 1920)
+                meta.setdefault("height", 1080)
+        else:
+            meta.setdefault("duration", 0.0)
+            meta.setdefault("width", 1920)
+            meta.setdefault("height", 1080)
 
     cache.save_json("info.json", meta)
     return meta

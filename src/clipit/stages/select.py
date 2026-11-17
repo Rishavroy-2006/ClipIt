@@ -16,9 +16,10 @@ def run_select(
     target_clips: int = 10,
     min_score: int = 70,
     selector_mode: str = "api",
+    force: bool = False,
 ) -> List[ClipItem]:
     """Select and rank viral clips, outputting cache/<video_id>/clips.json."""
-    if cache.exists("clips.json"):
+    if not force and cache.exists("clips.json"):
         raw = cache.load_json("clips.json")
         return [ClipItem(**c) for c in raw]
 

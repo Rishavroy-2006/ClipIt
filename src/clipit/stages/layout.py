@@ -298,7 +298,7 @@ def build_blur_fill_filter(
     if background == "blur":
         return (
             f"[0:v]{crop_part}scale=1080:1920:force_original_aspect_ratio=increase,"
-            f"crop=1080:1920,boxblur=luma_radius=min(h\\,w)/10:luma_power=2,eq=brightness=-0.3[bg];"
+            f"crop=1080:1920,boxblur=20:2,eq=brightness=-0.3[bg];"
             f"[0:v]{crop_part}scale=1080:-2[fg];"
             f"[bg][fg]overlay=x=0:y=(H-h)/2[base]"
         )

@@ -54,7 +54,12 @@ function go(n, push = true) {
 
 // Handle Browser Back / Forward Buttons
 window.addEventListener('popstate', e => {
-  // If modal is open when back is pressed, close it first without pushing new state
+  // If modals are open when back is pressed, close them first without navigating
+  const storageModal = $('#storageModalOverlay');
+  if (storageModal && storageModal.style.display === 'flex') {
+    closeStorageModal();
+    return;
+  }
   const cropModal = $('#cropModal');
   if (cropModal && cropModal.style.display === 'flex') {
     closeCropEditor(false);
@@ -334,6 +339,10 @@ function showContextMenu(anchorBtn, videoId) {
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
       Open in Studio
     </button>
+    <button type="button" class="ws-menu-item" data-act="rerun-ai">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+      ⚡ Rerun AI Diagnostics
+    </button>
     <button type="button" class="ws-menu-item" data-act="copy">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
       Copy Video URL
@@ -354,6 +363,10 @@ function showContextMenu(anchorBtn, videoId) {
   menu.querySelector('[data-act="open"]').onclick = () => {
     closeContextMenu();
     openProject(videoId);
+  };
+  menu.querySelector('[data-act="rerun-ai"]').onclick = () => {
+    closeContextMenu();
+    rerunAiDiagnostics(videoId);
   };
   menu.querySelector('[data-act="copy"]').onclick = async () => {
     closeContextMenu();
@@ -444,6 +457,18 @@ $('#launch').onclick = async () => {
     $('#launch').disabled = false;
   }
 };
+
+/* Step 2 Open Studio Action */
+const openStudioBtn = $('#open');
+if (openStudioBtn) {
+  openStudioBtn.onclick = () => {
+    if (S.vid) {
+      openProject(S.vid);
+    } else {
+      go(1);
+    }
+  };
+}
 
 /* Step 2: Live Multi-Agent Pipeline (Structured Telemetry, Focus Views, Master Timeline) */
 
@@ -1596,6 +1621,19 @@ const norm = (c, i) => ({
   })
 });
 
+async function rerunAiDiagnostics(videoId) {
+  if (!videoId) return;
+  toast('⚡ Launching Gemini AI Director diagnostics...');
+  try {
+    const res = await api('/api/rerun-ai', { video_id: videoId });
+    if (res && res.session_id) {
+      startRun(res.session_id, res.url || '');
+    }
+  } catch (err) {
+    toast('Failed to start AI diagnostics: ' + (err.message || err));
+  }
+}
+
 async function openProject(id, push = true) {
   try {
     const res = await api('/api/project/' + encodeURIComponent(id));
@@ -1607,6 +1645,10 @@ async function openProject(id, push = true) {
     S.cur = -1;
     go(3, push);
     $('#ptitle').textContent = S.title;
+    const rerunBtn = $('#rerunAiBtn');
+    if (rerunBtn) {
+      rerunBtn.onclick = () => rerunAiDiagnostics(S.vid);
+    }
     renderList();
     if (S.clips.length) select(0);
   } catch (e) {

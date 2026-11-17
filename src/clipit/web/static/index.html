@@ -417,9 +417,14 @@
               <h2 id="ptitle">Clips</h2>
               <span id="pstat" class="muted"></span>
             </div>
-            <button id="delRejectedBtn" class="del-rejected-btn" style="display:none;" type="button" title="Permanently delete all rejected clips from disk">
-              🗑 Delete Rejected (<span id="delRejectedCount">0</span>)
-            </button>
+            <div class="clips-actions-row">
+              <button id="rerunAiBtn" class="rerun-ai-btn" type="button" title="Rerun Gemini AI Director diagnostics to generate new viral hooks and scores">
+                ⚡ Rerun AI Diagnostics
+              </button>
+              <button id="delRejectedBtn" class="del-rejected-btn" style="display:none;" type="button" title="Permanently delete all rejected clips from disk">
+                🗑 Delete Rejected (<span id="delRejectedCount">0</span>)
+              </button>
+            </div>
           </div>
           <ul id="clipList"></ul>
         </aside>

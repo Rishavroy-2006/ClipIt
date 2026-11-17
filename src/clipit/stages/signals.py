@@ -123,7 +123,7 @@ def run_signals(
         chat_data = cache.load_json("chat.json") or []
         for msg in chat_data:
             t = int(msg.get("t", 0))
-            text = str(msg.get("m", "")).lower()
+            text = str(msg.get("text", msg.get("m", ""))).lower()
             weight = 2.5 if any(em in text for em in VIRAL_EMOTES) else 1.0
             if 0 <= t < duration_sec:
                 chat_rate[t] += weight
