@@ -104,6 +104,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_retention_status()
         elif path == "/api/storage-details":
             return self.handle_storage_details()
+        elif path == "/api/active-session":
+            return self.handle_get_active_session()
 
         # 3. Fallback to static or 404
         target_file = STATIC_DIR / path.lstrip("/")
@@ -284,6 +286,21 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         from clipit.retention import get_storage_breakdown
         res = get_storage_breakdown(CACHE_DIR, OUT_DIR, READY_DIR)
         self.send_json(res)
+
+    def handle_get_active_session(self):
+        with session_lock:
+            if not active_sessions:
+                self.send_json({"active": False})
+                return
+            latest = sorted(active_sessions.values(), key=lambda s: s.get("created_at", 0), reverse=True)[0]
+            self.send_json({
+                "active": True,
+                "session_id": latest["id"],
+                "video_id": latest.get("video_id"),
+                "url": latest.get("url"),
+                "done": latest.get("done", False),
+                "created_at": latest.get("created_at"),
+            })
 
     def handle_delete_all_clips(self, data: Dict[str, Any]):
         video_id = data.get("video_id")
@@ -589,6 +606,9 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 "queue": q,
                 "created_at": time.time(),
                 "status": "starting",
+                "events": [],
+                "video_id": None,
+                "done": False,
             }
 
         # Spawn agent workflow thread
@@ -617,12 +637,26 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         self.send_cors_headers()
         self.end_headers()
 
+        # 1. Replay historical events so reconnections or refreshed browsers instantly catch up!
+        with session_lock:
+            past_events = list(session.get("events", []))
+            is_done = session.get("done", False)
+
         try:
+            for pe in past_events:
+                ev_name = pe.get("event", "message")
+                p_data = json.dumps(pe.get("data", {}))
+                self.wfile.write(f"event: {ev_name}\ndata: {p_data}\n\n".encode("utf-8"))
+            self.wfile.flush()
+
+            if is_done:
+                return
+
             while True:
                 try:
-                    event = q.get(timeout=25.0)
+                    event = q.get(timeout=4.0)
                 except queue.Empty:
-                    # Keep-alive heartbeat
+                    # Keep-alive heartbeat every 4s to prevent browser/proxy timeout
                     self.wfile.write(b": heartbeat\n\n")
                     self.wfile.flush()
                     continue
@@ -854,52 +888,75 @@ def run_agent_pipeline_worker(
 
     total_stages = len(stages)
 
+    def emit_event(ev_type: str, data: Dict[str, Any]):
+        ev = {"event": ev_type, "data": data}
+        with session_lock:
+            if session_id in active_sessions:
+                active_sessions[session_id]["events"].append(ev)
+                if ev_type in ("pipeline_complete", "pipeline_error"):
+                    active_sessions[session_id]["done"] = True
+                if "video_id" in data and data["video_id"]:
+                    active_sessions[session_id]["video_id"] = data["video_id"]
+        q.put(ev)
+
     def emit_stage_start(idx: int, s: Dict[str, Any]):
-        q.put({
-            "event": "stage_start",
-            "data": {
-                "stage_index": idx,
-                "stage_id": s["id"],
-                "name": s["name"],
-                "badge": s["badge"],
-                "role": s["role"],
-                "description": s["desc"],
-                "progress_pct": int((idx - 1) / total_stages * 100),
-            }
+        emit_event("stage_start", {
+            "stage_index": idx,
+            "stage_id": s["id"],
+            "name": s["name"],
+            "badge": s["badge"],
+            "role": s["role"],
+            "description": s["desc"],
+            "progress_pct": int((idx - 1) / total_stages * 100),
         })
 
     def emit_log(stage_id: str, line: str, metrics: Optional[Dict[str, Any]] = None):
-        q.put({
-            "event": "agent_log",
-            "data": {
-                "stage_id": stage_id,
-                "timestamp": time.strftime("%H:%M:%S"),
-                "log": line,
-                "metrics": metrics or {},
-            }
+        emit_event("agent_log", {
+            "stage_id": stage_id,
+            "timestamp": time.strftime("%H:%M:%S"),
+            "log": line,
+            "metrics": metrics or {},
         })
 
     def emit_stage_complete(idx: int, s: Dict[str, Any], metrics: Optional[Dict[str, Any]] = None):
-        q.put({
-            "event": "stage_complete",
-            "data": {
-                "stage_id": s["id"],
-                "stage_index": idx,
-                "progress_pct": int(idx / total_stages * 100),
-                "metrics": metrics or {},
-            }
+        emit_event("stage_complete", {
+            "stage_id": s["id"],
+            "stage_index": idx,
+            "progress_pct": int(idx / total_stages * 100),
+            "metrics": metrics or {},
         })
 
+    class StageHeartbeat:
+        """Emits periodic live status pulses to keep SSE alive and inform user during long computations."""
+        def __init__(self, stage_id: str, message_template: str, interval: float = 4.0):
+            self.stage_id = stage_id
+            self.message_template = message_template
+            self.interval = interval
+            self.stop_evt = threading.Event()
+            self.thread = None
+
+        def __enter__(self):
+            def loop():
+                elapsed = 0
+                while not self.stop_evt.wait(self.interval):
+                    elapsed += int(self.interval)
+                    emit_log(self.stage_id, self.message_template.format(elapsed=elapsed))
+            self.thread = threading.Thread(target=loop, daemon=True)
+            self.thread.start()
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.stop_evt.set()
+            if self.thread:
+                self.thread.join(timeout=1.0)
+
     try:
-        q.put({
-            "event": "pipeline_start",
-            "data": {
-                "session_id": session_id,
-                "video_id": video_id,
-                "url": url,
-                "total_stages": total_stages,
-                "stages": [{"id": s["id"], "name": s["name"], "badge": s["badge"]} for s in stages],
-            }
+        emit_event("pipeline_start", {
+            "session_id": session_id,
+            "video_id": video_id,
+            "url": url,
+            "total_stages": total_stages,
+            "stages": [{"id": s["id"], "name": s["name"], "badge": s["badge"]} for s in stages],
         })
 
         # Stage 1: Ingest
@@ -917,20 +974,23 @@ def run_agent_pipeline_worker(
         # Stage 2: Transcribe
         st2 = stages[1]
         emit_stage_start(2, st2)
-        emit_log("transcribe", f"[TRANSCRIBE] Initializing MLX Whisper ({config.whisper.model}) on Apple Silicon Metal GPU...")
-        transcript = run_transcribe(cache, model_name=config.whisper.model)
+        whisper_engine = "faster-whisper (CUDA/CPU)" if sys.platform != "darwin" else "mlx-whisper (Metal GPU)"
+        emit_log("transcribe", f"[TRANSCRIBE] Initializing Whisper acoustic aligner ({whisper_engine})...")
+        with StageHeartbeat("transcribe", "[TRANSCRIBE] Aligning acoustic phonemes and word timestamps... ({elapsed}s elapsed)"):
+            transcript = run_transcribe(cache, model_name=config.whisper.model)
         num_segs = len(transcript.segments)
         total_words = sum(len(s.words) for s in transcript.segments)
         emit_log("transcribe", f"[TRANSCRIBE] Transcription complete: {num_segs} segments, {total_words} words, language: {transcript.language}")
         if transcript.segments:
             emit_log("transcribe", f"[TRANSCRIBE] Opening line: \"{transcript.segments[0].text.strip()[:60]}...\"")
-        emit_stage_complete(2, st2, {"segments": num_segs, "words": total_words, "accel": "Metal GPU"})
+        emit_stage_complete(2, st2, {"segments": num_segs, "words": total_words, "accel": whisper_engine})
 
         # Stage 3: Signals
         st3 = stages[2]
         emit_stage_start(3, st3)
         emit_log("signals", "[SIGNALS] Computing acoustic volume (RMS) and vocal excitement spectral power...")
-        signals = run_signals(cache, transcript, config.signals)
+        with StageHeartbeat("signals", "[SIGNALS] Analyzing spectral energy and visual scene cuts... ({elapsed}s elapsed)"):
+            signals = run_signals(cache, transcript, config.signals)
         sig_dur = signals.get("duration", duration)
         audio_energy = signals.get("audio_energy", [])
         peak_energy = max(audio_energy) if audio_energy else 0.85
@@ -963,16 +1023,17 @@ def run_agent_pipeline_worker(
         # Stage 5: Director (Select & Refine)
         st5 = stages[4]
         emit_stage_start(5, st5)
-        emit_log("director", "[DIRECTOR] Dispatching candidate windows to Gemini AI Director...")
+        emit_log("director", "[DIRECTOR] Dispatching candidate windows to Virality Director...")
         emit_log("director", "[DIRECTOR] Evaluating Hook Velocity, Narrative Arc, and Retention Potential...")
-        raw_clips = run_select(
-            cache,
-            transcript,
-            candidates,
-            target_clips=target_clips,
-            min_score=60,
-            selector_mode="api",
-        )
+        with StageHeartbeat("director", "[DIRECTOR] Evaluating viral hook strength & audience retention... ({elapsed}s elapsed)"):
+            raw_clips = run_select(
+                cache,
+                transcript,
+                candidates,
+                target_clips=target_clips,
+                min_score=60,
+                selector_mode="api",
+            )
         emit_log("director", f"[DIRECTOR] AI Director evaluated and approved {len(raw_clips)} candidate clips")
         emit_log("director", "[DIRECTOR] Refining exact sentence boundaries and speech pauses...")
         refined_clips = run_refine(
@@ -1065,25 +1126,22 @@ def run_agent_pipeline_worker(
         emit_stage_complete(8, st8, {"staged_files": len(rendered), "folder": f"ready_to_post/{video_id}"})
 
         # Pipeline complete!
-        q.put({
-            "event": "pipeline_complete",
-            "data": {
-                "session_id": session_id,
-                "video_id": video_id,
-                "clips_count": len(refined_clips),
-                "variants_per_clip": 3,
-                "export_folder": f"ready_to_post/{video_id}",
-                "message": f"Successfully generated {len(refined_clips)} clips for '{title}'!",
-            }
+        emit_event("pipeline_complete", {
+            "session_id": session_id,
+            "video_id": video_id,
+            "clips_count": len(refined_clips),
+            "variants_per_clip": 3,
+            "export_folder": f"ready_to_post/{video_id}",
+            "message": f"Successfully generated {len(refined_clips)} clips for '{title}'!",
         })
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         emit_log("error", f"[ERROR] Pipeline halted: {str(e)}")
-        q.put({
-            "event": "pipeline_error",
-            "data": {"error": str(e), "session_id": session_id}
+        emit_event("pipeline_error", {
+            "error": str(e),
+            "session_id": session_id,
         })
     finally:
         q.put(None)  # Sentinel to close SSE

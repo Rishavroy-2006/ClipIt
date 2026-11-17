@@ -28,9 +28,9 @@ def run_select(
 
     clips: List[ClipItem] = []
 
-    # 1. If API mode is requested or API key exists in .env, attempt Gemini selection
+    # 1. If API mode is requested and API key exists in .env, attempt Gemini selection
     api_key = get_api_key()
-    if (selector_mode == "api" or api_key) and selector_mode != "file-only":
+    if selector_mode == "api" and api_key and selector_mode not in ("heuristic", "file-only"):
         gemini_clips = select_clips_with_gemini(
             video_title=video_title,
             streamer=streamer,
@@ -41,6 +41,8 @@ def run_select(
         )
         if gemini_clips:
             clips = gemini_clips
+        else:
+            print("[DIRECTOR] Gemini API unavailable or timed out. Seamlessly engaging local heuristic virality selector.")
 
     # 2. If selector mode is 'file' or result file exists in results/
     prompts_dir = Path("prompts")

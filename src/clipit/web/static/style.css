@@ -3614,8 +3614,15 @@ input[type=url]:focus {
 }
 
 @keyframes modalPop {
-  0% { opacity: 0; transform: scale(0.96) translateY(8px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .storage-modal-header {
@@ -4082,13 +4089,16 @@ input[type=url]:focus {
     padding: 8px 14px;
     font-size: 0.85rem;
   }
+
   .storage-modal-header {
     padding: 16px;
   }
+
   .storage-modal-body {
     padding: 16px;
     gap: 16px;
   }
+
   .clip-title-text {
     max-width: 150px;
   }

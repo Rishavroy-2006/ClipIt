@@ -62,7 +62,7 @@ def select_clips_with_gemini(
         print("Warning: GEMINI_API_KEY not found in environment or .env.")
         return None
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=8000))
     models = model_chain or DEFAULT_MODEL_CHAIN
 
     # Build prompt input
@@ -99,69 +99,71 @@ def select_clips_with_gemini(
 
     full_prompt = f"{system_instruction}\n\n{user_prompt}"
 
-    for model_name in models:
-        for attempt in range(2):  # Attempt 0: Initial call, Attempt 1: Exactly 1 retry
-            try:
-                attempt_str = f"Attempt {attempt + 1}/2"
-                print(f"Calling Gemini API ({model_name}) [{attempt_str}]...")
-                resp = client.models.generate_content(
-                    model=model_name,
-                    contents=full_prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        temperature=0.4,
-                    ),
-                )
-                raw_text = resp.text.strip()
-                # Clean markdown fences if any
-                if raw_text.startswith("```"):
-                    raw_text = re.sub(r"^```[a-zA-Z]*\n", "", raw_text)
-                    raw_text = re.sub(r"\n```$", "", raw_text)
+    # Strict maximum 12s overall deadline for Gemini API before auto-falling back
+    start_time = time.time()
+    max_total_timeout = 12.0
 
-                parsed = json.loads(raw_text)
-                if isinstance(parsed, dict) and "clips" in parsed:
-                    parsed = parsed["clips"]
-                if not isinstance(parsed, list):
-                    parsed = [parsed]
+    # Limit to top 2 model candidates, 1 attempt each to prevent any pipeline stall
+    for model_name in models[:2]:
+        if time.time() - start_time > max_total_timeout:
+            print("Notice: Gemini API overall deadline reached (12s). Falling back to local heuristic selection.")
+            break
+        try:
+            print(f"Calling Gemini Director API ({model_name}, 8s timeout)...")
+            resp = client.models.generate_content(
+                model=model_name,
+                contents=full_prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.4,
+                ),
+            )
+            raw_text = resp.text.strip()
+            # Clean markdown fences if any
+            if raw_text.startswith("```"):
+                raw_text = re.sub(r"^```[a-zA-Z]*\n", "", raw_text)
+                raw_text = re.sub(r"\n```$", "", raw_text)
 
-                clips: List[ClipItem] = []
-                for item in parsed:
-                    try:
-                        # Fill defaults if needed
-                        if "id" not in item:
-                            item["id"] = f"c{len(clips) + 1:02d}"
-                        if "score" not in item:
-                            item["score"] = 85
-                        if "layout" not in item:
-                            item["layout"] = "blur-fill"
-                        if "source_permission" not in item:
-                            item["source_permission"] = "clip-policy"
-                        if "why_viral" not in item or len(item["why_viral"].split()) < 5:
-                            item["why_viral"] = "Strong emotional reaction with instant viewer hook and high short-form completion rate."
-                        clip = ClipItem(**item)
-                        clips.append(clip)
-                    except ValidationError as ve:
-                        print(f"Skipping invalid item: {ve}")
+            parsed = json.loads(raw_text)
+            if isinstance(parsed, dict) and "clips" in parsed:
+                parsed = parsed["clips"]
+            if not isinstance(parsed, list):
+                parsed = [parsed]
 
-                if clips:
-                    # Sort clips by score descending
-                    clips.sort(key=lambda x: getattr(x, "score", 0), reverse=True)
-                    # Enforce user constraints: auto is min 1, strictly < 30
-                    if target_clips <= 0:
-                        selected_clips = clips[:29]
-                        print(f"✔ Successfully selected {len(selected_clips)} viral highlight clips (Auto Mode) with {model_name}")
-                        return selected_clips
-                    else:
-                        selected_clips = clips[:target_clips]
-                        print(f"✔ Successfully selected {len(selected_clips)} clips with {model_name}")
-                        return selected_clips
+            clips: List[ClipItem] = []
+            for item in parsed:
+                try:
+                    # Fill defaults if needed
+                    if "id" not in item:
+                        item["id"] = f"c{len(clips) + 1:02d}"
+                    if "score" not in item:
+                        item["score"] = 85
+                    if "layout" not in item:
+                        item["layout"] = "blur-fill"
+                    if "source_permission" not in item:
+                        item["source_permission"] = "clip-policy"
+                    if "why_viral" not in item or len(item["why_viral"].split()) < 5:
+                        item["why_viral"] = "Strong emotional reaction with instant viewer hook and high short-form completion rate."
+                    clip = ClipItem(**item)
+                    clips.append(clip)
+                except ValidationError as ve:
+                    print(f"Skipping invalid item: {ve}")
 
-            except Exception as e:
-                if attempt == 0:
-                    print(f"Notice: Model {model_name} attempt 1 failed: {e}. Retrying once in 1.5s...")
-                    time.sleep(1.5)
+            if clips:
+                # Sort clips by score descending
+                clips.sort(key=lambda x: getattr(x, "score", 0), reverse=True)
+                # Enforce user constraints: auto is min 1, strictly < 30
+                if target_clips <= 0:
+                    selected_clips = clips[:29]
+                    print(f"✔ Successfully selected {len(selected_clips)} viral highlight clips (Auto Mode) with {model_name}")
+                    return selected_clips
                 else:
-                    print(f"Warning: Model {model_name} retry failed: {e}. Moving to next model in chain...")
+                    selected_clips = clips[:target_clips]
+                    print(f"✔ Successfully selected {len(selected_clips)} clips with {model_name}")
+                    return selected_clips
 
-    print("All Gemini API models in chain exhausted. Falling back to local heuristic selection.")
+        except Exception as e:
+            print(f"Notice: Gemini API model {model_name} failed: {e}. Moving to next option...")
+
+    print("Gemini API models unavailable or timed out. Instantly falling back to local heuristic selection.")
     return None

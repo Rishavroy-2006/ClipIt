@@ -1248,34 +1248,38 @@ function log(t) {
   addStructuredLog(t, S.pipeline.activeStage, 'info');
 }
 
-function startRun(sid, url) {
+function startRun(sid, url, resetUI = true) {
   go(2);
-  resetPipelineState();
-  buildAgents();
-  S.vid = null;
-  S.currentUrl = url;
+  S.currentSessionId = sid;
+  if (url) S.currentUrl = url;
+
+  if (resetUI) {
+    resetPipelineState();
+    buildAgents();
+    S.vid = null;
+    S.t0 = Date.now();
+    $('#bar').style.width = '0%';
+    const pctEl = $('#pipeProgressPct');
+    if (pctEl) pctEl.textContent = '0%';
+    $('#open').disabled = true;
+    $('#open').textContent = 'Open studio';
+  }
 
   // Header and Status Setup
   const liveDot = $('#pipeLiveDot');
   const statusTxt = $('#pipeStatusText');
   if (liveDot) liveDot.className = 'pipe-live-dot active';
   if (statusTxt) statusTxt.textContent = 'PIPELINE RUNNING';
-  $('#runtitle').textContent = 'Processing: ' + url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 50);
+  if (S.currentUrl) {
+    $('#runtitle').textContent = 'Processing: ' + S.currentUrl.replace(/^https?:\/\/(www\.)?/, '').slice(0, 50);
+  }
 
-  // Global Progress
-  $('#bar').style.width = '0%';
-  const pctEl = $('#pipeProgressPct');
-  if (pctEl) pctEl.textContent = '0%';
-
-  $('#open').disabled = true;
-  $('#open').textContent = 'Open studio';
   const resBtn = $('#resumePipeline');
   if (resBtn) resBtn.style.display = 'none';
 
   // Timer Setup
-  S.t0 = Date.now();
+  if (!S.t0) S.t0 = Date.now();
   clearInterval(S.tick);
-  $('#timer').textContent = '00:00';
   S.tick = setInterval(() => {
     $('#timer').textContent = fmt((Date.now() - S.t0) / 1000);
   }, 500);
@@ -1404,9 +1408,18 @@ function startRun(sid, url) {
     toast('Pipeline halted: ' + (d.error || 'See log'));
   });
 
+  let reconnectCount = 0;
   es.onerror = () => {
-    if (es.readyState === 2) {
-      addStructuredLog('Connection to stream closed.', 'system', 'info');
+    if (es.readyState === 2 && reconnectCount < 10) {
+      reconnectCount++;
+      addStructuredLog(`Connection paused. Auto-reconnecting (${reconnectCount}/10)...`, 'system', 'info');
+      setTimeout(() => {
+        if (S.view === 2 && S.currentSessionId) {
+          startRun(S.currentSessionId, S.currentUrl, false);
+        }
+      }, 1500);
+    } else if (es.readyState === 2) {
+      addStructuredLog('Connection closed.', 'system', 'info');
       clearInterval(S.tick);
       if (S.vid) {
         $('#open').disabled = false;
@@ -1543,6 +1556,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } else if (step === 'pipeline') {
     go(2, false);
+    // Automatically reconnect to active/recent session and replay logs
+    api('/api/active-session').then(res => {
+      if (res && res.active && res.session_id) {
+        startRun(res.session_id, res.url || '', false);
+      }
+    }).catch(() => {});
   } else {
     // Replace initial state with step 1
     history.replaceState({ step: 1, vid: null }, '', window.location.href);

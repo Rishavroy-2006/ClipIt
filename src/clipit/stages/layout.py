@@ -276,6 +276,10 @@ def build_blur_fill_filter(
     Top letterbox space (y=0..656) hosts the massive 3-line bold headline.
     Bottom letterbox space (y=1264..1920) hosts the kinetic dialogue subtitles.
     """
+    if source_w <= source_h:
+        # Input is already vertical or square - fit into 1080x1920
+        return "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(1080-iw)/2:(1920-ih)/2:color=black[base]"
+
     if not vision_info:
         top_y, bot_y = 0, source_h
     else:
@@ -309,6 +313,9 @@ def build_reframed_crop_filter(
     source_h: int = 1080,
 ) -> str:
     """Build deframed vertical crop with selectable aspect ratios (default 3:4 letterbox, 9:16 full-bleed, 1:1, etc.)."""
+    if source_w <= source_h:
+        return "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(1080-iw)/2:(1920-ih)/2:color=black[base]"
+
     ratio_str = str(vision_info.get("content_ratio", "3:4")) if vision_info else "3:4"
     ratio_map = {
         "3:4": (3.0 / 4.0, 1080, 1440, 240),
@@ -341,8 +348,8 @@ def build_reframed_crop_filter(
         base_w = source_w
         base_h = int(base_w / ar)
 
-    crop_w = max(240, int(base_w / zoom))
-    crop_h = max(240, int(base_h / zoom))
+    crop_w = max(64, min(source_w, int(base_w / zoom)))
+    crop_h = max(64, min(avail_h, int(base_h / zoom)))
 
     if vision_info and "content_focus_x" in vision_info:
         focus_cx = int(vision_info["content_focus_x"] / 1000.0 * source_w)

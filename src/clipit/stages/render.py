@@ -34,7 +34,25 @@ def render_variant_file(
     if codec == "auto":
         codec = getattr(video_config, "draft_codec", None) or get_available_encoder()
 
-    layout_filter, seam_y = get_layout_filter(layout_name, face_box=face_box, vision_info=vision_info)
+    info = cache.load_json("info.json") or {}
+    src_w = info.get("width")
+    src_h = info.get("height")
+    if not src_w or not src_h:
+        try:
+            import json as _json
+            p = subprocess.run(
+                ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", str(source_video)],
+                capture_output=True, text=True, check=True
+            )
+            d = _json.loads(p.stdout)
+            src_w = int(d["streams"][0]["width"])
+            src_h = int(d["streams"][0]["height"])
+        except Exception:
+            src_w, src_h = 1920, 1080
+
+    layout_filter, seam_y = get_layout_filter(
+        layout_name, face_box=face_box, vision_info=vision_info, source_w=src_w, source_h=src_h
+    )
 
     ass_suffix = f"_{layout_name}" if layout_name != "stack" else ""
     ass_path = cache.path(f"{clip.id}{ass_suffix}.ass")
