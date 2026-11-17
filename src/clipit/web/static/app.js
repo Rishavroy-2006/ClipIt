@@ -1598,6 +1598,18 @@ function stat() {
   const a = S.clips.filter(c => c.status === 'approved').length;
   const r = S.clips.filter(c => c.status === 'rejected').length;
   $('#pstat').textContent = `${a} approved · ${r} rejected`;
+
+  const delBtn = $('#delRejectedBtn');
+  if (delBtn) {
+    if (r > 0) {
+      delBtn.style.display = 'inline-flex';
+      const countSpan = $('#delRejectedCount');
+      if (countSpan) countSpan.textContent = r;
+      delBtn.onclick = deleteRejected;
+    } else {
+      delBtn.style.display = 'none';
+    }
+  }
 }
 
 function renderList() {
@@ -1705,9 +1717,12 @@ function inspect(c) {
     <button class="wide" id="cropBtn" style="margin-top:4px;background:var(--ink);border:1px solid var(--lemon);color:var(--lemon);font-weight:700;">✂ Adjust Video Crop & Framing</button>
     <button class="wide" id="copy" style="margin-top:8px;">Copy social publishing pack</button>
     <div class="acts">
-      <button class="ok" id="ap">Approve [A]</button>
-      <button class="no" id="rj">Reject [R]</button>
+      <button class="ok ${c.status === 'approved' ? 'active' : ''}" id="ap">Approve [A]</button>
+      <button class="no ${c.status === 'rejected' ? 'active' : ''}" id="rj">Reject [R]</button>
     </div>
+    ${c.status === 'rejected' ? `
+      <button class="wide del-clip-btn" id="delCurrentClip" title="Permanently delete this clip's video files">🗑 Delete This Rejected Clip Permanently</button>
+    ` : ''}
     <button class="wide export" id="exp">Export approved to Ready-to-Post</button>
   `;
 
@@ -1716,6 +1731,11 @@ function inspect(c) {
   $('#ap').onclick = () => mark('approved');
   $('#rj').onclick = () => mark('rejected');
   $('#exp').onclick = exportAll;
+
+  const delCurrent = $('#delCurrentClip');
+  if (delCurrent) {
+    delCurrent.onclick = deleteCurrentClip;
+  }
 }
 
 async function copyPack() {
@@ -1736,13 +1756,72 @@ async function mark(status) {
   const old = c.status;
   c.status = status;
   renderList();
+  inspect(c);
   try {
     await post('/api/approve-clip', { video_id: S.vid, clip_id: c.id, status });
     toast(status === 'approved' ? 'Approved [A]' : 'Rejected [R]');
   } catch (e) {
     c.status = old;
     renderList();
+    inspect(c);
     toast('Couldn’t save approval: ' + e.message);
+  }
+}
+
+async function deleteRejected() {
+  const rejected = S.clips.filter(c => c.status === 'rejected');
+  if (!rejected.length) return toast('No rejected clips to delete.');
+
+  const ok = window.confirm(`Permanently delete ${rejected.length} rejected clip(s)?\n\nThis will remove their rendered MP4 files and metadata from disk.`);
+  if (!ok) return;
+
+  try {
+    const res = await post('/api/delete-rejected', { video_id: S.vid });
+    if (res.success) {
+      const deletedIds = res.deleted_clip_ids || [];
+      S.clips = S.clips.filter(c => !deletedIds.includes(c.id));
+      toast(`Permanently deleted ${res.deleted_count} rejected clip(s) (freed ${res.freed_mb} MB)`);
+      if (S.clips.length) {
+        select(Math.max(0, Math.min(S.cur, S.clips.length - 1)));
+      } else {
+        S.cur = -1;
+        renderList();
+        load(true);
+        $('#inspect').innerHTML = '<p class="muted">No clips remaining in this project.</p>';
+      }
+    } else {
+      toast('Delete failed: ' + (res.error || 'Unknown error'));
+    }
+  } catch (e) {
+    toast('Delete failed: ' + e.message);
+  }
+}
+
+async function deleteCurrentClip() {
+  const c = S.clips[S.cur];
+  if (!c) return;
+
+  const ok = window.confirm(`Permanently delete "${c.title}"?\n\nThis will remove all its rendered MP4 video files from disk.`);
+  if (!ok) return;
+
+  try {
+    const res = await post('/api/delete-clip', { video_id: S.vid, clip_id: c.id });
+    if (res.success) {
+      toast(`Permanently deleted "${c.title.slice(0, 25)}..."`);
+      S.clips.splice(S.cur, 1);
+      if (S.clips.length) {
+        select(Math.max(0, Math.min(S.cur, S.clips.length - 1)));
+      } else {
+        S.cur = -1;
+        renderList();
+        load(true);
+        $('#inspect').innerHTML = '<p class="muted">No clips remaining in this project.</p>';
+      }
+    } else {
+      toast('Delete failed: ' + (res.error || 'Unknown error'));
+    }
+  } catch (e) {
+    toast('Delete failed: ' + e.message);
   }
 }
 

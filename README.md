@@ -19,7 +19,8 @@ Works on **macOS (Apple Silicon Metal)** and **Windows (NVIDIA NVENC / AMD / Int
   2. **Reference Letterbox / Blur-Fill**: 16:9 stream centered with dynamic blurred background and bold 3-line top hook headline.
   3. **Content Deframed 9:16**: Full-bleed vertical action crop focused on gameplay.
 * **Kinetic Word-by-Word Subtitles**: High-impact ASS subtitles with color pops and auto-emojis (💀, 😭, 😱, 🔥, 🏆, 🚗).
-* **ClipIt Web Studio**: Built-in zero-build interactive web app (`clipit serve --port 8765`) with live pipeline visualization, deep linking, 9:16 vertical crop adjustments, and one-click publishing.
+* **ClipIt Web Studio**: Built-in zero-build interactive web app (`clipit serve --port 8765`) with live pipeline visualization, deep linking, 9:16 vertical crop adjustments, rejected clip deletion, and one-click publishing.
+* **Smart Storage & 30-Day Lifecycle Retention**: One-click permanent deletion of rejected clips directly from the UI, plus an automated 30-day purge cycle for raw VODs and clips to prevent disk bloat.
 * **Full AI Agent Context**: Pre-configured [docs/.agents](file:///docs/.agents) / [docs/AGENTS.md](file:///docs/AGENTS.md) guide so any AI assistant (Cursor, Windsurf, Claude Code, Antigravity) can maintain, run, and extend all tools.
 
 ---

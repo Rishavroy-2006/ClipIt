@@ -305,21 +305,35 @@ def review(
 
 @app.command()
 def clean(
-    video_id: str = typer.Argument(..., help="Video ID to clean large video files for"),
+    video_id: Optional[str] = typer.Argument(None, help="Optional Video ID to clean large video files for"),
+    days: int = typer.Option(30, "--days", "-d", help="Max age in days for automatic 30-day retention lifecycle purge"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview expired projects without deleting files"),
 ):
-    """Free disk space by deleting cached raw video/audio while preserving transcripts and metadata JSON."""
-    cache_dir = Path("cache") / video_id
-    if not cache_dir.exists():
-        console.print(f"[red]Directory not found: {cache_dir}[/red]")
-        return
+    """Clean expired video assets (30-day lifecycle) or purge video cache for a specific project."""
+    if video_id:
+        cache_dir = Path("cache") / video_id
+        if not cache_dir.exists():
+            console.print(f"[red]Directory not found: {cache_dir}[/red]")
+            return
 
-    freed = 0
-    for ext in ("*.mp4", "*.mkv", "*.webm", "*.wav"):
-        for f in cache_dir.glob(ext):
-            sz = f.stat().st_size
-            f.unlink()
-            freed += sz
-    console.print(f"[green]Cleaned cache for {video_id}. Freed {freed / (1024**2):.1f} MB.[/green]")
+        freed = 0
+        for ext in ("*.mp4", "*.mkv", "*.webm", "*.wav"):
+            for f in cache_dir.glob(ext):
+                sz = f.stat().st_size
+                f.unlink()
+                freed += sz
+        console.print(f"[green]Cleaned cache for {video_id}. Freed {freed / (1024**2):.1f} MB.[/green]")
+    else:
+        from clipit.retention import enforce_retention_policy
+        console.print(f"[bold cyan]Running {days}-day retention lifecycle check...[/bold cyan]")
+        res = enforce_retention_policy(max_age_days=days, dry_run=dry_run)
+        if res["purged_count"] == 0:
+            console.print(f"[green]✔ All {res['scanned_projects']} projects are within the {days}-day lifecycle. Zero expired files.[/green]")
+        else:
+            action = "Would purge" if dry_run else "Purged"
+            console.print(f"[yellow]{action} {res['purged_count']} expired project(s). Freed {res['freed_gb']:.2f} GB disk space.[/yellow]")
+            for p in res["purged_projects"]:
+                console.print(f" • [bold]{p['video_id']}[/bold] (Age: {p['age_days']} days, Created: {p['created_at']}) -> Freed {p['freed_mb']} MB")
 
 
 @app.command(name="serve")

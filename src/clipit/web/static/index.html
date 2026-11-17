@@ -413,7 +413,13 @@
       <div class="studio">
         <aside class="clips">
           <div class="clips-h">
-            <h2 id="ptitle">Clips</h2><span id="pstat" class="muted"></span>
+            <div>
+              <h2 id="ptitle">Clips</h2>
+              <span id="pstat" class="muted"></span>
+            </div>
+            <button id="delRejectedBtn" class="del-rejected-btn" style="display:none;" type="button" title="Permanently delete all rejected clips from disk">
+              🗑 Delete Rejected (<span id="delRejectedCount">0</span>)
+            </button>
           </div>
           <ul id="clipList"></ul>
         </aside>

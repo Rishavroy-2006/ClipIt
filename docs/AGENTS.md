@@ -133,6 +133,10 @@ adjusting crops, and publishing.
     - `POST /api/save-layout`: Saves user-adjusted crop boundaries and facecam box.
     - `POST /api/render-preview`: Live ffmpeg-generated preview frame for crop editor.
     - `POST /api/export`: Publishes selected clips to `ready_to_post/`.
+    - `POST /api/delete-rejected`: Permanently deletes all rejected clips and their rendered MP4 files from disk.
+    - `POST /api/delete-clip`: Permanently deletes a single clip and its variants from disk.
+    - `GET /api/retention-status`: Scans all projects and reports creation age and 30-day lifecycle status.
+    - `POST /api/retention-clean`: Runs retention cleanup for projects older than 30 days.
 
 ---
 

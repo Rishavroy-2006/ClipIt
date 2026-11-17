@@ -248,4 +248,95 @@ def test_quality_sentinel(tmp_path: Path):
     assert report["audits"][0]["has_hook"] is True
 
 
+def test_delete_rejected_clips(tmp_path: Path):
+    import json
+    from clipit.retention import delete_rejected_clips
+
+    cache_dir = tmp_path / "cache"
+    out_dir = tmp_path / "out"
+    ready_dir = tmp_path / "ready"
+    vid = "test_vid_del"
+
+    c_dir = cache_dir / vid
+    o_dir = out_dir / vid
+    c_dir.mkdir(parents=True)
+    o_dir.mkdir(parents=True)
+
+    # Setup clips in out
+    (o_dir / "c01.mp4").write_text("dummy-c01")
+    (o_dir / "c02.mp4").write_text("dummy-c02-rejected")
+    (o_dir / "c02_blur.mp4").write_text("dummy-c02-blur")
+
+    # Setup manifests
+    (c_dir / "approved.json").write_text(json.dumps({"c01": "approved", "c02": "rejected"}))
+    (c_dir / "refined_clips.json").write_text(json.dumps([
+        {"id": "c01", "start": 0.0, "end": 10.0, "score": 90, "title": "C1", "hook_line": "H1", "why_viral": "Viral moment one here."},
+        {"id": "c02", "start": 15.0, "end": 25.0, "score": 70, "title": "C2", "hook_line": "H2", "why_viral": "Viral moment two here."},
+    ]))
+
+    res = delete_rejected_clips(vid, cache_base=cache_dir, out_base=out_dir, ready_base=ready_dir)
+
+    assert res["success"] is True
+    assert res["deleted_count"] == 1
+    assert "c02" in res["deleted_clip_ids"]
+    assert not (o_dir / "c02.mp4").exists()
+    assert not (o_dir / "c02_blur.mp4").exists()
+    assert (o_dir / "c01.mp4").exists()
+
+    with open(c_dir / "approved.json") as f:
+        app = json.load(f)
+    assert "c02" not in app
+    assert app.get("c01") == "approved"
+
+    with open(c_dir / "refined_clips.json") as f:
+        ref = json.load(f)
+    assert len(ref) == 1
+    assert ref[0]["id"] == "c01"
+
+
+def test_retention_policy_30_days(tmp_path: Path):
+    import json
+    import time
+    from clipit.retention import enforce_retention_policy
+
+    cache_dir = tmp_path / "cache"
+    out_dir = tmp_path / "out"
+
+    # 1. Fresh project (1 day old)
+    fresh_vid = "fresh_proj"
+    f_cache = cache_dir / fresh_vid
+    f_out = out_dir / fresh_vid
+    f_cache.mkdir(parents=True)
+    f_out.mkdir(parents=True)
+    (f_cache / "info.json").write_text(json.dumps({"created_at": time.time() - (1 * 86400)}))
+    (f_cache / "source.mp4").write_text("fresh-source")
+    (f_out / "c01.mp4").write_text("fresh-clip")
+
+    # 2. Expired project (35 days old)
+    old_vid = "old_proj"
+    o_cache = cache_dir / old_vid
+    o_out = out_dir / old_vid
+    o_cache.mkdir(parents=True)
+    o_out.mkdir(parents=True)
+    (o_cache / "info.json").write_text(json.dumps({"created_at": time.time() - (35 * 86400)}))
+    (o_cache / "source.mp4").write_text("old-source-to-delete")
+    (o_cache / "audio.wav").write_text("old-audio-to-delete")
+    (o_out / "c01.mp4").write_text("old-clip-to-delete")
+
+    res = enforce_retention_policy(cache_base=cache_dir, out_base=out_dir, max_age_days=30)
+
+    assert res["scanned_projects"] == 2
+    assert res["purged_count"] == 1
+    assert res["purged_projects"][0]["video_id"] == old_vid
+
+    # Verify old source and clips are deleted
+    assert not (o_cache / "source.mp4").exists()
+    assert not (o_cache / "audio.wav").exists()
+    assert not (o_out / "c01.mp4").exists()
+
+    # Verify fresh project remains intact
+    assert (f_cache / "source.mp4").exists()
+    assert (f_out / "c01.mp4").exists()
+
+
 

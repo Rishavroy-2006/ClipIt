@@ -1692,12 +1692,57 @@ input[type=url]:focus {
 .clips-h {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 8px
 }
 
 .clips-h h2 {
   font-size: 1.2rem
+}
+
+.del-rejected-btn {
+  background: rgba(255, 60, 90, 0.12);
+  border: 1px solid rgba(255, 80, 110, 0.45);
+  color: #ff6b85;
+  font-family: var(--f);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.del-rejected-btn:hover {
+  background: rgba(255, 60, 90, 0.25);
+  border-color: #ff4766;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.del-clip-btn {
+  background: rgba(255, 60, 90, 0.08);
+  border: 1px solid rgba(255, 80, 110, 0.35);
+  color: #ff6b85;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.del-clip-btn:hover {
+  background: rgba(255, 60, 90, 0.22);
+  border-color: #ff4766;
+  color: #fff;
 }
 
 #clipList {
@@ -1891,12 +1936,24 @@ input[type=url]:focus {
 
 .ok {
   background: var(--mint);
-  color: var(--ink)
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ok.active {
+  box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px var(--mint);
 }
 
 .no {
   background: var(--flare);
-  color: var(--ink)
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.no.active {
+  box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px var(--flare);
 }
 
 .wide {

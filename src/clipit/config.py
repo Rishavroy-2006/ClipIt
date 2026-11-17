@@ -104,12 +104,20 @@ class SafeZonesConfig(BaseModel):
     right_margin: float = 0.15
 
 
+class RetentionConfig(BaseModel):
+    enabled: bool = True
+    auto_cleanup_days: int = 30
+    clean_source_vod: bool = True
+    clean_rendered_clips: bool = True
+
+
 class AppConfig(BaseModel):
     defaults: DefaultsConfig = Field(default_factory=DefaultsConfig)
     signals: SignalConfig = Field(default_factory=SignalConfig)
     whisper: WhisperConfig = Field(default_factory=WhisperConfig)
     video: VideoConfig = Field(default_factory=VideoConfig)
     safe_zones: SafeZonesConfig = Field(default_factory=SafeZonesConfig)
+    retention: RetentionConfig = Field(default_factory=RetentionConfig)
 
 
 def load_config(config_path: Optional[Path] = None) -> AppConfig:

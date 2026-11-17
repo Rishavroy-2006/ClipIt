@@ -100,6 +100,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         elif path == "/api/stream-workflow":
             session_id = query.get("session_id", [None])[0]
             return self.handle_sse_workflow(session_id)
+        elif path == "/api/retention-status":
+            return self.handle_retention_status()
 
         # 3. Fallback to static or 404
         target_file = STATIC_DIR / path.lstrip("/")
@@ -128,6 +130,12 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_export(data)
         elif path == "/api/delete-project":
             return self.handle_delete_project(data)
+        elif path == "/api/delete-clip":
+            return self.handle_delete_clip(data)
+        elif path == "/api/delete-rejected":
+            return self.handle_delete_rejected(data)
+        elif path == "/api/retention-clean":
+            return self.handle_retention_clean(data)
         elif path == "/api/rerender-clip":
             return self.handle_rerender_clip(data)
         else:
@@ -217,6 +225,54 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             shutil.rmtree(cache_v, ignore_errors=True)
 
         self.send_json({"success": True, "deleted": video_id})
+
+    def handle_delete_clip(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        clip_id = data.get("clip_id")
+        if not video_id or not clip_id:
+            self.send_error(HTTPStatus.BAD_REQUEST, "Missing video_id or clip_id")
+            return
+        from clipit.retention import delete_single_clip
+        res = delete_single_clip(video_id, clip_id, CACHE_DIR, OUT_DIR, READY_DIR)
+        self.send_json(res)
+
+    def handle_delete_rejected(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        if not video_id:
+            self.send_error(HTTPStatus.BAD_REQUEST, "Missing video_id")
+            return
+        from clipit.retention import delete_rejected_clips
+        res = delete_rejected_clips(video_id, CACHE_DIR, OUT_DIR, READY_DIR)
+        self.send_json(res)
+
+    def handle_retention_clean(self, data: Dict[str, Any]):
+        days = int(data.get("days", 30))
+        dry_run = bool(data.get("dry_run", False))
+        from clipit.retention import enforce_retention_policy
+        res = enforce_retention_policy(CACHE_DIR, OUT_DIR, max_age_days=days, dry_run=dry_run)
+        self.send_json(res)
+
+    def handle_retention_status(self):
+        from datetime import datetime, timezone
+        from clipit.retention import get_project_age_days, get_project_creation_timestamp
+        projects = []
+        all_vids = set()
+        if CACHE_DIR.exists():
+            all_vids.update(p.name for p in CACHE_DIR.iterdir() if p.is_dir() and not p.name.startswith("."))
+        if OUT_DIR.exists():
+            all_vids.update(p.name for p in OUT_DIR.iterdir() if p.is_dir() and not p.name.startswith("."))
+
+        for vid in sorted(all_vids):
+            age = get_project_age_days(vid, CACHE_DIR, OUT_DIR)
+            ts = get_project_creation_timestamp(vid, CACHE_DIR, OUT_DIR)
+            dt_str = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            projects.append({
+                "video_id": vid,
+                "created_at": dt_str,
+                "age_days": round(age, 1),
+                "expired_30d": age >= 30,
+            })
+        self.send_json({"policy_days": 30, "projects": projects})
 
     def handle_get_project_detail(self, video_id: str):
         out_v = OUT_DIR / video_id
@@ -1020,6 +1076,20 @@ def start_server(port: int = 8765, open_browser: bool = True):
     print(f" 🚀 ClipIt Studio Web Server Running at: {url}")
     print(f" Press Ctrl+C to stop.")
     print("=" * 70 + "\n")
+
+    # Start 30-day retention lifecycle worker (runs on startup + every 24h)
+    def retention_worker():
+        while True:
+            try:
+                from clipit.retention import enforce_retention_policy
+                res = enforce_retention_policy(CACHE_DIR, OUT_DIR, max_age_days=30)
+                if res.get("purged_count", 0) > 0:
+                    print(f" [RETENTION] Automatically cleaned {res['purged_count']} expired project(s) (>30 days old), freed {res['freed_gb']} GB")
+            except Exception as err:
+                print(f" [RETENTION] Notice: retention check encountered: {err}")
+            time.sleep(86400)
+
+    threading.Thread(target=retention_worker, daemon=True, name="RetentionWorker").start()
 
     if open_browser:
         try:

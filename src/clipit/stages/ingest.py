@@ -3,6 +3,8 @@
 import json
 import shutil
 import subprocess
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from clipit.cache import CacheManager
@@ -59,11 +61,14 @@ def run_ingest(
         return cache.load_json("info.json")
 
     is_url = url_or_path.startswith("http://") or url_or_path.startswith("https://")
+    now_ts = time.time()
     meta: Dict[str, Any] = {
         "source": url_or_path,
         "video_id": cache.video_id,
         "is_url": is_url,
         "title": Path(url_or_path).stem if not is_url else "Online Stream",
+        "created_at": now_ts,
+        "created_iso": datetime.now(timezone.utc).isoformat(),
     }
 
     if is_url:

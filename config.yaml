@@ -40,3 +40,9 @@ video:
 safe_zones:
   bottom_margin: 0.20
   right_margin: 0.15
+
+retention:
+  enabled: true
+  auto_cleanup_days: 30
+  clean_source_vod: true
+  clean_rendered_clips: true
