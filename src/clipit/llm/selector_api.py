@@ -18,15 +18,15 @@ except ImportError:
     GENAI_AVAILABLE = False
 
 
-# Sorted strictly Best-to-Worst according to user capability and quota profile
+# Sorted strictly by available quota, reliability, and speed
 DEFAULT_MODEL_CHAIN = [
-    "gemini-3.8-flash",
-    "gemini-3.6-flash",
+    "gemini-3.1-flash-lite",  # 15 RPM, 500 RPD (fastest & highest free-tier quota)
+    "gemini-3.5-flash-lite",  # 15 RPM, 500 RPD
+    "gemma-4-26b-a4b-it",     # 30 RPM, 14.4K RPD
+    "gemini-3.8-flash",       # 5 RPM, 20 RPD
+    "gemini-3.6-flash",       # 5 RPM, 20 RPD
     "gemini-3-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-3.1-flash-lite",
     "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
 ]
 
 
@@ -62,21 +62,23 @@ def select_clips_with_gemini(
         print("Warning: GEMINI_API_KEY not found in environment or .env.")
         return None
 
-    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=10000))
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=25000))
     models = model_chain or DEFAULT_MODEL_CHAIN
 
-    # Build prompt input
+    # Build prompt input with targeted candidate transcript segments
     cand_lines = []
-    cand_slice_limit = min(40, len(candidates)) if target_clips <= 0 else target_clips * 2
-    for c in candidates[:cand_slice_limit]:
+    cand_slice_limit = min(20, len(candidates)) if target_clips <= 0 else max(5, target_clips * 2)
+    selected_cands = candidates[:cand_slice_limit]
+    relevant_segments = set()
+    for c in selected_cands:
         cand_lines.append(f"- [{c.id}] {c.start:.1f}s -> {c.end:.1f}s (Loudness {c.loudness_z:.1f}σ): {c.reason}")
-    candidates_text = "\n".join(cand_lines)
+        for seg in transcript.segments:
+            if seg.end >= c.start - 2.0 and seg.start <= c.end + 2.0:
+                relevant_segments.add((seg.start, seg.end, seg.text))
 
-    # Format transcript with timestamps
-    trans_lines = []
-    for seg in transcript.segments:
-        trans_lines.append(f"[{seg.start:.1f}s - {seg.end:.1f}s] {seg.text}")
-    transcript_text = "\n".join(trans_lines[:400])
+    candidates_text = "\n".join(cand_lines)
+    sorted_segs = sorted(list(relevant_segments), key=lambda x: x[0])
+    transcript_text = "\n".join([f"[{s:.1f}s - {e:.1f}s] {t}" for s, e, t in sorted_segs[:100]])
 
     user_prompt = build_selection_prompt(video_title, streamer, target_clips, candidates_text, transcript_text)
 
@@ -99,17 +101,17 @@ def select_clips_with_gemini(
 
     full_prompt = f"{system_instruction}\n\n{user_prompt}"
 
-    # Strict maximum 15s overall deadline for Gemini API before auto-falling back
+    # Strict maximum 30s overall deadline for Gemini API before auto-falling back
     start_time = time.time()
-    max_total_timeout = 15.0
+    max_total_timeout = 30.0
 
     # Limit to top 2 model candidates, 1 attempt each to prevent any pipeline stall
     for model_name in models[:2]:
         if time.time() - start_time > max_total_timeout:
-            print("Notice: Gemini API overall deadline reached (15s). Falling back to local heuristic selection.")
+            print("Notice: Gemini API overall deadline reached (30s). Falling back to local heuristic selection.")
             break
         try:
-            print(f"Calling Gemini Director API ({model_name}, 10s timeout)...")
+            print(f"Calling Gemini Director API ({model_name}, 25s timeout)...")
             resp = client.models.generate_content(
                 model=model_name,
                 contents=full_prompt,

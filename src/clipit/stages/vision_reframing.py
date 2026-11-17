@@ -18,15 +18,15 @@ from clipit.models import ClipItem
 from clipit.cache import CacheManager
 
 
-# Sorted strictly Best-to-Worst according to user capability and quota profile
+# Sorted strictly by available quota, reliability, and speed
 FALLBACK_MODELS = [
-    "gemini-3.8-flash",
-    "gemini-3.6-flash",
+    "gemini-3.1-flash-lite",  # 15 RPM, 500 RPD (fastest & highest free-tier quota)
+    "gemini-3.5-flash-lite",  # 15 RPM, 500 RPD
+    "gemma-4-26b-a4b-it",     # 30 RPM, 14.4K RPD
+    "gemini-3.8-flash",       # 5 RPM, 20 RPD
+    "gemini-3.6-flash",       # 5 RPM, 20 RPD
     "gemini-3-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-3.1-flash-lite",
     "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
 ]
 
 

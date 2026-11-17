@@ -186,13 +186,13 @@ def test_model_chain_ordering():
     from clipit.stages.vision_reframing import FALLBACK_MODELS
 
     expected_order = [
-        "gemini-3.8-flash",
-        "gemini-3.6-flash",
+        "gemini-3.1-flash-lite",  # 15 RPM, 500 RPD (fastest & highest free-tier quota)
+        "gemini-3.5-flash-lite",  # 15 RPM, 500 RPD
+        "gemma-4-26b-a4b-it",     # 30 RPM, 14.4K RPD
+        "gemini-3.8-flash",       # 5 RPM, 20 RPD
+        "gemini-3.6-flash",       # 5 RPM, 20 RPD
         "gemini-3-flash",
-        "gemini-3.5-flash-lite",
-        "gemini-3.1-flash-lite",
         "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
     ]
     assert DEFAULT_MODEL_CHAIN == expected_order
     assert FALLBACK_MODELS == expected_order
