@@ -52,31 +52,72 @@ def run_export(
     game = "GTA 6"
 
     # 1. Discover approved clips list
-    clips_to_export: List[Dict[str, Any]] = []
+    raw_approved: Any = None
 
     # Priority 1: User-specified manifest
     if manifest_path and manifest_path.exists():
         with open(manifest_path, "r", encoding="utf-8") as f:
-            clips_to_export = json.load(f)
+            raw_approved = json.load(f)
 
     # Priority 2: Check inside out/<video_id>/approved.json or cache/<video_id>/approved.json
-    if not clips_to_export:
+    if raw_approved is None:
         for candidate in (clips_dir / "approved.json", cache.path("approved.json")):
             if candidate.exists():
                 with open(candidate, "r", encoding="utf-8") as f:
-                    clips_to_export = json.load(f)
+                    raw_approved = json.load(f)
                     break
 
     # Priority 3: Check ~/Downloads for recently downloaded approved_*.json
-    if not clips_to_export:
+    if raw_approved is None:
         downloads = Path.home() / "Downloads"
         if downloads.exists():
             recent_approved = sorted(downloads.glob("approved_*.json"), key=os.path.getmtime, reverse=True)
             if recent_approved:
                 with open(recent_approved[0], "r", encoding="utf-8") as f:
-                    clips_to_export = json.load(f)
+                    raw_approved = json.load(f)
 
-    # Priority 4: Fallback to all rendered clips in out/<video_id>/
+    # Load all available clip metadata into a dictionary keyed by id
+    all_clips_map: Dict[str, Dict[str, Any]] = {}
+    refined_file = cache.path("refined_clips.json")
+    if refined_file.exists():
+        try:
+            with open(refined_file, "r", encoding="utf-8") as f:
+                r_clips = json.load(f)
+                for c in r_clips:
+                    if isinstance(c, dict) and "id" in c:
+                        all_clips_map[c["id"]] = c
+        except Exception:
+            pass
+
+    for json_file in sorted(clips_dir.glob("c*.json")):
+        if json_file.stem != "info":
+            try:
+                with open(json_file, "r", encoding="utf-8") as f:
+                    c_data = json.load(f)
+                    if isinstance(c_data, dict) and "id" in c_data:
+                        all_clips_map.setdefault(c_data["id"], c_data)
+            except Exception:
+                pass
+
+    clips_to_export: List[Dict[str, Any]] = []
+
+    if isinstance(raw_approved, dict):
+        # Case A: {"c01": "approved", "c02": "rejected"}
+        for cid, status in raw_approved.items():
+            if status == "approved":
+                if cid in all_clips_map:
+                    clips_to_export.append(all_clips_map[cid])
+                elif isinstance(status, dict):
+                    clips_to_export.append(status)
+    elif isinstance(raw_approved, list):
+        # Case B: [{"id": "c01", ...}] or ["c01", "c02"]
+        for item in raw_approved:
+            if isinstance(item, dict):
+                clips_to_export.append(item)
+            elif isinstance(item, str) and item in all_clips_map:
+                clips_to_export.append(all_clips_map[item])
+
+    # Fallback: if no approved clips were specifically marked, export all rendered clips
     if not clips_to_export:
         for json_file in sorted(clips_dir.glob("c*.json")):
             if json_file.stem != "info":
@@ -119,7 +160,18 @@ def run_export(
         dest_mp4 = dest_dir / out_filename
 
         if src_mp4.exists():
-            shutil.copy2(src_mp4, dest_mp4)
+            if not dest_mp4.exists() or dest_mp4.stat().st_size != src_mp4.stat().st_size:
+                shutil.copy2(src_mp4, dest_mp4)
+
+        # Export multi-variants if rendered
+        exported_variants = [f"Primary ({out_filename})"]
+        for var_suffix, var_label in [("blur", "Letterbox"), ("reframed", "Deframed")]:
+            v_src = clips_dir / f"{cid}_{var_suffix}.mp4"
+            if v_src.exists():
+                v_dest = dest_dir / f"{idx:02d}_{slug}_{var_label}.mp4"
+                if not v_dest.exists() or v_dest.stat().st_size != v_src.stat().st_size:
+                    shutil.copy2(v_src, v_dest)
+                exported_variants.append(f"{var_label} ({v_dest.name})")
 
         # Generate tags
         clip_obj = ClipItem(**c_dict)
@@ -129,6 +181,7 @@ def run_export(
         # Append to copy-paste pack
         copy_pack_lines.extend([
             f"🎬 CLIP {idx:02d}: {out_filename} ({duration:.1f}s)",
+            f"🎨 VARIANTS AVAILABLE: {', '.join(exported_variants)}",
             "-" * 80,
             f"📌 TITLE (Copy-Paste into YouTube / TikTok):",
             f"{title}",

@@ -40,8 +40,13 @@ def run_candidates(
     # Sort peaks by score descending
     peaks.sort(key=lambda x: x[1], reverse=True)
 
+    # Initialize candidates list
     candidates: List[CandidateWindow] = []
     half_window = preferred_length / 2.0
+
+    # If target_clips is auto (<= 0), scale candidate generation based on stream duration
+    # Generating enough high-quality peak windows (up to 40 candidates) so director can pick between 1 and 30 top clips
+    max_cand_limit = min(40, max(12, int(duration / 120))) if target_clips <= 0 else target_clips * 2
 
     for idx, (peak_sec, score) in enumerate(peaks):
         start = max(0.0, peak_sec - half_window)
@@ -88,14 +93,15 @@ def run_candidates(
                 )
             )
 
-        if len(candidates) >= target_clips * 2:
+        if len(candidates) >= max_cand_limit:
             break
 
     # If video had very few peaks, create default time slices
     if not candidates and duration >= min_length:
         step = max(min_length, min(preferred_length, float(duration)))
         curr = 0.0
-        while curr + min_length <= duration and len(candidates) < target_clips:
+        fallback_target = 10 if target_clips <= 0 else target_clips
+        while curr + min_length <= duration and len(candidates) < fallback_target:
             cid = f"cand_{len(candidates) + 1:02d}"
             candidates.append(
                 CandidateWindow(

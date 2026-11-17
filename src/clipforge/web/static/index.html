@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, shrink-to-fit=no" />
+  <title>ClipForge Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Hanken+Grotesk:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="bg" aria-hidden="true"><canvas id="bgc"></canvas></div>
+  <header class="top">
+    <div class="brand">ClipForge<span>Studio</span></div>
+    <nav class="steps" aria-label="Steps">
+      <button data-go="1" class="on">1 Ingest</button><button data-go="2">2 Pipeline</button><button data-go="3">3
+        Studio</button>
+    </nav>
+  </header>
+  <div class="sprockets" aria-hidden="true"></div>
+
+  <main>
+    <section id="v1" class="view on">
+      <div class="hero">
+        <h1>Hours in.<br>Shorts out.</h1>
+        <p>Paste a stream VOD. Eight agents find the loudest, funniest, most clippable moments and cut them to 9:16.</p>
+      </div>
+      <div class="panel launch">
+        <label for="url">Stream URL</label>
+        <div class="urlrow"><input id="url" type="url" placeholder="https://www.youtube.com/watch?v=…"
+            autocomplete="off" value="" /><button id="paste" class="btn" type="button">Paste</button></div>
+        <div class="opts">
+          <div class="c2"><label>Clips</label>
+            <div class="seg eq" style="--n:4" data-key="target"><button data-v="auto" class="on"
+                title="Auto: Figures out top viral clips (<30)">Auto</button><button data-v="5">5</button><button
+                data-v="10">10</button><button data-v="15">15</button></div>
+          </div>
+          <div class="c4"><label>Layout</label>
+            <div class="seg eq" style="--n:4" data-key="layout"><button data-v="all" class="on">All
+                three</button><button data-v="stack">Reaction Stacked</button><button data-v="letterbox">Reference
+                Letterbox</button><button data-v="reframed">Deframed</button></div>
+          </div>
+          <div class="c4"><label>Subtitle style</label><input type="hidden" id="style" value="bold-yellow">
+            <div class="pick subs" data-for="style">
+              <button type="button" data-v="bold-yellow" class="on"><em class="sp s1">VIRAL</em><small>Bold
+                  yellow</small></button>
+              <button type="button" data-v="white-pop"><em class="sp s2">CLEAN</em><small>White pop</small></button>
+              <button type="button" data-v="neon-pink"><em class="sp s3">ELECTRIC</em><small>Neon pink</small></button>
+              <button type="button" data-v="clean-box"><em class="sp s4">BOXED</em><small>Clean box</small></button>
+            </div>
+          </div>
+          <div class="c2 cam-control-group">
+            <div class="cam-header"><label for="face">Facecam tracking</label><span class="cam-indicator"
+                id="camTag">Auto (YuNet)</span></div>
+            <input type="hidden" id="face" value="auto">
+            <div class="cam-deck">
+              <div class="pick cam" data-for="face" role="group" aria-label="Facecam position">
+                <button type="button" data-v="top-left" aria-label="Top left" class="tl" title="Top Left">TL</button>
+                <button type="button" data-v="top-right" aria-label="Top right" class="tr" title="Top Right">TR</button>
+                <button type="button" data-v="bottom-left" aria-label="Bottom left" class="bl"
+                  title="Bottom Left">BL</button>
+                <button type="button" data-v="bottom-right" aria-label="Bottom right" class="br"
+                  title="Bottom Right">BR</button>
+                <button type="button" data-v="auto" class="auto on"
+                  title="Auto-Detect (YuNet AI)"><span>Auto</span></button>
+              </div>
+              <div class="cam-actions">
+                <button type="button" class="cam-opt on" data-cam="auto">Auto-Detect</button>
+                <button type="button" class="cam-opt" data-cam="none">No Facecam</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button id="launch" class="go">Launch pipeline</button>
+      </div>
+
+      <div class="ws-section">
+        <div class="ws-header-row">
+          <div class="ws-title">
+            <svg class="ws-cam-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"></path>
+              <rect x="1" y="5" width="15" height="14" rx="3" ry="3"></rect>
+            </svg>
+            <span class="ws-heading">Videos <span id="wsCount">(0)</span></span>
+          </div>
+          <div class="ws-view-switch" role="group" aria-label="View style">
+            <button type="button" id="wsBtnList" class="ws-toggle-pill on" title="List View">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+              <span>List</span>
+            </button>
+            <button type="button" id="wsBtnGrid" class="ws-toggle-pill" title="Grid View">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Grid</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="ws-search-box">
+          <svg class="ws-search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="wsSearchInput" placeholder="Search videos..." autocomplete="off" />
+        </div>
+
+        <div class="ws-table-card" id="wsTableCard">
+          <div class="ws-table-head">
+            <div class="ws-th th-thumb">THUMBNAIL</div>
+            <div class="ws-th th-desc">DESCRIPTION</div>
+            <div class="ws-th th-source">SOURCE</div>
+            <div class="ws-th th-type">VIDEO TYPE</div>
+            <div class="ws-th th-ratio">RATIO</div>
+            <div class="ws-th th-actions">ACTIONS</div>
+          </div>
+          <div id="wsTableBody" class="ws-table-body">
+            <div class="ws-loading">Loading videos...</div>
+          </div>
+        </div>
+
+        <div id="wsGridBody" class="ws-grid-body" style="display:none;"></div>
+      </div>
+    </section>
+
+    <section id="v2" class="view">
+      <!-- Pinned Runhead & Telemetry Bar -->
+      <div class="pipe-header">
+        <div class="pipe-title-box">
+          <div class="pipe-status-row">
+            <span class="pipe-live-dot" id="pipeLiveDot"></span>
+            <span class="pipe-status-text" id="pipeStatusText">PIPELINE STANDBY</span>
+            <span id="demoBadge" class="demo-badge" style="display:none;">DEMO DATA</span>
+            <div id="pipeModelChip" class="pipe-model-chip" style="display:none;">
+              <span class="chip-engine" id="chipEngine"></span>
+              <span class="chip-device" id="chipDevice"></span>
+            </div>
+          </div>
+          <h2 id="runtitle" class="pipe-runtitle">Waiting for a stream VOD</h2>
+        </div>
+        <div class="pipe-timer-box">
+          <span class="pipe-timer-lbl">ELAPSED</span>
+          <div class="timer" id="timer">00:00</div>
+        </div>
+      </div>
+
+      <!-- Global Progress Bar with Sub-Progress Indicator -->
+      <div class="pipe-progress-wrap">
+        <div class="bar"><i id="bar"></i></div>
+        <div class="pipe-progress-meta">
+          <span id="pipeProgressStage">Stage 0 of 8</span>
+          <span id="pipeProgressPct">0%</span>
+        </div>
+      </div>
+
+      <!-- Pinned Current Task HUD (Screen Reader Announced) -->
+      <div class="pipe-task-hud" id="pipeTaskHud">
+        <div class="task-hud-left">
+          <span class="task-icon" id="taskIcon">⚡</span>
+          <span class="task-announcer" id="pipeTaskLine" aria-live="polite">Awaiting pipeline start…</span>
+        </div>
+        <div class="task-hud-right">
+          <span class="task-ts-badge" id="pipeTaskTs" style="display:none;">00:00:00 – 00:00:00</span>
+          <span class="task-item-badge" id="pipeTaskItem" style="display:none;">Item 0 / 0</span>
+        </div>
+      </div>
+
+      <!-- Main Pipeline Deck: Stepper (Left) + Central Deck (Right) -->
+      <div class="grid2">
+        <!-- 8-Agent Stepper Column -->
+        <div class="stepper-col">
+          <div class="col-head">
+            <span>AGENTS ROSTER</span>
+            <span class="col-count" id="agentDoneCount">0 / 8 Done</span>
+          </div>
+          <ol id="agents" class="agents"></ol>
+        </div>
+
+        <!-- Center Deck: Focus Pane -> Master VOD Timeline -> Structured Log -->
+        <div class="right2">
+          <!-- Dynamic Stage Focus Pane -->
+          <div class="focus-pane-card" id="focusPaneCard">
+            <div class="focus-pane-header">
+              <div class="focus-header-left">
+                <span class="focus-tag" id="focusStageTag">ACTIVE AGENT VISUALIZER</span>
+                <span class="focus-title" id="focusStageTitle">Awaiting Stream Ingestion</span>
+              </div>
+              <div class="focus-header-right" id="focusHeaderRight">
+                <span class="focus-badge" id="focusStatusBadge">Idle</span>
+              </div>
+            </div>
+
+            <div class="focus-body" id="focusBody">
+              <!-- 1. Ingest Visualizer -->
+              <div class="focus-view" id="fv-ingest" style="display:none;">
+                <div class="fv-ingest-layout">
+                  <div class="fv-ingest-thumb" id="fvIngestThumb">
+                    <div class="fv-thumb-placeholder" id="fvIngestPlaceholder">📹 Stream Source</div>
+                  </div>
+                  <div class="fv-ingest-info">
+                    <h3 id="fvIngestTitle">Fetching Stream VOD Details…</h3>
+                    <div class="fv-kv-grid">
+                      <div class="fv-kv"><small>Resolution</small><b id="fvIngestRes">1080p60</b></div>
+                      <div class="fv-kv"><small>VOD Duration</small><b id="fvIngestDur">--:--:--</b></div>
+                      <div class="fv-kv"><small>Format</small><b id="fvIngestFormat">MP4 / AAC</b></div>
+                      <div class="fv-kv"><small>Stream Demuxer</small><b>yt-dlp + ffmpeg</b></div>
+                    </div>
+                    <div class="fv-sub-progress">
+                      <div class="sub-prog-bar"><i id="fvIngestBar" style="width:0%"></i></div>
+                      <span id="fvIngestStepText" class="sub-prog-lbl">Connecting to source URL…</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Whisper Transcript Visualizer -->
+              <div class="focus-view" id="fv-whisper" style="display:none;">
+                <div class="fv-whisper-header">
+                  <span>LIVE WORD-LEVEL ALIGNED STREAM</span>
+                  <span id="fvWhisperStats" class="fv-mono">0 words transcribed</span>
+                </div>
+                <div class="fv-transcript-stream" id="fvTranscriptStream">
+                  <div class="fv-empty-stream">Listening for speech audio segments…</div>
+                </div>
+              </div>
+
+              <!-- 3. Signal Intelligence Dual-Axis Scope -->
+              <div class="focus-view" id="fv-signals" style="display:none;">
+                <div class="scopewrap">
+                  <canvas id="scope" width="900" height="230"></canvas>
+                  <div class="legend">
+                    <b class="a">Audio Energy (dB)</b>
+                    <b class="b">Chat Velocity (msg/s)</b>
+                    <b class="c">Viral Peak</b>
+                  </div>
+                  <div class="scope-idle-overlay" id="scopeIdleOverlay">
+                    <span>Awaiting signal telemetry…</span>
+                  </div>
+                </div>
+                <div class="scope-meta-row">
+                  <div class="scope-stat"><small>CURRENT AUDIO</small><b id="scopeDbVal">-60.0 dB</b></div>
+                  <div class="scope-stat"><small>CHAT VELOCITY</small><b id="scopeChatVal">0 msg/s</b></div>
+                  <div class="scope-stat"><small>PEAK SAMPLES</small><b id="scopePeakCount">0 spikes detected</b></div>
+                </div>
+              </div>
+
+              <!-- 4. Candidate Slicer Visualizer -->
+              <div class="focus-view" id="fv-slicer" style="display:none;">
+                <div class="fv-slicer-header">
+                  <span>SLICED CANDIDATE WINDOWS (OPTIMAL BOUNDARIES)</span>
+                  <span id="fvSlicerCount">0 Candidates</span>
+                </div>
+                <div class="fv-candidates-grid" id="fvCandidatesGrid"></div>
+              </div>
+
+              <!-- 5. Gemini AI Director Visualizer -->
+              <div class="focus-view" id="fv-director" style="display:none;">
+                <div class="fv-director-deck">
+                  <div class="fv-director-card" id="fvDirectorCard">
+                    <div class="fv-score-gauge-wrap">
+                      <div class="fv-score-gauge" id="fvScoreGauge">
+                        <span class="gauge-val" id="fvDirectorScore">--</span>
+                        <small>VIRALITY</small>
+                      </div>
+                      <div class="fv-verdict-pill" id="fvDirectorVerdict">EVALUATING</div>
+                    </div>
+                    <div class="fv-director-details">
+                      <span class="fv-hook-lbl">GENERATED TAPE-LABEL HOOK</span>
+                      <div class="fv-hook-typewriter" id="fvDirectorHook">Analyzing punchlines and audio spikes…</div>
+                      <div class="fv-reason-box" id="fvDirectorReason">Gemini AI Director reasoning will appear here…
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6. Vision Reframer Visualizer -->
+              <div class="focus-view" id="fv-reframer" style="display:none;">
+                <div class="fv-reframer-layout">
+                  <div class="fv-reframer-stage">
+                    <div class="reframer-canvas-wrap">
+                      <div class="reframer-box-fc" id="fvReframerCamBox" style="display:none;">
+                        <span>Streamer Facecam</span>
+                      </div>
+                      <div class="reframer-box-crop" id="fvReframerCropBox" style="display:none;">
+                        <span>9:16 Vertical Content Crop</span>
+                      </div>
+                      <div class="reframer-placeholder" id="fvReframerPlaceholder">Awaiting sampled frames for facecam
+                        detection…</div>
+                    </div>
+                  </div>
+                  <div class="fv-reframer-meta">
+                    <h3>OpenCV YuNet + Gemini Vision</h3>
+                    <div class="fv-kv"><small>Facecam Coordinates</small><b id="fvReframerCoord">Scanning…</b></div>
+                    <div class="fv-kv"><small>Aspect Framing</small><b>Reaction Stacked 9:16</b></div>
+                    <div class="fv-kv"><small>Tracking Accuracy</small><b id="fvReframerConf">Confidence: --%</b></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 7. Hardware Motion Renderer Visualizer -->
+              <div class="focus-view" id="fv-renderer" style="display:none;">
+                <div class="fv-render-head">
+                  <span>HARDWARE ENCODER TELEMETRY</span>
+                  <span id="fvRenderEncoder">Apple VideoToolbox · h264_videotoolbox</span>
+                </div>
+                <div class="fv-render-stats">
+                  <div class="r-stat"><small>ENCODE SPEED</small><b id="fvRenderFps">-- fps</b></div>
+                  <div class="r-stat"><small>TIME REMAINING (ETA)</small><b id="fvRenderEta">--:--</b></div>
+                  <div class="r-stat"><small>CLIPS PROCESSED</small><b id="fvRenderCount">0 / 0</b></div>
+                </div>
+                <div class="fv-render-list" id="fvRenderList"></div>
+              </div>
+
+              <!-- 8. Export Packager Visualizer -->
+              <div class="focus-view" id="fv-export" style="display:none;">
+                <div class="fv-export-head">
+                  <span>READY-TO-POST ARTIFACTS ASSEMBLY</span>
+                  <span id="fvExportStatus">Packaging…</span>
+                </div>
+                <div class="fv-export-checklist" id="fvExportList">
+                  <div class="exp-item" id="exp-mp4"><i>⏳</i><span>Vertical 9:16 MP4 Master Video Renders</span></div>
+                  <div class="exp-item" id="exp-sub"><i>⏳</i><span>Bouncing Kinetic ASS Subtitles Burned</span></div>
+                  <div class="exp-item" id="exp-meta"><i>⏳</i><span>AI Titles, Descriptions & Hashtags Pack</span></div>
+                  <div class="exp-item" id="exp-sched"><i>⏳</i><span>Multi-Platform Publishing Schedule (CSV)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Neutral Working Fallback -->
+              <div class="focus-view" id="fv-neutral">
+                <div class="fv-neutral-box">
+                  <div class="fv-pulse-circle">⚡</div>
+                  <h3 id="fvNeutralTitle">Pipeline Initializing</h3>
+                  <p id="fvNeutralDesc">Starting multi-agent autonomous workflow…</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Master VOD Full-Width Timeline Strip -->
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <div class="tl-title-group">
+                <span class="tl-title">MASTER VOD SPATIAL TIMELINE</span>
+                <span class="tl-duration-tag" id="tlDurationTag">00:00:00 / 00:00:00</span>
+              </div>
+              <div class="tl-legend">
+                <span class="tl-leg-item"><i class="leg-box leg-trans"></i>Transcribed</span>
+                <span class="tl-leg-item"><i class="leg-box leg-heat"></i>Signal Heat</span>
+                <span class="tl-leg-item"><i class="leg-box leg-cand"></i>Candidate</span>
+                <span class="tl-leg-item"><i class="leg-box leg-done"></i>Rendered Short</span>
+              </div>
+            </div>
+
+            <div class="timeline-canvas-wrap" id="tlWrap">
+              <canvas id="tlCanvas" width="900" height="74"></canvas>
+              <div class="tl-playhead" id="tlPlayhead" style="left:0%;display:none;">
+                <div class="tl-playhead-line"></div>
+                <span class="tl-playhead-tag" id="tlPlayheadTag">00:00:00</span>
+              </div>
+              <div class="tl-tooltip" id="tlTooltip" style="display:none;"></div>
+            </div>
+          </div>
+
+          <!-- Structured Log Console with Grouping & Filters -->
+          <div class="log-card">
+            <div class="log-card-header">
+              <div class="log-filter-pills" id="logFilters">
+                <button class="log-pill on" data-filter="all">All Logs (<span id="logCountAll">0</span>)</button>
+                <button class="log-pill" data-filter="agent">Agent Milestones (<span
+                    id="logCountAgent">0</span>)</button>
+                <button class="log-pill" data-filter="error">Errors (<span id="logCountErr">0</span>)</button>
+              </div>
+              <button class="log-copy-btn" id="logCopyBtn" title="Copy raw log to clipboard">📋 Copy</button>
+            </div>
+            <div id="structuredLog" class="structured-log-body">
+              <div class="log-empty">System standby. Awaiting agent execution logs…</div>
+            </div>
+          </div>
+
+          <!-- Action Footer -->
+          <div class="pipeline-actions">
+            <button id="resumePipeline" class="btn"
+              style="flex:1;background:var(--ink2);border:1px solid var(--lemon);color:var(--lemon);font-weight:700;padding:14px;border-radius:12px;display:none;"
+              type="button">⚡ Back to Ingest / Retry</button>
+            <button id="open" class="go" style="flex:1.5;margin-top:0;" disabled>Open studio</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="v3" class="view">
+      <div class="studio">
+        <aside class="clips">
+          <div class="clips-h">
+            <h2 id="ptitle">Clips</h2><span id="pstat" class="muted"></span>
+          </div>
+          <ul id="clipList"></ul>
+        </aside>
+        <div class="stage">
+          <div class="phone">
+            <video id="vid" playsinline preload="metadata"></video>
+            <div class="phone-cam-status" id="phoneCamStatus">
+              <span class="cam-status-dot"></span>
+              <span id="phoneCamText">Facecam: Active (YuNet)</span>
+            </div>
+            <div id="empty" class="empty">Select a clip</div>
+          </div>
+          <div class="variants" id="variants"></div>
+          <div class="ctrl">
+            <button id="play" aria-label="Play or pause">Play</button>
+            <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek" />
+            <span id="time">0:00 / 0:00</span>
+            <button id="mute">Sound on</button><button id="speed">1x</button><a id="dl" class="btn" href="#"
+              download>MP4</a>
+          </div>
+        </div>
+        <aside class="inspect" id="inspect">
+          <p class="muted">The AI Director’s notes appear here.</p>
+        </aside>
+      </div>
+      <p class="keys">Space play · A approve · R reject · 1 2 3 layouts · ↑ ↓ clips</p>
+    </section>
+  </main>
+
+  <!-- Video Crop & Layout Editor Modal -->
+  <div id="cropModal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true"
+    aria-labelledby="cropModalTitle">
+    <div class="crop-modal">
+      <div class="crop-modal-header">
+        <div>
+          <h2 id="cropModalTitle">Adjust Video Crop & Framing</h2>
+          <span class="crop-modal-sub" id="cropModalSub">Fine-tune 9:16 vertical crop, focal point, and facecam
+            split</span>
+        </div>
+        <button class="crop-close-btn" id="cropCloseBtn" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="crop-modal-body">
+        <!-- Left: Interactive Canvas / Preview -->
+        <div class="crop-preview-wrap">
+          <div class="crop-preview-duel">
+            <!-- 16:9 Source Stream with Interactive Facecam & Content Framing -->
+            <div class="crop-stage-card">
+              <div class="crop-stage-header">
+                <span class="crop-card-label">16:9 Source Stream</span>
+                <span class="crop-stage-legend">
+                  <span class="legend-dot cyan"></span>Facecam
+                  <span class="legend-dot yellow"></span>Content
+                </span>
+              </div>
+              <div class="crop-stage" id="cropStage">
+                <img id="cropFrameImg" class="crop-frame-img" alt="Source frame"
+                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='9'%3E%3Crect width='100%25' height='100%25' fill='%2305061A'/%3E%3C/svg%3E" />
+                <!-- Scrims (darkening outside the 9:16 crop) -->
+                <div class="crop-scrim-left" id="cropScrimLeft"></div>
+                <div class="crop-scrim-right" id="cropScrimRight"></div>
+
+                <!-- Active Framing Box (Gameplay / Content) -->
+                <div class="crop-box" id="cropBox" title="Drag horizontally to reposition framing">
+                  <div class="crop-box-handle" id="cropBoxHandle">
+                    <span>↔ Drag to Pan</span>
+                  </div>
+                  <div class="crop-box-guide-v"></div>
+                  <div class="crop-box-guide-h"></div>
+                  <div class="crop-content-tier" id="cropContentTier">
+                    <span class="crop-tier-label yellow" id="cropTierLabel">Gameplay / Content</span>
+                  </div>
+                </div>
+
+                <!-- Streamer Facecam Box (Draggable & Selectable) -->
+                <div class="crop-cam-box" id="cropCamBox" title="Streamer Facecam (Drag to reposition)">
+                  <div class="crop-cam-badge">📹 Streamer Facecam</div>
+                  <div class="crop-cam-crosshair"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live 9:16 Vertical Result Preview -->
+            <div class="crop-live-card" id="cropLiveCard">
+              <div class="crop-stage-header">
+                <span class="crop-card-label">9:16 Vertical Preview</span>
+                <span class="crop-live-pill" id="cropLivePill">Reaction Stacked</span>
+              </div>
+              <div class="crop-live-wrap">
+                <canvas id="cropLiveCanvas" width="270" height="480"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="crop-canvas-hint" id="cropCanvasHint">
+            💡 Click or drag the <b>cyan facecam box</b> to position streamer camera · Adjust sliders to frame action
+          </div>
+        </div>
+
+        <!-- Right: Controls -->
+        <div class="crop-controls">
+          <div class="crop-ctrl-group">
+            <label>Layout Style</label>
+            <div class="crop-btn-group" id="cropLayoutGroup">
+              <button class="crop-btn on" data-layout="stack">Reaction Stacked</button>
+              <button class="crop-btn" data-layout="reframed">Content (Deframed)</button>
+              <button class="crop-btn" data-layout="blur-fill">Reference Letterbox</button>
+            </div>
+          </div>
+
+          <!-- Deframed Content Aspect Ratio Section (Visible when Deframed is selected) -->
+          <div class="crop-ctrl-group" id="cropRatioSection" style="display:none;">
+            <div class="crop-slider-header">
+              <label>Content Aspect Ratio</label>
+              <span id="cropRatioVal" style="color:var(--lemon);">3:4 (Reference)</span>
+            </div>
+            <div class="crop-preset-grid" id="cropRatioGrid" style="grid-template-columns: repeat(3, 1fr);">
+              <button class="crop-preset-btn on" data-ratio="3:4">3:4 (Ref)</button>
+              <button class="crop-preset-btn" data-ratio="9:16">9:16 Full</button>
+              <button class="crop-preset-btn" data-ratio="1:1">1:1 Square</button>
+              <button class="crop-preset-btn" data-ratio="4:5">4:5 Portrait</button>
+              <button class="crop-preset-btn" data-ratio="16:9">16:9 Letterbox</button>
+            </div>
+          </div>
+
+          <!-- Overall Subtitle / Text Position (Above, Middle, Bottom) -->
+          <div class="crop-ctrl-group" id="cropTextPosGroup">
+            <div class="crop-slider-header">
+              <label>Subtitle / Text Position</label>
+              <span id="cropTextPosVal" style="color:var(--lemon);">Bottom</span>
+            </div>
+            <div class="crop-btn-group" id="cropTextPosBtns">
+              <button class="crop-btn" data-pos="above">⬆ Above / Top</button>
+              <button class="crop-btn" data-pos="middle">⏺ Middle</button>
+              <button class="crop-btn on" data-pos="bottom">⬇ Bottom</button>
+            </div>
+          </div>
+
+          <!-- Facecam Settings Section -->
+          <div class="crop-facecam-section" id="cropFacecamSection">
+            <div class="crop-ctrl-group" id="cropFacecamToggleGroup">
+              <label class="crop-check-label">
+                <input type="checkbox" id="cropFacecamToggle" checked />
+                <span>Enable Streamer Facecam</span>
+              </label>
+            </div>
+
+            <div class="crop-ctrl-group" id="cropPresetGroup">
+              <label>Facecam Position (Click or drag box on video)</label>
+              <div class="crop-preset-grid" id="cropPresetGrid">
+                <button class="crop-preset-btn on" data-pos="bl">↙ Bottom-Left (Speed)</button>
+                <button class="crop-preset-btn" data-pos="br">↘ Bottom-Right</button>
+                <button class="crop-preset-btn" data-pos="center">⏺ Center / Full</button>
+                <button class="crop-preset-btn" data-pos="tl">↖ Top-Left</button>
+                <button class="crop-preset-btn" data-pos="tr">↗ Top-Right</button>
+                <button class="crop-preset-btn" data-pos="auto">⚡ Auto (YuNet)</button>
+              </div>
+            </div>
+
+            <div class="crop-ctrl-group" id="cropCamSizeGroup">
+              <div class="crop-slider-header">
+                <label for="cropCamSizeSlider">Facecam Box Size / Zoom</label>
+                <span id="cropCamSizeVal">28%</span>
+              </div>
+              <input type="range" id="cropCamSizeSlider" min="15" max="50" value="28" step="1" />
+              <div class="crop-slider-ticks">
+                <span>Tight Face (15%)</span>
+                <span>Standard (28%)</span>
+                <span>Full Torso (50%)</span>
+              </div>
+            </div>
+
+            <div class="crop-ctrl-group" id="cropSplitGroup">
+              <div class="crop-slider-header">
+                <label for="cropSplitSlider">Facecam Split Height</label>
+                <span id="cropSplitVal">38%</span>
+              </div>
+              <input type="range" id="cropSplitSlider" min="25" max="50" value="38" step="1" />
+              <div class="crop-slider-ticks">
+                <span>25% Top</span>
+                <span>38% (Optimal)</span>
+                <span>50% Split</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gameplay / Content Framing -->
+          <div class="crop-ctrl-group" id="cropFocusGroup">
+            <div class="crop-slider-header">
+              <label for="cropFocusSlider">Gameplay / Content Framing Center</label>
+              <span id="cropFocusVal">50% (Center)</span>
+            </div>
+            <input type="range" id="cropFocusSlider" min="0" max="1000" value="500" step="5" />
+            <div class="crop-slider-ticks">
+              <span>Left (0%)</span>
+              <span>Center (50%)</span>
+              <span>Right (100%)</span>
+            </div>
+          </div>
+
+          <div class="crop-ctrl-group" id="cropZoomGroup">
+            <div class="crop-slider-header">
+              <label for="cropZoomSlider">Content Zoom / Scale</label>
+              <span id="cropZoomVal">1.0x</span>
+            </div>
+            <input type="range" id="cropZoomSlider" min="100" max="200" value="100" step="5" />
+            <div class="crop-slider-ticks">
+              <span>1.0x (Fit)</span>
+              <span>1.5x</span>
+              <span>2.0x (Close-up)</span>
+            </div>
+          </div>
+
+          <div class="crop-ai-hint" id="cropAiHint">
+            <span class="hint-icon">⚡</span>
+            <span id="cropAiHintText">Facecam positioned at Bottom-Left corner.</span>
+          </div>
+
+          <div class="crop-actions">
+            <button class="btn-cancel" id="cropCancelBtn">Cancel</button>
+            <button class="btn-reset" id="cropResetBtn">Reset to Auto</button>
+            <button class="btn-apply" id="cropApplyBtn">
+              <span id="cropApplySpinner" class="spinner" style="display:none;"></span>
+              <span id="cropApplyText">Apply & Re-render</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" role="status"></div>
+  <script src="app.js"></script>
+  <!-- impeccable-live-start -->
+  <script src="http://localhost:8400/live.js?token=89a1bd76-c60f-40ad-9f96-850a065f29a8"></script>
+  <!-- impeccable-live-end -->
+</body>
+
+</html>

@@ -71,7 +71,15 @@ def run_select(
 
     # 3. Fallback to heuristic selection if neither API nor file gave clips
     if not clips:
-        for idx, cand in enumerate(candidates[:target_clips]):
+        # If target_clips is auto (<= 0), automatically select all high-quality candidates (>= 75 score, up to 29)
+        if target_clips <= 0:
+            heuristic_cands = [c for c in candidates if getattr(c, "score", 0) >= 75][:29]
+            if not heuristic_cands:
+                heuristic_cands = candidates[:min(5, len(candidates))]
+        else:
+            heuristic_cands = candidates[:target_clips]
+
+        for idx, cand in enumerate(heuristic_cands):
             cid = f"clip_{idx + 1:02d}"
             slice_words = []
             for seg in transcript.segments:

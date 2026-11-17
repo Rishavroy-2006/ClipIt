@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Any
 from clipforge.cache import CacheManager
 from clipforge.models import ClipItem
 
@@ -148,6 +148,59 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       align-items: flex-start;
       justify-content: center;
     }
+    .video-container-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    .variant-selector {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 360px;
+    }
+    .variant-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .variant-pill:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .variant-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+    .cam-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .cam-active {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .cam-inactive {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
     .video-container {
       width: 360px;
       height: 640px;
@@ -262,13 +315,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <div class="clip-list" id="clipList"></div>
 
     <div class="clip-preview-panel">
-      <div class="video-container">
-        <video id="player" controls autoplay loop playsinline></video>
+      <div class="video-container-wrap">
+        <div class="variant-selector" id="variantSelector"></div>
+        <div class="video-container">
+          <video id="player" controls autoplay loop playsinline></video>
+        </div>
       </div>
 
       <div class="details-panel">
         <div>
-          <div class="section-title">Clip Title (Edit or pick alternative)</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+            <div class="section-title" style="margin: 0;">Clip Title (Edit or pick alternative)</div>
+            <div id="camBadge"></div>
+          </div>
           <input type="text" id="titleInput" class="title-input" oninput="updateActiveTitle(this.value)">
         </div>
 
@@ -330,7 +389,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       currentIndex = idx;
       const c = clips[currentIndex];
       const player = document.getElementById('player');
-      player.src = `${c.id}.mp4`;
+      
+      // Render Variant Switcher pills
+      const varContainer = document.getElementById('variantSelector');
+      varContainer.innerHTML = '';
+      const variants = c.variants && c.variants.length > 0 ? c.variants : [
+        { id: 'primary', name: 'Primary Clip', file: `${c.id}.mp4`, description: 'Default rendered clip' }
+      ];
+
+      variants.forEach((v, vIdx) => {
+        const pill = document.createElement('button');
+        const isActive = c.selected_file ? c.selected_file === v.file : vIdx === 0;
+        pill.className = `variant-pill ${isActive ? 'active' : ''}`;
+        pill.textContent = v.name;
+        pill.title = v.description || v.name;
+        pill.onclick = () => {
+          const currentTime = player.currentTime;
+          const isPaused = player.paused;
+          player.src = v.file;
+          player.currentTime = currentTime;
+          if (!isPaused) player.play().catch(() => {});
+          c.selected_file = v.file;
+          c.selected_variant = v.id;
+          document.querySelectorAll('.variant-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+        };
+        varContainer.appendChild(pill);
+      });
+
+      // Streamer cam badge
+      const camBadge = document.getElementById('camBadge');
+      if (c.has_facecam === true) {
+        camBadge.innerHTML = '<span class="cam-status-badge cam-active">● Facecam: Active</span>';
+      } else if (c.has_facecam === false) {
+        camBadge.innerHTML = '<span class="cam-status-badge cam-inactive">○ Facecam: None (Deframed Content)</span>';
+      } else {
+        camBadge.innerHTML = '';
+      }
+
+      const activeFile = c.selected_file || variants[0].file;
+      player.src = activeFile;
       player.play().catch(() => {});
 
       document.getElementById('titleInput').value = c.title;
@@ -408,7 +506,22 @@ def generate_review_html(
     out_dir: Path,
 ) -> Path:
     """Generate static review.html in both cache/ and out/<video_id>/."""
-    clips_data = [c.model_dump() for c in clips]
+    clips_data = []
+    for c in clips:
+        c_dict = c.model_dump()
+        sidecar_p = out_dir / f"{c.id}.json"
+        if sidecar_p.exists():
+            try:
+                with open(sidecar_p, "r", encoding="utf-8") as f:
+                    sidecar_data = json.load(f)
+                    if "variants" in sidecar_data:
+                        c_dict["variants"] = sidecar_data["variants"]
+                    if "has_facecam" in sidecar_data:
+                        c_dict["has_facecam"] = sidecar_data["has_facecam"]
+            except Exception:
+                pass
+        clips_data.append(c_dict)
+
     rendered_html = (
         HTML_TEMPLATE.replace("{{ video_id }}", cache.video_id)
         .replace("{{ clips_json | safe }}", json.dumps(clips_data))
@@ -425,3 +538,47 @@ def generate_review_html(
         f.write(rendered_html)
 
     return out_html
+
+
+def run_quality_sentinel(
+    clips: List[ClipItem],
+    cache: CacheManager,
+) -> Dict[str, Any]:
+    """Automated Quality Gate (Nyquist Sentinel) to audit clips before delivery."""
+    audits = []
+    overall_pass = True
+
+    for c in clips:
+        dur = c.end - c.start
+        dur_valid = 15.0 <= dur <= 60.0
+        has_hook = bool(c.hook_line and len(c.hook_line.strip()) > 3)
+        has_why = bool(c.why_viral and len(c.why_viral.split()) >= 10)
+
+        score = c.score
+        if not dur_valid:
+            score = max(50, score - 20)
+        if not has_hook:
+            score = max(50, score - 15)
+
+        verdict = "PASS" if score >= 80 else "FLAG"
+        if verdict == "FLAG":
+            overall_pass = False
+
+        audits.append({
+            "clip_id": c.id,
+            "title": c.title,
+            "duration": round(dur, 2),
+            "score": score,
+            "duration_valid": dur_valid,
+            "has_hook": has_hook,
+            "has_why": has_why,
+            "verdict": verdict,
+        })
+
+    report = {
+        "video_id": cache.video_id,
+        "overall_pass": overall_pass,
+        "audits": audits,
+    }
+    cache.save_json("quality_sentinel.json", report)
+    return report

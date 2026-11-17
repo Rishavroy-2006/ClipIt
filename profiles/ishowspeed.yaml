@@ -2,8 +2,8 @@ name: ishowspeed
 streamer: "iShowSpeed"
 game: "GTA 6"
 glossary: "iShowSpeed, Speed, GTA 6, Grand Theft Auto VI, Rockstar Games, Vice City, Lucia, Jason, chat, Ronald"
-style: bold-yellow
-layout: blur-fill
+style: beast-red
+layout: stack
 censor_captions: false
 permission: clip-policy
-facecam_box: null # can be populated or auto-detected (x, y, w, h)
+facecam_box: null

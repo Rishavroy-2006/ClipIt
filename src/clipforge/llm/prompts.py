@@ -21,10 +21,17 @@ def build_selection_prompt(
     candidates_text: str,
     transcript_text: str,
 ) -> str:
+    target_desc = "Auto (Select the truly viral, top-tier clips only, between 1 and 29 clips maximum; do not include mediocre filler)" if target_clips <= 0 else f"{target_clips} clips"
+    instruction_line = (
+        "Automatically identify and return ONLY the truly exceptional, viral highlight clips (minimum 1, strictly less than 30 clips total). "
+        "Sort them strictly from highest virality score to lowest. Only include clips with clear hooks, great energy, or comedic payoff."
+        if target_clips <= 0
+        else f"Please return the top {target_clips} clips in valid JSON format matching the schema."
+    )
     return f"""# Source Stream Information
 - Title: {video_title}
 - Streamer: {streamer or 'Gaming Streamer'}
-- Target Clips: {target_clips}
+- Target Clips: {target_desc}
 
 # Top Candidate Signal Windows:
 {candidates_text}
@@ -32,5 +39,5 @@ def build_selection_prompt(
 # Transcript with Signal Context:
 {transcript_text}
 
-Please return the top {target_clips} clips in valid JSON format matching the schema.
+{instruction_line}
 """

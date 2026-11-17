@@ -4,7 +4,48 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+
+def get_available_encoder(requested: Optional[str] = None) -> str:
+    """Return best available hardware or software h264 encoder."""
+    import sys
+    import shutil
+    import subprocess
+
+    if requested and requested not in ("auto", "h264_videotoolbox"):
+        return requested
+
+    # If specifically asked for videotoolbox on macOS, verify we are on macOS
+    if requested == "h264_videotoolbox" and sys.platform == "darwin":
+        return "h264_videotoolbox"
+
+    if not shutil.which("ffmpeg"):
+        return "libx264"
+
+    try:
+        res = subprocess.run(
+            ["ffmpeg", "-encoders"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=3,
+        )
+        encoders = res.stdout
+        if sys.platform == "darwin" and "h264_videotoolbox" in encoders:
+            return "h264_videotoolbox"
+        if "h264_nvenc" in encoders:
+            return "h264_nvenc"
+        if "h264_qsv" in encoders:
+            return "h264_qsv"
+        if "h264_amf" in encoders:
+            return "h264_amf"
+        if "libx264" in encoders:
+            return "libx264"
+    except Exception:
+        pass
+
+    return "libx264"
 
 
 class SignalWeights(BaseModel):
@@ -47,10 +88,15 @@ class VideoConfig(BaseModel):
     output_width: int = 1080
     output_height: int = 1920
     target_fps: int = 60
-    draft_codec: str = "h264_videotoolbox"
+    draft_codec: str = "auto"
     final_codec: str = "libx264"
     crf: int = 18
     audio_lufs: float = -14.0
+
+    @model_validator(mode="after")
+    def resolve_codec(self):
+        self.draft_codec = get_available_encoder(self.draft_codec)
+        return self
 
 
 class SafeZonesConfig(BaseModel):

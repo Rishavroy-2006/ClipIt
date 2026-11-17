@@ -32,7 +32,10 @@ console = Console()
 
 @app.command()
 def check():
-    """Verify system requirements, Metal acceleration, and installed tools."""
+    """Verify system requirements, hardware acceleration, and installed tools (macOS & Windows)."""
+    import os
+    import platform
+
     console.print(Panel.fit("[bold cyan]ClipForge Environment Check[/bold cyan]"))
 
     table = Table(title="Hardware & Media Engine Status")
@@ -40,16 +43,25 @@ def check():
     table.add_column("Status", style="green")
     table.add_column("Details")
 
-    # 1. Disk Space
-    disk = shutil.disk_usage("/")
-    free_gb = disk.free / (1024**3)
-    table.add_row(
-        "Disk Space",
-        "PASS" if free_gb >= 10 else "WARN",
-        f"{free_gb:.1f} GB free on root volume",
-    )
+    # 1. Platform & OS
+    os_name = platform.system()
+    arch = platform.machine()
+    table.add_row("Platform", "INFO", f"{os_name} ({arch}) - Python {platform.python_version()}")
 
-    # 2. ffmpeg & libass & videotoolbox
+    # 2. Disk Space
+    root_path = Path.cwd().anchor or "/"
+    try:
+        disk = shutil.disk_usage(root_path)
+        free_gb = disk.free / (1024**3)
+        table.add_row(
+            "Disk Space",
+            "PASS" if free_gb >= 10 else "WARN",
+            f"{free_gb:.1f} GB free on {root_path}",
+        )
+    except Exception as e:
+        table.add_row("Disk Space", "WARN", f"Could not check: {e}")
+
+    # 3. ffmpeg & libass & hardware encoders
     ffmpeg_path = shutil.which("ffmpeg")
     if ffmpeg_path:
         res_ass = subprocess.run(
@@ -60,39 +72,78 @@ def check():
         res_enc = subprocess.run(
             ["ffmpeg", "-encoders"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
-        has_vtb = "videotoolbox" in res_enc.stdout
+        enc_out = res_enc.stdout
+        available_encs = []
+        if "h264_videotoolbox" in enc_out:
+            available_encs.append("VideoToolbox (Apple)")
+        if "h264_nvenc" in enc_out:
+            available_encs.append("NVENC (NVIDIA)")
+        if "h264_qsv" in enc_out:
+            available_encs.append("QSV (Intel)")
+        if "h264_amf" in enc_out:
+            available_encs.append("AMF (AMD)")
+        if "libx264" in enc_out:
+            available_encs.append("libx264 (CPU)")
 
-        details = f"Found at {ffmpeg_path} (libass: {'YES' if has_ass else 'NO'}, VideoToolbox: {'YES' if has_vtb else 'NO'})"
+        enc_str = ", ".join(available_encs) if available_encs else "None"
+        hw_ready = bool(available_encs)
         table.add_row(
             "FFmpeg Engine",
-            "PASS" if (has_ass and has_vtb) else "WARN",
-            details,
+            "PASS" if (has_ass and hw_ready) else "WARN",
+            f"libass: {'YES' if has_ass else 'NO'} | Encoders: {enc_str}",
         )
     else:
         table.add_row("FFmpeg Engine", "FAIL", "ffmpeg not found in PATH")
 
-    # 3. yt-dlp
+    # 4. yt-dlp
     ytdlp_path = shutil.which("yt-dlp")
     table.add_row(
         "yt-dlp",
         "PASS" if ytdlp_path else "FAIL",
-        ytdlp_path or "Missing",
+        ytdlp_path or "Missing (install via pip install yt-dlp or winget/brew)",
     )
 
-    # 4. MLX / Metal
-    try:
-        import mlx.core as mx
-        device = mx.default_device()
-        table.add_row("Apple MLX / Metal", "PASS", f"Active device: {device}")
-    except Exception as e:
-        table.add_row("Apple MLX / Metal", "WARN", f"MLX check: {e}")
+    # 5. Whisper Speech-to-Text Backend
+    whisper_found = False
+    if os_name == "Darwin" and arch == "arm64":
+        try:
+            import mlx.core as mx
+            import mlx_whisper
+            device = mx.default_device()
+            table.add_row("Whisper (MLX Metal)", "PASS", f"Apple Silicon Metal acceleration active ({device})")
+            whisper_found = True
+        except Exception as e:
+            table.add_row("Whisper (MLX Metal)", "WARN", f"mlx-whisper check: {e}")
 
-    # 5. mlx-whisper
-    try:
-        import mlx_whisper
-        table.add_row("MLX Whisper", "PASS", "mlx-whisper installed")
-    except Exception as e:
-        table.add_row("MLX Whisper", "WARN", f"mlx-whisper import: {e}")
+    if not whisper_found:
+        try:
+            from faster_whisper import WhisperModel
+            table.add_row("Whisper (faster-whisper)", "PASS", "faster-whisper installed (CUDA / CPU auto-detect)")
+            whisper_found = True
+        except Exception:
+            pass
+
+    if not whisper_found:
+        try:
+            import whisper
+            table.add_row("Whisper (openai-whisper)", "PASS", "openai-whisper installed")
+            whisper_found = True
+        except Exception:
+            pass
+
+    if not whisper_found:
+        table.add_row(
+            "Whisper Backend",
+            "WARN",
+            "Install mlx-whisper (macOS) or faster-whisper (Windows/Linux): pip install faster-whisper",
+        )
+
+    # 6. Gemini LLM API Key (Optional for smart AI selection)
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if gemini_key:
+        table.add_row("Gemini Director API", "PASS", "GEMINI_API_KEY detected (AI Virality Selection enabled)")
+    else:
+        table.add_row("Gemini Director API", "INFO", "GEMINI_API_KEY unset (defaults to offline heuristic selector)")
 
     console.print(table)
 
@@ -193,6 +244,7 @@ def run(
         config.video,
         out_base=Path("out"),
         style_name=style,
+        profile_name=profile,
     )
     console.print(f"✔ Rendered {len(rendered)} MP4 clips in [bold]{out_dir}[/bold]")
 
@@ -268,6 +320,26 @@ def clean(
             f.unlink()
             freed += sz
     console.print(f"[green]Cleaned cache for {video_id}. Freed {freed / (1024**2):.1f} MB.[/green]")
+
+
+@app.command(name="serve")
+def serve(
+    port: int = typer.Option(8765, "--port", "-p", help="Port to run the studio server on"),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open browser on startup"),
+):
+    """Launch the ClipForge AI Studio interactive web application."""
+    from clipforge.web.server import start_server
+    start_server(port=port, open_browser=open_browser)
+
+
+@app.command(name="studio")
+def studio(
+    port: int = typer.Option(8765, "--port", "-p", help="Port to run the studio server on"),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open browser on startup"),
+):
+    """Alias for 'serve': Launch the ClipForge AI Studio interactive web application."""
+    from clipforge.web.server import start_server
+    start_server(port=port, open_browser=open_browser)
 
 
 @app.command()

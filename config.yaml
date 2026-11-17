@@ -32,7 +32,7 @@ video:
   output_width: 1080
   output_height: 1920
   target_fps: 60
-  draft_codec: "h264_videotoolbox"
+  draft_codec: "auto"
   final_codec: "libx264"
   crf: 18
   audio_lufs: -14.0
