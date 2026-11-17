@@ -62,7 +62,7 @@ def select_clips_with_gemini(
         print("Warning: GEMINI_API_KEY not found in environment or .env.")
         return None
 
-    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=8000))
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=10000))
     models = model_chain or DEFAULT_MODEL_CHAIN
 
     # Build prompt input
@@ -99,17 +99,17 @@ def select_clips_with_gemini(
 
     full_prompt = f"{system_instruction}\n\n{user_prompt}"
 
-    # Strict maximum 12s overall deadline for Gemini API before auto-falling back
+    # Strict maximum 15s overall deadline for Gemini API before auto-falling back
     start_time = time.time()
-    max_total_timeout = 12.0
+    max_total_timeout = 15.0
 
     # Limit to top 2 model candidates, 1 attempt each to prevent any pipeline stall
     for model_name in models[:2]:
         if time.time() - start_time > max_total_timeout:
-            print("Notice: Gemini API overall deadline reached (12s). Falling back to local heuristic selection.")
+            print("Notice: Gemini API overall deadline reached (15s). Falling back to local heuristic selection.")
             break
         try:
-            print(f"Calling Gemini Director API ({model_name}, 8s timeout)...")
+            print(f"Calling Gemini Director API ({model_name}, 10s timeout)...")
             resp = client.models.generate_content(
                 model=model_name,
                 contents=full_prompt,
