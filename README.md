@@ -20,7 +20,7 @@ Works on **macOS (Apple Silicon Metal)** and **Windows (NVIDIA NVENC / AMD / Int
   3. **Content Deframed 9:16**: Full-bleed vertical action crop focused on gameplay.
 * **Kinetic Word-by-Word Subtitles**: High-impact ASS subtitles with color pops and auto-emojis (💀, 😭, 😱, 🔥, 🏆, 🚗).
 * **ClipForge Web Studio**: Built-in zero-build interactive web app (`clipforge serve --port 8765`) with live pipeline visualization, deep linking, 9:16 vertical crop adjustments, and one-click publishing.
-* **Full AI Agent Context**: Pre-configured [.agents](file:///.agents) / [AGENTS.md](file:///AGENTS.md) guide so any AI assistant (Cursor, Windsurf, Claude Code, Antigravity) can maintain, run, and extend all tools.
+* **Full AI Agent Context**: Pre-configured [docs/.agents](file:///docs/.agents) / [docs/AGENTS.md](file:///docs/AGENTS.md) guide so any AI assistant (Cursor, Windsurf, Claude Code, Antigravity) can maintain, run, and extend all tools.
 
 ---
 
@@ -116,7 +116,7 @@ When clips are exported, ClipForge organizes everything in `ready_to_post/<video
 ## 🤖 Context for AI Coding Assistants
 
 If you or your collaborators are working with an AI assistant (Cursor, Claude Code, Windsurf, Antigravity, Copilot), the project includes:
-* **[.agents](file:///.agents)** / **[AGENTS.md](file:///AGENTS.md)**: Exhaustive context covering the 8-stage architecture, data contracts, REST/SSE APIs, Windows vs macOS hardware encoders, path escaping, and troubleshooting recipes.
+* **[docs/.agents](file:///docs/.agents)** / **[docs/AGENTS.md](file:///docs/AGENTS.md)**: Exhaustive context covering the 8-stage architecture, data contracts, REST/SSE APIs, Windows vs macOS hardware encoders, path escaping, and troubleshooting recipes.
 
 ---
 
