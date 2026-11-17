@@ -61,7 +61,7 @@ def analyze_with_gemini_vision(frame_path: Path, api_key: str) -> Optional[Dict[
     from google import genai
     from google.genai import types
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=10000))
     img_bytes = frame_path.read_bytes()
     part = types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg")
 
@@ -82,24 +82,23 @@ Output JSON only in this exact schema:
   "content_pct": 62
 }"""
 
-    for model in FALLBACK_MODELS:
-        for attempt in range(2):  # Attempt 0: initial, Attempt 1: 1 retry
-            try:
-                res = client.models.generate_content(
-                    model=model,
-                    contents=[part, prompt],
-                    config=types.GenerateContentConfig(response_mime_type="application/json")
-                )
-                data = json.loads(res.text)
-                if "content_alignment" in data:
-                    if "has_facecam" not in data:
-                        data["has_facecam"] = bool(data.get("streamer_box"))
-                    return data
-            except Exception as e:
-                if attempt == 0:
-                    time.sleep(1.5)
-                else:
-                    break
+    start_time = time.time()
+    for model in FALLBACK_MODELS[:2]:
+        if time.time() - start_time > 15.0:
+            break
+        try:
+            res = client.models.generate_content(
+                model=model,
+                contents=[part, prompt],
+                config=types.GenerateContentConfig(response_mime_type="application/json")
+            )
+            data = json.loads(res.text)
+            if "content_alignment" in data:
+                if "has_facecam" not in data:
+                    data["has_facecam"] = bool(data.get("streamer_box"))
+                return data
+        except Exception:
+            continue
 
     return None
 
