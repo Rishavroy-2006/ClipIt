@@ -102,6 +102,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_sse_workflow(session_id)
         elif path == "/api/retention-status":
             return self.handle_retention_status()
+        elif path == "/api/storage-details":
+            return self.handle_storage_details()
 
         # 3. Fallback to static or 404
         target_file = STATIC_DIR / path.lstrip("/")
@@ -136,6 +138,10 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_delete_rejected(data)
         elif path == "/api/retention-clean":
             return self.handle_retention_clean(data)
+        elif path == "/api/delete-all-clips":
+            return self.handle_delete_all_clips(data)
+        elif path == "/api/delete-source":
+            return self.handle_delete_source(data)
         elif path == "/api/rerender-clip":
             return self.handle_rerender_clip(data)
         else:
@@ -273,6 +279,26 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 "expired_30d": age >= 30,
             })
         self.send_json({"policy_days": 30, "projects": projects})
+
+    def handle_storage_details(self):
+        from clipit.retention import get_storage_breakdown
+        res = get_storage_breakdown(CACHE_DIR, OUT_DIR, READY_DIR)
+        self.send_json(res)
+
+    def handle_delete_all_clips(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        from clipit.retention import delete_all_clips
+        res = delete_all_clips(video_id, CACHE_DIR, OUT_DIR, READY_DIR)
+        self.send_json(res)
+
+    def handle_delete_source(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        if not video_id:
+            self.send_error(HTTPStatus.BAD_REQUEST, "Missing video_id")
+            return
+        from clipit.retention import delete_source_vod
+        res = delete_source_vod(video_id, CACHE_DIR)
+        self.send_json(res)
 
     def handle_get_project_detail(self, video_id: str):
         out_v = OUT_DIR / video_id
@@ -539,7 +565,10 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
     # ==========================================
 
     def handle_start_pipeline(self, data: Dict[str, Any]):
-        url = data.get("url", "https://youtu.be/E07OTlhncP0").strip()
+        url = data.get("url", "").strip()
+        if not url:
+            self.send_json({"error": "Stream URL is required"}, status=HTTPStatus.BAD_REQUEST)
+            return
         raw_target = data.get("target_clips", 0)
         try:
             target_clips = int(raw_target)

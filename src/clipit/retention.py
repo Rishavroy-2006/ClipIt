@@ -312,3 +312,255 @@ def delete_rejected_clips(
         "freed_mb": round(total_freed / (1024 * 1024), 2),
         "remaining_count": rem_count,
     }
+
+
+def get_storage_breakdown(
+    cache_base: Path = Path("cache"),
+    out_base: Path = Path("out"),
+    ready_base: Path = Path("ready_to_post"),
+) -> Dict[str, Any]:
+    """Calculate detailed storage metrics for all projects, source VODs, and individual clips."""
+    import shutil
+
+    now = time.time()
+    cache_vids = {p.name for p in cache_base.iterdir() if p.is_dir() and not p.name.startswith(".")} if cache_base.exists() else set()
+    out_vids = {p.name for p in out_base.iterdir() if p.is_dir() and not p.name.startswith(".")} if out_base.exists() else set()
+    all_vids = sorted(cache_vids | out_vids)
+
+    projects_list = []
+    grand_total_bytes = 0
+    grand_total_clips = 0
+
+    for vid in all_vids:
+        c_dir = cache_base / vid
+        o_dir = out_base / vid
+        r_dir = ready_base / vid
+
+        # Metadata
+        title = vid
+        info_file = c_dir / "info.json"
+        created_at = get_project_creation_timestamp(vid, cache_base, out_base)
+        age_days = (now - created_at) / 86400.0
+        days_left = max(0.0, 30.0 - age_days)
+
+        if info_file.exists():
+            try:
+                with open(info_file, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                    title = meta.get("title", vid)
+            except Exception:
+                pass
+
+        # 1. Source video size (cache/source.mp4 + audio.wav)
+        source_bytes = 0
+        source_files = []
+        for sf in ("source.mp4", "audio.wav"):
+            f = c_dir / sf
+            if f.exists():
+                sz = f.stat().st_size
+                source_bytes += sz
+                source_files.append({"name": sf, "size_mb": round(sz / (1024 * 1024), 2)})
+
+        # 2. Approved map
+        app_map = {}
+        app_file = c_dir / "approved.json"
+        if app_file.exists():
+            try:
+                with open(app_file, "r", encoding="utf-8") as f:
+                    app_map = json.load(f)
+            except Exception:
+                pass
+
+        # 3. Refined clips metadata
+        refined_titles = {}
+        refined_file = c_dir / "refined_clips.json"
+        if refined_file.exists():
+            try:
+                with open(refined_file, "r", encoding="utf-8") as f:
+                    for c in json.load(f):
+                        cid = c.get("id") or c.get("clip_id")
+                        if cid:
+                            refined_titles[cid] = c.get("title", cid)
+            except Exception:
+                pass
+
+        # 4. Individual clip breakdown in out/
+        clips_dict: Dict[str, Dict[str, Any]] = {}
+        out_clips_bytes = 0
+
+        if o_dir.exists():
+            for mp4 in o_dir.glob("*.mp4"):
+                sz = mp4.stat().st_size
+                out_clips_bytes += sz
+                # Extract clip ID (e.g. c01 from c01.mp4, c01_blur.mp4, c01_reframed.mp4)
+                stem = mp4.stem
+                cid = stem.split("_")[0]
+                if cid not in clips_dict:
+                    clips_dict[cid] = {
+                        "clip_id": cid,
+                        "title": refined_titles.get(cid, f"Clip {cid}"),
+                        "status": app_map.get(cid, "pending"),
+                        "size_bytes": 0,
+                        "variants_count": 0,
+                        "files": [],
+                    }
+                clips_dict[cid]["size_bytes"] += sz
+                clips_dict[cid]["variants_count"] += 1
+                clips_dict[cid]["files"].append(mp4.name)
+
+        # Convert clips dict to list sorted by clip_id
+        clips_list = []
+        for cid in sorted(clips_dict.keys()):
+            c_info = clips_dict[cid]
+            c_info["size_mb"] = round(c_info["size_bytes"] / (1024 * 1024), 2)
+            clips_list.append(c_info)
+
+        # 5. Ready-to-post exports size
+        ready_bytes = 0
+        if r_dir.exists():
+            ready_bytes = sum(f.stat().st_size for f in r_dir.glob("*.mp4"))
+
+        proj_total_bytes = source_bytes + out_clips_bytes + ready_bytes
+        grand_total_bytes += proj_total_bytes
+        grand_total_clips += len(clips_list)
+
+        created_dt = datetime.fromtimestamp(created_at, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+        projects_list.append({
+            "video_id": vid,
+            "title": title,
+            "created_at": created_dt,
+            "age_days": round(age_days, 1),
+            "days_until_retention": round(days_left, 1),
+            "is_expired": age_days >= 30,
+            "has_source": source_bytes > 0,
+            "source_bytes": source_bytes,
+            "source_mb": round(source_bytes / (1024 * 1024), 2),
+            "clips_count": len(clips_list),
+            "clips_bytes": out_clips_bytes,
+            "clips_mb": round(out_clips_bytes / (1024 * 1024), 2),
+            "ready_bytes": ready_bytes,
+            "ready_mb": round(ready_bytes / (1024 * 1024), 2),
+            "total_bytes": proj_total_bytes,
+            "total_mb": round(proj_total_bytes / (1024 * 1024), 2),
+            "clips": clips_list,
+        })
+
+    # Host disk space
+    try:
+        disk = shutil.disk_usage(Path.cwd().anchor or "/")
+        disk_free_gb = round(disk.free / (1024**3), 1)
+        disk_total_gb = round(disk.total / (1024**3), 1)
+    except Exception:
+        disk_free_gb = 0.0
+        disk_total_gb = 0.0
+
+    return {
+        "success": True,
+        "total_projects": len(projects_list),
+        "total_clips": grand_total_clips,
+        "total_bytes": grand_total_bytes,
+        "total_mb": round(grand_total_bytes / (1024 * 1024), 2),
+        "total_gb": round(grand_total_bytes / (1024**3), 3),
+        "disk_free_gb": disk_free_gb,
+        "disk_total_gb": disk_total_gb,
+        "projects": projects_list,
+    }
+
+
+def delete_all_clips(
+    video_id: Optional[str] = None,
+    cache_base: Path = Path("cache"),
+    out_base: Path = Path("out"),
+    ready_base: Path = Path("ready_to_post"),
+) -> Dict[str, Any]:
+    """Permanently delete all rendered clips and subtitle artifacts for a video (or all videos)."""
+    if video_id and video_id != "all":
+        target_vids = [video_id]
+    else:
+        out_vids = {p.name for p in out_base.iterdir() if p.is_dir()} if out_base.exists() else set()
+        cache_vids = {p.name for p in cache_base.iterdir() if p.is_dir()} if cache_base.exists() else set()
+        target_vids = sorted(out_vids | cache_vids)
+
+    total_freed = 0
+    deleted_clips_count = 0
+
+    for vid in target_vids:
+        o_dir = out_base / vid
+        c_dir = cache_base / vid
+
+        # Delete all .mp4 files in out/<vid>/
+        if o_dir.exists():
+            for f in list(o_dir.glob("*.mp4")) + list(o_dir.glob("*.json")):
+                try:
+                    total_freed += f.stat().st_size
+                    f.unlink()
+                    if f.suffix == ".mp4":
+                        deleted_clips_count += 1
+                except Exception as e:
+                    print(f"Error unlinking {f}: {e}")
+
+        # Delete subtitle and vision files in cache/<vid>/
+        if c_dir.exists():
+            for f in list(c_dir.glob("*.ass")) + list(c_dir.glob("vision_*")):
+                try:
+                    total_freed += f.stat().st_size
+                    f.unlink()
+                except Exception as e:
+                    print(f"Error unlinking {f}: {e}")
+
+            # Reset manifests
+            ref_f = c_dir / "refined_clips.json"
+            if ref_f.exists():
+                try:
+                    with open(ref_f, "w", encoding="utf-8") as f:
+                        json.dump([], f)
+                except Exception:
+                    pass
+
+            app_f = c_dir / "approved.json"
+            if app_f.exists():
+                try:
+                    with open(app_f, "w", encoding="utf-8") as f:
+                        json.dump({}, f)
+                except Exception:
+                    pass
+
+    return {
+        "success": True,
+        "video_id": video_id or "all",
+        "deleted_clips_count": deleted_clips_count,
+        "freed_bytes": total_freed,
+        "freed_mb": round(total_freed / (1024 * 1024), 2),
+        "freed_gb": round(total_freed / (1024**3), 3),
+    }
+
+
+def delete_source_vod(
+    video_id: str,
+    cache_base: Path = Path("cache"),
+) -> Dict[str, Any]:
+    """Delete raw source.mp4 and audio.wav for a project while keeping all clips and transcripts."""
+    c_dir = cache_base / video_id
+    freed = 0
+    deleted_files = []
+
+    if c_dir.exists():
+        for fname in ("source.mp4", "audio.wav"):
+            f = c_dir / fname
+            if f.exists():
+                sz = f.stat().st_size
+                freed += sz
+                try:
+                    f.unlink()
+                    deleted_files.append(fname)
+                except Exception as e:
+                    print(f"Error unlinking {f}: {e}")
+
+    return {
+        "success": True,
+        "video_id": video_id,
+        "deleted_files": deleted_files,
+        "freed_bytes": freed,
+        "freed_mb": round(freed / (1024 * 1024), 2),
+    }

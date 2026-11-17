@@ -179,6 +179,7 @@ async function loadProjects() {
     const res = await api('/api/projects');
     S.wsProjects = res.projects || (Array.isArray(res) ? res : []);
     renderWorkspace();
+    if (typeof fetchStorageDetails === 'function') fetchStorageDetails();
   } catch (e) {
     if (tableBody) tableBody.innerHTML = '<div class="ws-empty">Connecting to backend server...</div>';
   }
@@ -2805,8 +2806,355 @@ if ($('#cropApplyBtn')) $('#cropApplyBtn').onclick = async () => {
   }
 };
 
+/* ==========================================================================
+   Floating Storage & Retention Manager
+   ========================================================================== */
+let storageDetailsData = null;
+
+async function fetchStorageDetails() {
+  try {
+    const res = await api('/api/storage-details');
+    storageDetailsData = res;
+    updateStorageBadge(res);
+    return res;
+  } catch (e) {
+    console.error('Failed to load storage details:', e);
+    return null;
+  }
+}
+
+function updateStorageBadge(data) {
+  const badge = $('#storageTotalBadge');
+  if (!badge || !data) return;
+  const gb = data.total_gb;
+  if (gb >= 1) {
+    badge.textContent = `${gb.toFixed(1)} GB`;
+  } else {
+    badge.textContent = `${data.total_mb.toFixed(0)} MB`;
+  }
+}
+
+function openStorageModal() {
+  const modal = $('#storageModalOverlay');
+  if (modal) modal.style.display = 'flex';
+  renderStorageModal();
+  fetchStorageDetails().then(d => {
+    if (d) renderStorageModal();
+  });
+}
+
+function closeStorageModal() {
+  const modal = $('#storageModalOverlay');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderStorageModal() {
+  const d = storageDetailsData;
+  if (!d) return;
+
+  // Header metrics
+  const totalVal = $('#storageTotalVal');
+  const totalSub = $('#storageTotalSub');
+  const freeVal = $('#storageDiskFreeVal');
+  const freeSub = $('#storageDiskTotalSub');
+  const countBadge = $('#storageProjectsCount');
+
+  if (totalVal) {
+    totalVal.textContent = d.total_gb >= 1 ? `${d.total_gb.toFixed(2)} GB` : `${d.total_mb.toFixed(1)} MB`;
+  }
+  if (totalSub) {
+    totalSub.textContent = `Across ${d.total_projects} projects (${d.total_clips} clips rendered)`;
+  }
+  if (freeVal) {
+    freeVal.textContent = `${d.disk_free_gb.toFixed(1)} GB free`;
+  }
+  if (freeSub) {
+    freeSub.textContent = `of ${d.disk_total_gb.toFixed(1)} GB disk capacity`;
+  }
+  if (countBadge) {
+    countBadge.textContent = `${d.total_projects} project${d.total_projects === 1 ? '' : 's'}`;
+  }
+
+  // Render projects list
+  const container = $('#storageProjectsContainer');
+  if (!container) return;
+
+  if (!d.projects || d.projects.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: rgba(242, 239, 255, 0.4); font-family: var(--d);">
+        <p style="font-size: 1.1rem; margin-bottom: 8px;">No projects currently stored.</p>
+        <p style="font-size: 0.85rem;">Ingest a stream above to create clips and manage storage.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = d.projects.map(p => {
+    const isExp = p.is_expired;
+    const retLabel = isExp ? 'EXPIRED (Pending purge)' : `${p.days_until_retention}d until auto-purge`;
+    const retClass = isExp ? 'retention-tag expired' : 'retention-tag';
+    const totalDisplay = p.total_mb >= 1000 ? `${(p.total_mb / 1024).toFixed(2)} GB` : `${p.total_mb.toFixed(1)} MB`;
+    const srcDisplay = p.source_mb >= 1000 ? `${(p.source_mb / 1024).toFixed(2)} GB` : `${p.source_mb.toFixed(1)} MB`;
+    const clipsDisplay = p.clips_mb >= 1000 ? `${(p.clips_mb / 1024).toFixed(2)} GB` : `${p.clips_mb.toFixed(1)} MB`;
+
+    const clipsRows = (p.clips || []).map(c => `
+      <div class="clip-row-item">
+        <div class="clip-row-left">
+          <span class="clip-id-badge">${esc(c.clip_id)}</span>
+          <span class="clip-title-text" title="${esc(c.title)}">${esc(c.title)}</span>
+          <span class="clip-status-pill ${esc(c.status)}">${esc(c.status)}</span>
+        </div>
+        <div class="clip-row-right">
+          <span class="clip-size-text">${c.size_mb.toFixed(1)} MB</span>
+          <button class="btn-delete-single-clip" data-vid="${esc(p.video_id)}" data-cid="${esc(c.clip_id)}" data-title="${esc(c.title)}" data-sz="${c.size_mb.toFixed(1)}" title="Delete this clip permanently">
+            🗑️ Delete
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="proj-card" data-vid="${esc(p.video_id)}">
+        <div class="proj-card-top">
+          <div class="proj-card-title-col">
+            <div class="proj-title">${esc(p.title)}</div>
+            <div class="proj-meta-row">
+              <span>ID: ${esc(p.video_id)}</span>
+              <span>•</span>
+              <span>Created ${esc(p.created_at)} (${p.age_days}d ago)</span>
+              <span>•</span>
+              <span class="${retClass}">${retLabel}</span>
+            </div>
+          </div>
+          <div class="proj-card-size-col">
+            <span class="proj-size-val">${totalDisplay}</span>
+            <span class="proj-size-label">total</span>
+          </div>
+        </div>
+
+        <div class="proj-card-content">
+          <div class="proj-assets-breakdown">
+            <div class="asset-box">
+              <div class="asset-info">
+                <span class="asset-name">Raw Source VOD</span>
+                <span class="asset-size">${p.has_source ? `${srcDisplay} (source.mp4 & audio.wav)` : 'Purged / Not Present'}</span>
+              </div>
+              <button class="btn-purge-asset btn-purge-source" data-vid="${esc(p.video_id)}" data-title="${esc(p.title)}" data-sz="${srcDisplay}" ${!p.has_source ? 'disabled title="Raw source is already deleted"' : 'title="Delete raw source to save disk space"'}>
+                🗑️ Delete Raw Source
+              </button>
+            </div>
+            <div class="asset-box">
+              <div class="asset-info">
+                <span class="asset-name">Rendered Clips (${p.clips_count})</span>
+                <span class="asset-size">${clipsDisplay} total rendered video</span>
+              </div>
+              <button class="btn-purge-asset btn-purge-project-clips" data-vid="${esc(p.video_id)}" data-title="${esc(p.title)}" data-count="${p.clips_count}" ${p.clips_count === 0 ? 'disabled' : ''} title="Permanently delete all rendered clips for this project">
+                🗑️ Delete All Clips
+              </button>
+            </div>
+          </div>
+
+          ${(p.clips && p.clips.length > 0) ? `
+            <div>
+              <button class="clips-accordion-toggle" type="button" data-vid="${esc(p.video_id)}">
+                <span>View individual clips (${p.clips.length})</span>
+                <span class="caret">▼</span>
+              </button>
+              <div class="clips-sub-table" id="clipsSub_${esc(p.video_id)}" style="display:none;">
+                ${clipsRows}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Wire accordion toggles
+  $$('.clips-accordion-toggle', container).forEach(btn => {
+    btn.onclick = () => {
+      const vid = btn.dataset.vid;
+      const sub = $(`#clipsSub_${vid}`, container);
+      if (!sub) return;
+      const isOpen = sub.style.display !== 'none';
+      sub.style.display = isOpen ? 'none' : 'flex';
+      btn.classList.toggle('open', !isOpen);
+    };
+  });
+
+  // Wire single clip deletion
+  $$('.btn-delete-single-clip', container).forEach(btn => {
+    btn.onclick = async () => {
+      const vid = btn.dataset.vid;
+      const cid = btn.dataset.cid;
+      const title = btn.dataset.title;
+      const sz = btn.dataset.sz;
+      if (!confirm(`Permanently delete clip "${title}" (${cid}, ${sz} MB)? This cannot be undone.`)) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+      try {
+        const res = await post('/api/delete-clip', { video_id: vid, clip_id: cid });
+        if (res.success) {
+          toast(`Clip ${cid} deleted (${res.freed_mb} MB freed)`);
+          await fetchStorageDetails();
+          renderStorageModal();
+          if (S.vid === vid && typeof loadProjectClips === 'function') {
+            loadProjectClips(vid);
+          }
+          if (typeof loadProjects === 'function') {
+            loadProjects();
+          }
+        } else {
+          toast('Failed to delete clip: ' + (res.error || 'Unknown error'));
+        }
+      } catch (e) {
+        toast('Delete failed: ' + e.message);
+      }
+    };
+  });
+
+  // Wire source VOD deletion
+  $$('.btn-purge-source', container).forEach(btn => {
+    btn.onclick = async () => {
+      const vid = btn.dataset.vid;
+      const title = btn.dataset.title;
+      const sz = btn.dataset.sz;
+      if (!confirm(`Delete raw source VOD for "${title}"?\n\nThis will free ${sz} of disk space. All rendered clips and transcripts will be kept intact.`)) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+      try {
+        const res = await post('/api/delete-source', { video_id: vid });
+        if (res.success) {
+          toast(`Raw source deleted (${res.freed_mb} MB freed)`);
+          await fetchStorageDetails();
+          renderStorageModal();
+          if (typeof loadProjects === 'function') loadProjects();
+        } else {
+          toast('Failed to delete source: ' + (res.error || 'Unknown error'));
+        }
+      } catch (e) {
+        toast('Delete error: ' + e.message);
+      }
+    };
+  });
+
+  // Wire all clips in project deletion
+  $$('.btn-purge-project-clips', container).forEach(btn => {
+    btn.onclick = async () => {
+      const vid = btn.dataset.vid;
+      const title = btn.dataset.title;
+      const count = btn.dataset.count;
+      if (!confirm(`⚠️ Delete ALL ${count} clips for "${title}"?\n\nThis will permanently delete all rendered MP4s and subtitle files for this project. This cannot be undone.`)) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+      try {
+        const res = await post('/api/delete-all-clips', { video_id: vid });
+        if (res.success) {
+          toast(`All clips deleted for ${vid} (${res.freed_mb} MB freed)`);
+          await fetchStorageDetails();
+          renderStorageModal();
+          if (S.vid === vid && typeof loadProjectClips === 'function') {
+            loadProjectClips(vid);
+          }
+          if (typeof loadProjects === 'function') loadProjects();
+        } else {
+          toast('Failed: ' + (res.error || 'Unknown error'));
+        }
+      } catch (e) {
+        toast('Delete error: ' + e.message);
+      }
+    };
+  });
+}
+
+function initStorageManager() {
+  const openBtn = $('#storageSettingsBtn');
+  const closeBtn = $('#storageCloseBtn');
+  const overlay = $('#storageModalOverlay');
+  const runRetentionBtn = $('#storageRunRetentionBtn');
+  const deleteAllBtn = $('#storageDeleteAllClipsBtn');
+
+  if (openBtn) openBtn.onclick = () => openStorageModal();
+  if (closeBtn) closeBtn.onclick = () => closeStorageModal();
+
+  if (overlay) {
+    overlay.onclick = e => {
+      if (e.target === overlay) closeStorageModal();
+    };
+  }
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay && overlay.style.display !== 'none') {
+      closeStorageModal();
+    }
+  });
+
+  // Global: Enforce 30-Day Purge Now
+  if (runRetentionBtn) {
+    runRetentionBtn.onclick = async () => {
+      if (!confirm('Run the 30-day lifecycle retention purge now?\n\nAny project source VODs or clips older than 30 days will be permanently deleted.')) return;
+      runRetentionBtn.disabled = true;
+      runRetentionBtn.textContent = 'Enforcing...';
+      try {
+        const res = await post('/api/retention-clean', { days: 30 });
+        if (res.purged_count > 0) {
+          toast(`Purged ${res.purged_count} expired project(s), freed ${res.total_freed_mb} MB!`);
+        } else {
+          toast('All projects are within the 30-day lifecycle. No files expired.');
+        }
+        await fetchStorageDetails();
+        renderStorageModal();
+        if (typeof loadProjects === 'function') loadProjects();
+      } catch (e) {
+        toast('Retention clean failed: ' + e.message);
+      } finally {
+        runRetentionBtn.disabled = false;
+        runRetentionBtn.textContent = '⚡ Enforce 30-Day Purge Now';
+      }
+    };
+  }
+
+  // Global: Delete ALL clips across ALL projects
+  if (deleteAllBtn) {
+    deleteAllBtn.onclick = async () => {
+      const confirmPrompt = prompt('⚠️ DANGER: This will permanently delete ALL rendered clips across ALL projects!\n\nType DELETE to confirm:');
+      if (confirmPrompt !== 'DELETE') {
+        if (confirmPrompt !== null) toast('Bulk deletion cancelled (confirmation mismatch).');
+        return;
+      }
+
+      deleteAllBtn.disabled = true;
+      deleteAllBtn.textContent = 'Purging all clips...';
+      try {
+        const res = await post('/api/delete-all-clips', { video_id: 'all' });
+        if (res.success) {
+          toast(`All clips purged! Freed ${res.freed_mb} MB (${res.freed_gb} GB)`);
+          await fetchStorageDetails();
+          renderStorageModal();
+          if (typeof loadProjects === 'function') loadProjects();
+          if (S.vid && typeof loadProjectClips === 'function') loadProjectClips(S.vid);
+        } else {
+          toast('Failed: ' + (res.error || 'Unknown error'));
+        }
+      } catch (e) {
+        toast('Bulk delete error: ' + e.message);
+      } finally {
+        deleteAllBtn.disabled = false;
+        deleteAllBtn.textContent = '🗑️ Delete All Clips (All Projects)';
+      }
+    };
+  }
+
+  // Initial fetch for badge
+  fetchStorageDetails();
+}
+
 // Load workspace streams on startup
 loadProjects();
+initStorageManager();
 
 /* Background Animation */
 (() => {

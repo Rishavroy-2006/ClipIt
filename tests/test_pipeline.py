@@ -339,4 +339,58 @@ def test_retention_policy_30_days(tmp_path: Path):
     assert (f_out / "c01.mp4").exists()
 
 
+def test_storage_breakdown_and_bulk_deletion(tmp_path):
+    import json
+    from clipit.retention import get_storage_breakdown, delete_all_clips, delete_source_vod
+
+    cache_dir = tmp_path / "cache"
+    out_dir = tmp_path / "out"
+    ready_dir = tmp_path / "ready_to_post"
+    vid = "test_bulk_vid"
+
+    p_cache = cache_dir / vid
+    p_out = out_dir / vid
+    p_cache.mkdir(parents=True)
+    p_out.mkdir(parents=True)
+
+    (p_cache / "source.mp4").write_text("bulk-source-data-12345")
+    (p_cache / "audio.wav").write_text("bulk-audio-data-67890")
+    (p_cache / "info.json").write_text(json.dumps({"title": "Bulk Test Video"}))
+    (p_cache / "approved.json").write_text(json.dumps({"c01": "approved", "c02": "pending"}))
+    (p_cache / "refined_clips.json").write_text(json.dumps([{"id": "c01", "title": "Clip One"}, {"id": "c02", "title": "Clip Two"}]))
+
+    (p_out / "c01.mp4").write_text("c01-video")
+    (p_out / "c01_blur.mp4").write_text("c01-blur-video")
+    (p_out / "c02.mp4").write_text("c02-video")
+
+    # 1. Test get_storage_breakdown
+    details = get_storage_breakdown(cache_base=cache_dir, out_base=out_dir, ready_base=ready_dir)
+    assert details["success"] is True
+    assert details["total_projects"] == 1
+    assert details["total_clips"] == 2
+    proj = details["projects"][0]
+    assert proj["video_id"] == vid
+    assert proj["title"] == "Bulk Test Video"
+    assert proj["has_source"] is True
+    assert len(proj["clips"]) == 2
+
+    # 2. Test delete_source_vod
+    src_res = delete_source_vod(vid, cache_base=cache_dir)
+    assert src_res["success"] is True
+    assert "source.mp4" in src_res["deleted_files"]
+    assert "audio.wav" in src_res["deleted_files"]
+    assert not (p_cache / "source.mp4").exists()
+    assert not (p_cache / "audio.wav").exists()
+    # Clips should still exist
+    assert (p_out / "c01.mp4").exists()
+
+    # 3. Test delete_all_clips
+    del_res = delete_all_clips(vid, cache_base=cache_dir, out_base=out_dir, ready_base=ready_dir)
+    assert del_res["success"] is True
+    assert del_res["deleted_clips_count"] == 3
+    assert not (p_out / "c01.mp4").exists()
+    assert not (p_out / "c02.mp4").exists()
+
+
+
 
