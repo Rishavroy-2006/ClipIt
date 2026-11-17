@@ -1,4 +1,4 @@
-# CLIPFORGE AGENTS & SYSTEM CONTEXT (AGENTS.md)
+# CLIPIT AGENTS & SYSTEM CONTEXT (AGENTS.md)
 ================================================================================
 Target Audience: AI Coding Agents (Cursor, Claude Code, Antigravity, Windsurf, Copilot)
                  & Human Collaborators (macOS & Windows).
@@ -7,7 +7,7 @@ Last Updated: November 2026
 
 ## 1. PROJECT OVERVIEW & PHILOSOPHY
 
-ClipForge is an autonomous, local-first AI video clipping engine and studio tailored
+ClipIt is an autonomous, local-first AI video clipping engine and studio tailored
 for gaming streamers and editors (e.g., GTA 6 reactions, Kai Cenat, iShowSpeed, Twitch streams).
 It ingests 2-12 hour raw stream VODs (via YouTube URL or local MP4), analyzes audio and chat signals,
 identifies viral high-energy peaks, reframes the video to 9:16 vertical format with 3 layout options,
@@ -21,14 +21,14 @@ generates kinetic bouncing subtitles with auto-emojis, and produces ready-to-pub
    to act as an AI Director for viral scoring and hook generation.
 3. **Cross-Platform Compatibility**: Fully engineered for both macOS (Apple Silicon Metal acceleration)
    and Windows (NVIDIA NVENC, Intel QSV, AMD AMF, and faster-whisper with CUDA/CPU).
-4. **Zero-Build Web Studio**: Vanilla HTML5, CSS3, and ES Modules (`src/clipforge/web/static/`).
+4. **Zero-Build Web Studio**: Vanilla HTML5, CSS3, and ES Modules (`src/clipit/web/static/`).
    No Node.js, Webpack, Vite, or npm build steps required.
 
 ---
 
 ## 2. THE 8-STAGE AUTONOMOUS PIPELINE
 
-The core pipeline is divided into 8 modular stages located under `src/clipforge/stages/`:
+The core pipeline is divided into 8 modular stages located under `src/clipit/stages/`:
 
 ```
 [1. Ingest] ──► [2. Transcribe] ──► [3. Signals] ──► [4. Candidates]
@@ -112,17 +112,17 @@ The core pipeline is divided into 8 modular stages located under `src/clipforge/
 
 ---
 
-## 3. WEB STUDIO ARCHITECTURE (`src/clipforge/web/`)
+## 3. WEB STUDIO ARCHITECTURE (`src/clipit/web/`)
 
-ClipForge Studio provides a real-time reactive Web UI for monitoring pipeline execution, previewing clips,
+ClipIt Studio provides a real-time reactive Web UI for monitoring pipeline execution, previewing clips,
 adjusting crops, and publishing.
 
-- **Frontend Core (`src/clipforge/web/static/`)**:
+- **Frontend Core (`src/clipit/web/static/`)**:
   - `index.html`: Multi-step single page app (Step 1: Ingest & Settings, Step 2: Live Pipeline, Step 3: Studio).
   - `style.css`: Modern Dark/Cobalt theme with responsive layouts (iOS Safari zoom-fix compliant).
   - `app.js`: State manager with browser history support (`history.pushState` / `popstate`), deep-linking
     (`?step=studio&project=...`), and real-time SSE listener.
-- **Backend Server (`src/clipforge/web/server.py`)**:
+- **Backend Server (`src/clipit/web/server.py`)**:
   - Native Python HTTP Server running on `http://127.0.0.1:8765`.
   - Server-Sent Events (SSE) endpoint: `GET /api/stream-workflow?session_id=...` emitting:
     `pipeline_start`, `stage_start`, `agent_log`, `stage_complete`, `pipeline_complete`, `pipeline_error`.
@@ -138,26 +138,26 @@ adjusting crops, and publishing.
 
 ## 4. COMMAND LINE INTERFACE (CLI) & TOOLS
 
-All features are exposed via the `clipforge` CLI:
+All features are exposed via the `clipit` CLI:
 
 ```bash
 # 1. Environment & Hardware Diagnostics (Run this first!)
-clipforge check
+clipit check
 
 # 2. Run the Full End-to-End Pipeline
-clipforge run "https://youtu.be/E07OTlhncP0" --target auto --style bold-yellow --profile ishowspeed
+clipit run "https://youtu.be/E07OTlhncP0" --target auto --style bold-yellow --profile ishowspeed
 
 # 3. Launch the Web Studio UI
-clipforge serve --port 8765
+clipit serve --port 8765
 
 # 4. Step-by-Step Granular Commands
-clipforge ingest "https://youtu.be/E07OTlhncP0"
-clipforge transcribe cache/yt_E07OTlhncP0
-clipforge signals cache/yt_E07OTlhncP0
-clipforge candidates cache/yt_E07OTlhncP0
-clipforge select cache/yt_E07OTlhncP0 --target auto
-clipforge render cache/yt_E07OTlhncP0 --style bold-yellow
-clipforge export cache/yt_E07OTlhncP0
+clipit ingest "https://youtu.be/E07OTlhncP0"
+clipit transcribe cache/yt_E07OTlhncP0
+clipit signals cache/yt_E07OTlhncP0
+clipit candidates cache/yt_E07OTlhncP0
+clipit select cache/yt_E07OTlhncP0 --target auto
+clipit render cache/yt_E07OTlhncP0 --style bold-yellow
+clipit export cache/yt_E07OTlhncP0
 ```
 
 ---
@@ -210,9 +210,9 @@ pip install -e .
 
 ### Step 5: Verify the Environment
 ```powershell
-clipforge check
+clipit check
 ```
-If you have an NVIDIA GPU, `clipforge check` will detect `NVENC (NVIDIA)` and `faster-whisper` automatically.
+If you have an NVIDIA GPU, `clipit check` will detect `NVENC (NVIDIA)` and `faster-whisper` automatically.
 
 ---
 
@@ -225,7 +225,7 @@ If you have an NVIDIA GPU, `clipforge check` will detect `NVENC (NVIDIA)` and `f
 
 ### Issue 2: Windows Path Colon in FFmpeg Filter (`C:\...`)
 - **Cause**: FFmpeg filtergraphs interpret colons `:` as option separators.
-- **Resolution**: ClipForge automatically converts paths relative to the current working directory (`cache/...`),
+- **Resolution**: ClipIt automatically converts paths relative to the current working directory (`cache/...`),
   eliminating drive letters and avoiding colon-escaping issues. Always use `Path.relative_to(Path.cwd()).as_posix()`
   or forward slashes when writing FFmpeg filters.
 
@@ -240,7 +240,7 @@ If you have an NVIDIA GPU, `clipforge check` will detect `NVENC (NVIDIA)` and `f
   ```
 
 ### Issue 4: Gemini API Quota or Offline Mode
-- If `GEMINI_API_KEY` is not provided or runs out of quota, ClipForge automatically falls back
+- If `GEMINI_API_KEY` is not provided or runs out of quota, ClipIt automatically falls back
   to the offline heuristic selector (`stages/select.py`). It will never crash due to a missing key.
 - To set your key:
   - macOS/Linux: `export GEMINI_API_KEY="your-api-key"`

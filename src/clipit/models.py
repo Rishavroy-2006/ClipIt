@@ -1,4 +1,4 @@
-"""Data contracts and Pydantic models for ClipForge."""
+"""Data contracts and Pydantic models for ClipIt."""
 
 from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, Field, field_validator

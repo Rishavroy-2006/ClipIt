@@ -2,8 +2,8 @@
 
 import numpy as np
 from typing import List, Dict, Any
-from clipforge.cache import CacheManager
-from clipforge.models import FullTranscript, CandidateWindow
+from clipit.cache import CacheManager
+from clipit.models import FullTranscript, CandidateWindow
 
 
 def run_candidates(

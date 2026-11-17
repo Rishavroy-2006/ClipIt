@@ -1,9 +1,9 @@
-# ClipForge Backend Pipeline Events Specification (`metrics` extensions)
+# ClipIt Backend Pipeline Events Specification (`metrics` extensions)
 
-This document specifies the schema for optional structured metrics emitted in `agent_log` SSE events by ClipForge backend stages.
+This document specifies the schema for optional structured metrics emitted in `agent_log` SSE events by ClipIt backend stages.
 
 ## SSE Event Flow
-ClipForge UI listens on `GET /api/stream-workflow?session_id={id}` for Server-Sent Events (SSE):
+ClipIt UI listens on `GET /api/stream-workflow?session_id={id}` for Server-Sent Events (SSE):
 
 1. `pipeline_start { "video_id": string, "url": string }`
 2. `stage_start { "stage_id": string, "name": string, "stage_index": int, "badge": string }`

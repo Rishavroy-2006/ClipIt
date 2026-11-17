@@ -23,8 +23,8 @@ try:
 except ImportError:
     openai_whisper = None
 
-from clipforge.cache import CacheManager
-from clipforge.models import FullTranscript, TranscriptSegment, WordTimestamp
+from clipit.cache import CacheManager
+from clipit.models import FullTranscript, TranscriptSegment, WordTimestamp
 
 
 DEFAULT_GLOSSARY = (

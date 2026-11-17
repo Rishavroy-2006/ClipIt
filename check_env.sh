@@ -2,7 +2,7 @@
 set -e
 
 echo "=========================================="
-echo "    ClipForge Environment Verification"
+echo "    ClipIt Environment Verification"
 echo "=========================================="
 
 echo "Architecture: $(uname -m)"

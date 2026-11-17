@@ -6,8 +6,8 @@ import json
 import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from clipforge.cache import CacheManager
-from clipforge.models import ClipItem
+from clipit.cache import CacheManager
+from clipit.models import ClipItem
 
 
 def clean_slug(title: str, max_words: int = 6) -> str:
@@ -133,7 +133,7 @@ def run_export(
 
     copy_pack_lines: List[str] = [
         "=" * 80,
-        f" CLIPFORGE READY-TO-POST PUBLISHING PACK",
+        f" CLIPIT READY-TO-POST PUBLISHING PACK",
         f" Source: {info.get('title', video_id)}",
         f" Total Clips: {len(clips_to_export)}",
         "=" * 80,

@@ -4,12 +4,12 @@ import subprocess
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
-from clipforge.cache import CacheManager
-from clipforge.config import VideoConfig, get_available_encoder
-from clipforge.models import FullTranscript, ClipItem
-from clipforge.stages.layout import get_layout_filter, detect_facecam_box, check_facecam_active
-from clipforge.stages.captions import generate_clip_ass
-from clipforge.stages.vision_reframing import analyze_clip_vision
+from clipit.cache import CacheManager
+from clipit.config import VideoConfig, get_available_encoder
+from clipit.models import FullTranscript, ClipItem
+from clipit.stages.layout import get_layout_filter, detect_facecam_box, check_facecam_active
+from clipit.stages.captions import generate_clip_ass
+from clipit.stages.vision_reframing import analyze_clip_vision
 
 
 def render_variant_file(

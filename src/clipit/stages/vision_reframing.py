@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 import cv2
 import numpy as np
-from clipforge.models import ClipItem
-from clipforge.cache import CacheManager
+from clipit.models import ClipItem
+from clipit.cache import CacheManager
 
 
 # Sorted strictly Best-to-Worst according to user capability and quota profile
@@ -236,7 +236,7 @@ def analyze_clip_vision(
         return fallback
 
     # 2. Vision Detection Engine: OpenCV YuNet by default (~75ms per clip)
-    engine = os.environ.get("CLIPFORGE_VISION_ENGINE", "opencv").lower()
+    engine = os.environ.get("CLIPIT_VISION_ENGINE", "opencv").lower()
     analysis: Optional[Dict[str, Any]] = None
 
     if engine == "gemini":

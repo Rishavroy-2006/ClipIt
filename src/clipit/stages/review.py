@@ -3,15 +3,15 @@
 import json
 from pathlib import Path
 from typing import List, Dict, Any
-from clipforge.cache import CacheManager
-from clipforge.models import ClipItem
+from clipit.cache import CacheManager
+from clipit.models import ClipItem
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, shrink-to-fit=no" />
-  <title>ClipForge Review - {{ video_id }}</title>
+  <title>ClipIt Review - {{ video_id }}</title>
   <style>
     :root {
       --bg: #0f1117;
@@ -304,7 +304,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
   <header>
-    <h1><span>🎬</span> ClipForge Review Dashboard</h1>
+    <h1><span>🎬</span> ClipIt Review Dashboard</h1>
     <span class="badge">{{ video_id }}</span>
     <div class="header-actions">
       <button class="btn-export" onclick="exportApproved()">Export Approved Clips</button>

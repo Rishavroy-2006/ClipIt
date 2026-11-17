@@ -1,8 +1,8 @@
 """Refine stage: Boundary snapping to word timestamps, length enforcement, de-repetition, and deduplication."""
 
 from typing import List
-from clipforge.cache import CacheManager
-from clipforge.models import FullTranscript, ClipItem
+from clipit.cache import CacheManager
+from clipit.models import FullTranscript, ClipItem
 
 
 def snap_boundaries_to_words(

@@ -1,6 +1,6 @@
-# ClipForge: Build Plan for Claude Code
+# ClipIt: Build Plan for Claude Code
 
-Working name: **ClipForge** (rename freely). Put this file in an empty project folder and start with: "Read PLAN.md fully, then begin with Milestone 0."
+Working name: **ClipIt** (rename freely). Put this file in an empty project folder and start with: "Read PLAN.md fully, then begin with Milestone 0."
 
 ---
 
@@ -108,7 +108,7 @@ From one trial on a 10-minute clip of an iShowSpeed stream reacting to the GTA 6
  [9 review.html] -> approve / reject / edit titles -> export.json
 ```
 
-Every stage reads and writes JSON on disk under `cache/<video_id>/`, is idempotent, and skips work if its inputs are unchanged (hash-based). Any stage can be re-run alone: `clipforge run --from select`.
+Every stage reads and writes JSON on disk under `cache/<video_id>/`, is idempotent, and skips work if its inputs are unchanged (hash-based). Any stage can be re-run alone: `clipit run --from select`.
 
 ---
 
@@ -234,12 +234,12 @@ Use strict validation: `why_viral` must be at least 20 words minimum 1 sentence;
 ## 8. CLI and config
 
 ```
-clipforge run <url|file> [--target-clips 10] [--min-score 70] [--layout auto]
+clipit run <url|file> [--target-clips 10] [--min-score 70] [--layout auto]
                          [--selector api|file] [--from <stage>] [--start HH:MM:SS --end HH:MM:SS]
                          [--style bold-yellow] [--censor-captions] [--profile <streamer>]
-clipforge review <video_id>      # build/open review.html
-clipforge clean  <video_id>      # delete cached video, keep JSON
-clipforge cost   <video_id>      # token and time report
+clipit review <video_id>      # build/open review.html
+clipit clean  <video_id>      # delete cached video, keep JSON
+clipit cost   <video_id>      # token and time report
 ```
 `config.yaml` holds defaults: length bounds, signal weights, models, concurrency, style, safe zones, paths. Everything overridable by CLI flags.
 
@@ -248,9 +248,9 @@ clipforge cost   <video_id>      # token and time report
 ## 9. Suggested repo layout
 
 ```
-clipforge/
+clipit/
   pyproject.toml  README.md  PLAN.md  DECISIONS.md  LOG.md  .env.example  config.yaml
-  src/clipforge/
+  src/clipit/
     cli.py  config.py  cache.py  models.py
     stages/ ingest.py transcribe.py signals.py candidates.py select.py refine.py layout.py captions.py render.py review.py
     llm/ selector_api.py selector_file.py prompts.py
@@ -264,7 +264,7 @@ clipforge/
 
 **Launch-week fast path = M0 to M3.** The user needs usable clips within the first session or two. Get a working end-to-end version first, then improve.
 
-- **M0 Environment:** verify tools, create venv, `clipforge --help` works, ffmpeg has libass and videotoolbox. *Accept:* a script prints versions and free disk space.
+- **M0 Environment:** verify tools, create venv, `clipit --help` works, ffmpeg has libass and videotoolbox. *Accept:* a script prints versions and free disk space.
 - **M1 Ingest + transcribe:** download or read a file, produce `transcript.json` with word timestamps. Benchmark speed. *Accept:* 10-minute sample transcribes; timing logged; glossary effect checked.
 - **M2 Select (file and api modes):** prompts, schema validation, merge of chunks. *Accept:* 10-minute sample yields clips with specific `why_viral`, valid JSON, no overlaps.
 - **M3 Render MVP:** cut, `blur-fill` layout, word-by-word captions, 1080x1920 output, `review.html`. *Accept:* 3 clips play correctly, captions in sync, audio normalized, no black bars or clicks. **This is the launch-week tool.**
@@ -296,7 +296,7 @@ clipforge/
 ## 12. Token and usage budget
 
 - Building this project consumes the user's Claude Code allowance (shared with chat; five-hour and weekly limits). Check `/usage` regularly; keep tool output short, avoid dumping big files into context, and work in small, testable steps.
-- Running the tool: `file` mode uses subscription usage; `api` mode bills per token. Make `clipforge cost` accurate so the user can decide.
+- Running the tool: `file` mode uses subscription usage; `api` mode bills per token. Make `clipit cost` accurate so the user can decide.
 - Cache aggressively so re-selection never repeats the transcription or download.
 
 ---

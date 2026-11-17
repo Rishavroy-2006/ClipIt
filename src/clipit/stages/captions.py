@@ -4,11 +4,11 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import yaml
-from clipforge.models import FullTranscript, ClipItem, WordTimestamp
+from clipit.models import FullTranscript, ClipItem, WordTimestamp
 
 
 DEFAULT_ASS_HEADER = """[Script Info]
-Title: ClipForge Subtitles
+Title: ClipIt Subtitles
 ScriptType: v4.00+
 WrapStyle: 2
 ScaledBorderAndShadow: yes

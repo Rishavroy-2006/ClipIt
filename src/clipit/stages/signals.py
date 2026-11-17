@@ -4,9 +4,9 @@ import math
 import numpy as np
 import scipy.io.wavfile as wavfile
 from typing import Dict, Any, List, Optional, Tuple
-from clipforge.cache import CacheManager
-from clipforge.config import SignalConfig
-from clipforge.models import FullTranscript
+from clipit.cache import CacheManager
+from clipit.config import SignalConfig
+from clipit.models import FullTranscript
 
 
 GAMING_KEYWORDS = [

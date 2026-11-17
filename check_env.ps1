@@ -1,5 +1,5 @@
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "   ClipForge Windows Environment Check    " -ForegroundColor Cyan
+Write-Host "   ClipIt Windows Environment Check    " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -27,13 +27,13 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
 }
 
 Write-Host ""
-Write-Host "Running ClipForge Diagnostics..." -ForegroundColor Cyan
+Write-Host "Running ClipIt Diagnostics..." -ForegroundColor Cyan
 
-if (Test-Path ".\.venv\Scripts\clipforge.exe") {
-    & ".\.venv\Scripts\clipforge.exe" check
+if (Test-Path ".\.venv\Scripts\clipit.exe") {
+    & ".\.venv\Scripts\clipit.exe" check
 } else {
     try {
-        python -m clipforge check
+        python -m clipit check
     } catch {
         Write-Host "Virtual environment not initialized. Run: python -m venv .venv; .\.venv\Scripts\Activate.ps1; pip install -e ." -ForegroundColor Yellow
     }

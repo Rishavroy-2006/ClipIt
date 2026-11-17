@@ -1,5 +1,5 @@
 [project]
-name = "clipforge"
+name = "clipit"
 version = "0.1.0"
 description = "Local AI gaming video clipping tool for YouTube Shorts, Reels, and TikTok"
 readme = "README.md"
@@ -26,7 +26,7 @@ llm = [
 ]
 
 [project.scripts]
-clipforge = "clipforge.cli:app"
+clipit = "clipit.cli:app"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,4 +1,4 @@
-"""ClipForge Web Studio: High-performance Threading HTTP Server with HTTP 206 Video Streaming,
+"""ClipIt Web Studio: High-performance Threading HTTP Server with HTTP 206 Video Streaming,
 REST APIs, and Server-Sent Events (SSE) Live Multi-Agent Workflow Simulation.
 """
 
@@ -17,19 +17,19 @@ from http import HTTPStatus
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from typing import Dict, Any, Optional, List
 
-from clipforge.cache import CacheManager, get_video_id
-from clipforge.config import load_config
-from clipforge.stages.ingest import run_ingest
-from clipforge.stages.transcribe import run_transcribe
-from clipforge.stages.signals import run_signals
-from clipforge.stages.candidates import run_candidates
-from clipforge.stages.select import run_select
-from clipforge.stages.refine import run_refine
-from clipforge.models import ClipItem, FullTranscript
-from clipforge.stages.render import run_render, render_single_clip, render_variant_file
-from clipforge.stages.review import generate_review_html, run_quality_sentinel
-from clipforge.stages.export import run_export
-from clipforge.stages.vision_reframing import analyze_clip_vision
+from clipit.cache import CacheManager, get_video_id
+from clipit.config import load_config
+from clipit.stages.ingest import run_ingest
+from clipit.stages.transcribe import run_transcribe
+from clipit.stages.signals import run_signals
+from clipit.stages.candidates import run_candidates
+from clipit.stages.select import run_select
+from clipit.stages.refine import run_refine
+from clipit.models import ClipItem, FullTranscript
+from clipit.stages.render import run_render, render_single_clip, render_variant_file
+from clipit.stages.review import generate_review_html, run_quality_sentinel
+from clipit.stages.export import run_export
+from clipit.stages.vision_reframing import analyze_clip_vision
 
 # Workspace Root
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -46,7 +46,7 @@ session_lock = threading.Lock()
 class RangeRequestHandler(BaseHTTPRequestHandler):
     """Custom HTTP request handler with HTTP 206 Partial Content video streaming and SSE."""
 
-    server_version = "ClipForgeServer/1.0"
+    server_version = "ClipItServer/1.0"
 
     def do_OPTIONS(self):
         """Handle CORS preflight requests."""
@@ -376,7 +376,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            from clipforge.stages.export import run_export
+            from clipit.stages.export import run_export
             dest_dir = run_export(video_id=video_id, out_dir_base=ROOT_DIR / "ready_to_post")
             files = [f.name for f in dest_dir.glob("*.mp4")]
             self.send_json({
@@ -761,7 +761,7 @@ def run_agent_pipeline_worker(
         {
             "id": "export",
             "name": "Publishing Packager Agent",
-            "badge": "ClipForge Review & Quality Sentinel",
+            "badge": "ClipIt Review & Quality Sentinel",
             "role": "Viral Renaming, Copy Pack & CSV Staging",
             "desc": "Staging ready-to-post MP4s, schedule CSV, quality sentinel report, and 1-click publishing pack.",
         },
@@ -899,7 +899,7 @@ def run_agent_pipeline_worker(
         )
         # Fallback if refined_clips empty
         if not refined_clips and candidates:
-            from clipforge.models import ClipItem
+            from clipit.models import ClipItem
             fallback_slice = candidates[:29] if target_clips <= 0 else candidates[:target_clips]
             for i, cand in enumerate(fallback_slice):
                 c_start = getattr(cand, "start", 0.0) if not isinstance(cand, dict) else cand.get("start", 0.0)
@@ -941,7 +941,7 @@ def run_agent_pipeline_worker(
         emit_stage_start(7, st7)
         active_codec = getattr(config.video, "draft_codec", "auto")
         if active_codec == "auto":
-            from clipforge.config import get_available_encoder
+            from clipit.config import get_available_encoder
             active_codec = get_available_encoder()
         emit_log("render", f"[RENDER] Initializing hardware encoder ({active_codec})...")
         emit_log("render", "[RENDER] Rendering 3 vertical layouts per clip with kinetic bouncing captions...")
@@ -1004,20 +1004,20 @@ def run_agent_pipeline_worker(
         q.put(None)  # Sentinel to close SSE
 
 
-class ClipForgeHTTPServer(ThreadingHTTPServer):
+class ClipItHTTPServer(ThreadingHTTPServer):
     """Threaded HTTP server with immediate address reuse and daemon threads."""
     allow_reuse_address = True
     daemon_threads = True
 
 
 def start_server(port: int = 8765, open_browser: bool = True):
-    """Start ClipForge Studio Web Server."""
+    """Start ClipIt Studio Web Server."""
     server_address = ("0.0.0.0", port)
-    httpd = ClipForgeHTTPServer(server_address, RangeRequestHandler)
+    httpd = ClipItHTTPServer(server_address, RangeRequestHandler)
     url = f"http://127.0.0.1:{port}"
 
     print(f"\n" + "=" * 70)
-    print(f" 🚀 ClipForge Studio Web Server Running at: {url}")
+    print(f" 🚀 ClipIt Studio Web Server Running at: {url}")
     print(f" Press Ctrl+C to stop.")
     print("=" * 70 + "\n")
 
@@ -1031,7 +1031,7 @@ def start_server(port: int = 8765, open_browser: bool = True):
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopping ClipForge Studio server...")
+        print("\nStopping ClipIt Studio server...")
         httpd.server_close()
 
 

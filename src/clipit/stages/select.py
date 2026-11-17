@@ -3,10 +3,10 @@
 import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from clipforge.cache import CacheManager
-from clipforge.models import FullTranscript, CandidateWindow, ClipItem
-from clipforge.llm.prompts import SYSTEM_PROMPT, build_selection_prompt
-from clipforge.llm.selector_api import select_clips_with_gemini, get_api_key
+from clipit.cache import CacheManager
+from clipit.models import FullTranscript, CandidateWindow, ClipItem
+from clipit.llm.prompts import SYSTEM_PROMPT, build_selection_prompt
+from clipit.llm.selector_api import select_clips_with_gemini, get_api_key
 
 
 def run_select(

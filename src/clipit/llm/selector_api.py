@@ -7,8 +7,8 @@ import time
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from pydantic import ValidationError
-from clipforge.models import ClipItem, CandidateWindow, FullTranscript
-from clipforge.llm.prompts import SYSTEM_PROMPT, build_selection_prompt
+from clipit.models import ClipItem, CandidateWindow, FullTranscript
+from clipit.llm.prompts import SYSTEM_PROMPT, build_selection_prompt
 
 try:
     from google import genai

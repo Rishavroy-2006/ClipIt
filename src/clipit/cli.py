@@ -1,4 +1,4 @@
-"""Command Line Interface for ClipForge using Typer and Rich."""
+"""Command Line Interface for ClipIt using Typer and Rich."""
 
 import sys
 import shutil
@@ -10,21 +10,21 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from clipforge.config import load_config
-from clipforge.cache import CacheManager, get_video_id
-from clipforge.stages.ingest import run_ingest
-from clipforge.stages.transcribe import run_transcribe
-from clipforge.stages.signals import run_signals
-from clipforge.stages.candidates import run_candidates
-from clipforge.stages.select import run_select
-from clipforge.stages.refine import run_refine
-from clipforge.stages.render import run_render
-from clipforge.stages.review import generate_review_html
-from clipforge.stages.export import run_export
+from clipit.config import load_config
+from clipit.cache import CacheManager, get_video_id
+from clipit.stages.ingest import run_ingest
+from clipit.stages.transcribe import run_transcribe
+from clipit.stages.signals import run_signals
+from clipit.stages.candidates import run_candidates
+from clipit.stages.select import run_select
+from clipit.stages.refine import run_refine
+from clipit.stages.render import run_render
+from clipit.stages.review import generate_review_html
+from clipit.stages.export import run_export
 
 app = typer.Typer(
-    name="clipforge",
-    help="ClipForge: Local AI video clipping tool for YouTube Shorts, Reels, and TikTok",
+    name="clipit",
+    help="ClipIt: Local AI video clipping tool for YouTube Shorts, Reels, and TikTok",
     add_completion=False,
 )
 console = Console()
@@ -36,7 +36,7 @@ def check():
     import os
     import platform
 
-    console.print(Panel.fit("[bold cyan]ClipForge Environment Check[/bold cyan]"))
+    console.print(Panel.fit("[bold cyan]ClipIt Environment Check[/bold cyan]"))
 
     table = Table(title="Hardware & Media Engine Status")
     table.add_column("Component", style="bold")
@@ -166,13 +166,13 @@ def run(
     censor_captions: bool = typer.Option(False, "--censor-captions", help="Censor profanity in subtitles"),
     profile: Optional[str] = typer.Option(None, "--profile", help="Streamer profile preset"),
 ):
-    """Run the complete ClipForge pipeline from video to rendered vertical clips."""
+    """Run the complete ClipIt pipeline from video to rendered vertical clips."""
     config = load_config()
     vid = get_video_id(url_or_file)
     cache = CacheManager(vid)
 
     console.print(Panel(
-        f"[bold cyan]ClipForge Execution Pipeline[/bold cyan]\n"
+        f"[bold cyan]ClipIt Execution Pipeline[/bold cyan]\n"
         f"Source: [white]{url_or_file}[/white]\n"
         f"Video ID: [green]{vid}[/green] | Selector Mode: [yellow]{selector}[/yellow] | Layout: [magenta]{layout}[/magenta]",
         expand=False
@@ -254,8 +254,8 @@ def run(
         f"[bold green]✨ Processing Complete![/bold green]\n\n"
         f"Clips Directory: [link=file://{out_dir.resolve()}]{out_dir}[/link]\n"
         f"Review Dashboard: [link=file://{review_path.resolve()}]{review_path}[/link]\n\n"
-        f"[dim]Run 'clipforge review {vid}' anytime to open the review dashboard.[/dim]",
-        title="ClipForge Ready",
+        f"[dim]Run 'clipit review {vid}' anytime to open the review dashboard.[/dim]",
+        title="ClipIt Ready",
         border_style="green",
     ))
 
@@ -280,7 +280,7 @@ def export(
             f"📄 Copy-Paste Pack: [link=file://{pack_txt.resolve()}]{pack_txt}[/link]\n"
             f"📊 Schedule CSV: [link=file://{csv_file.resolve()}]{csv_file}[/link]\n\n"
             f"[dim]The videos have been renamed with viral slugs and titles ready for upload.[/dim]",
-            title="ClipForge Export Ready",
+            title="ClipIt Export Ready",
             border_style="green",
         ))
     except Exception as e:
@@ -327,8 +327,8 @@ def serve(
     port: int = typer.Option(8765, "--port", "-p", help="Port to run the studio server on"),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open browser on startup"),
 ):
-    """Launch the ClipForge AI Studio interactive web application."""
-    from clipforge.web.server import start_server
+    """Launch the ClipIt AI Studio interactive web application."""
+    from clipit.web.server import start_server
     start_server(port=port, open_browser=open_browser)
 
 
@@ -337,8 +337,8 @@ def studio(
     port: int = typer.Option(8765, "--port", "-p", help="Port to run the studio server on"),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Open browser on startup"),
 ):
-    """Alias for 'serve': Launch the ClipForge AI Studio interactive web application."""
-    from clipforge.web.server import start_server
+    """Alias for 'serve': Launch the ClipIt AI Studio interactive web application."""
+    from clipit.web.server import start_server
     start_server(port=port, open_browser=open_browser)
 
 

@@ -1,6 +1,6 @@
 @echo off
 echo ==========================================
-echo    ClipForge Windows Environment Check
+echo    ClipIt Windows Environment Check
 echo ==========================================
 echo.
 
@@ -27,11 +27,11 @@ if %ERRORLEVEL% equ 0 (
 )
 
 echo.
-echo Running ClipForge Diagnostics...
-if exist ".venv\Scripts\clipforge.exe" (
-    ".venv\Scripts\clipforge.exe" check
+echo Running ClipIt Diagnostics...
+if exist ".venv\Scripts\clipit.exe" (
+    ".venv\Scripts\clipit.exe" check
 ) else (
-    python -m clipforge check 2>nul || python -m clipforge.cli check 2>nul || echo Please create and activate your virtual environment: python -m venv .venv ^&^& .venv\Scripts\activate ^&^& pip install -e .
+    python -m clipit check 2>nul || python -m clipit.cli check 2>nul || echo Please create and activate your virtual environment: python -m venv .venv ^&^& .venv\Scripts\activate ^&^& pip install -e .
 )
 
 echo.

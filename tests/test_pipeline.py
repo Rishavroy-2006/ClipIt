@@ -1,9 +1,9 @@
-"""Unit tests for ClipForge models, refine, deduplication, and captions."""
+"""Unit tests for ClipIt models, refine, deduplication, and captions."""
 
 from pathlib import Path
-from clipforge.models import FullTranscript, TranscriptSegment, WordTimestamp, ClipItem, CandidateWindow
-from clipforge.stages.refine import deduplicate_clips, snap_boundaries_to_words
-from clipforge.stages.captions import generate_clip_ass, format_ass_time
+from clipit.models import FullTranscript, TranscriptSegment, WordTimestamp, ClipItem, CandidateWindow
+from clipit.stages.refine import deduplicate_clips, snap_boundaries_to_words
+from clipit.stages.captions import generate_clip_ass, format_ass_time
 
 
 def test_ass_time_formatting():
@@ -81,7 +81,7 @@ def test_caption_ass_generation(tmp_path: Path):
 
 
 def test_emoji_sanitization():
-    from clipforge.stages.captions import strip_unsupported_ass_chars
+    from clipit.stages.captions import strip_unsupported_ass_chars
     raw = "Oh my god! I'm in the game! 🎮🔥💀"
     cleaned = strip_unsupported_ass_chars(raw)
     assert cleaned == "Oh my god! I'm in the game!"
@@ -90,7 +90,7 @@ def test_emoji_sanitization():
 
 
 def test_stack_filter_generation():
-    from clipforge.stages.layout import build_reference_stack_filter, get_layout_filter
+    from clipit.stages.layout import build_reference_stack_filter, get_layout_filter
     vision_info = {
         "streamer_box": [500, 0, 1000, 400],
         "content_focus": [100, 500, 800, 950],
@@ -127,7 +127,7 @@ def test_stack_filter_generation():
 
 
 def test_variant_filter_generation():
-    from clipforge.stages.layout import (
+    from clipit.stages.layout import (
         build_blur_fill_filter,
         build_reframed_crop_filter,
         get_layout_filter,
@@ -182,8 +182,8 @@ def test_variant_filter_generation():
 
 
 def test_model_chain_ordering():
-    from clipforge.llm.selector_api import DEFAULT_MODEL_CHAIN
-    from clipforge.stages.vision_reframing import FALLBACK_MODELS
+    from clipit.llm.selector_api import DEFAULT_MODEL_CHAIN
+    from clipit.stages.vision_reframing import FALLBACK_MODELS
 
     expected_order = [
         "gemini-3.8-flash",
@@ -226,8 +226,8 @@ def test_bouncing_caption_scale_tags(tmp_path: Path):
 
 
 def test_quality_sentinel(tmp_path: Path):
-    from clipforge.cache import CacheManager
-    from clipforge.stages.review import run_quality_sentinel
+    from clipit.cache import CacheManager
+    from clipit.stages.review import run_quality_sentinel
 
     cache = CacheManager(base_dir=tmp_path, video_id="test_vid")
     clip = ClipItem(

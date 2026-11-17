@@ -1,4 +1,4 @@
-"""Configuration loader and schema for ClipForge."""
+"""Configuration loader and schema for ClipIt."""
 
 import os
 from pathlib import Path

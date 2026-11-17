@@ -1,4 +1,4 @@
-# ClipForge Studio: Design Notes
+# ClipIt Studio: Design Notes
 
 **Concept:** a film cutting room for stream clippers. Cobalt film stock, a lemon "tape label" accent, and a signal-ridge backdrop that reads as audio energy over time, the same signal the agents hunt for viral peaks.
 

@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Optional, Dict, Any, List
-from clipforge.cache import CacheManager
+from clipit.cache import CacheManager
 
 
 def parse_youtube_live_chat(chat_file: Path) -> List[Dict[str, Any]]:

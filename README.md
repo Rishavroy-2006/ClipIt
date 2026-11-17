@@ -1,6 +1,6 @@
-# ClipForge Studio 🎬⚡
+# ClipIt Studio 🎬⚡
 
-**ClipForge** is a local-first, privacy-conscious AI video clipping engine and Web Studio. It transforms raw 2–12 hour gaming streams and long VODs (via YouTube link or local MP4) into high-energy, ready-to-publish vertical 9:16 clips for **YouTube Shorts**, **TikTok**, and **Instagram Reels** with zero minute quotas and zero cloud render fees.
+**ClipIt** is a local-first, privacy-conscious AI video clipping engine and Web Studio. It transforms raw 2–12 hour gaming streams and long VODs (via YouTube link or local MP4) into high-energy, ready-to-publish vertical 9:16 clips for **YouTube Shorts**, **TikTok**, and **Instagram Reels** with zero minute quotas and zero cloud render fees.
 
 Works on **macOS (Apple Silicon Metal)** and **Windows (NVIDIA NVENC / AMD / Intel / CPU)**.
 
@@ -19,7 +19,7 @@ Works on **macOS (Apple Silicon Metal)** and **Windows (NVIDIA NVENC / AMD / Int
   2. **Reference Letterbox / Blur-Fill**: 16:9 stream centered with dynamic blurred background and bold 3-line top hook headline.
   3. **Content Deframed 9:16**: Full-bleed vertical action crop focused on gameplay.
 * **Kinetic Word-by-Word Subtitles**: High-impact ASS subtitles with color pops and auto-emojis (💀, 😭, 😱, 🔥, 🏆, 🚗).
-* **ClipForge Web Studio**: Built-in zero-build interactive web app (`clipforge serve --port 8765`) with live pipeline visualization, deep linking, 9:16 vertical crop adjustments, and one-click publishing.
+* **ClipIt Web Studio**: Built-in zero-build interactive web app (`clipit serve --port 8765`) with live pipeline visualization, deep linking, 9:16 vertical crop adjustments, and one-click publishing.
 * **Full AI Agent Context**: Pre-configured [docs/.agents](file:///docs/.agents) / [docs/AGENTS.md](file:///docs/AGENTS.md) guide so any AI assistant (Cursor, Windsurf, Claude Code, Antigravity) can maintain, run, and extend all tools.
 
 ---
@@ -52,7 +52,7 @@ source .venv/bin/activate
 # python -m venv .venv
 # .\.venv\Scripts\Activate.ps1
 
-# Install ClipForge in editable mode
+# Install ClipIt in editable mode
 pip install -e .
 ```
 
@@ -60,7 +60,7 @@ pip install -e .
 
 ```bash
 # Universal environment & hardware check (macOS & Windows)
-clipforge check
+clipit check
 
 # Or use platform scripts:
 # macOS: ./check_env.sh
@@ -69,12 +69,12 @@ clipforge check
 
 ---
 
-## 🖥️ ClipForge Studio (Web UI)
+## 🖥️ ClipIt Studio (Web UI)
 
 Launch the interactive studio dashboard in your browser:
 
 ```bash
-clipforge serve --port 8765
+clipit serve --port 8765
 ```
 
 Navigate to `http://localhost:8765`:
@@ -90,23 +90,23 @@ You can also run everything headlessly from the command line:
 
 ```bash
 # 1. Full Autonomous Run
-clipforge run "https://youtu.be/E07OTlhncP0" --target auto --style bold-yellow --profile ishowspeed
+clipit run "https://youtu.be/E07OTlhncP0" --target auto --style bold-yellow --profile ishowspeed
 
 # 2. Granular Stage Execution
-clipforge ingest "https://youtu.be/E07OTlhncP0"
-clipforge transcribe cache/yt_E07OTlhncP0
-clipforge signals cache/yt_E07OTlhncP0
-clipforge candidates cache/yt_E07OTlhncP0
-clipforge select cache/yt_E07OTlhncP0 --target auto
-clipforge render cache/yt_E07OTlhncP0 --style bold-yellow
-clipforge export cache/yt_E07OTlhncP0
+clipit ingest "https://youtu.be/E07OTlhncP0"
+clipit transcribe cache/yt_E07OTlhncP0
+clipit signals cache/yt_E07OTlhncP0
+clipit candidates cache/yt_E07OTlhncP0
+clipit select cache/yt_E07OTlhncP0 --target auto
+clipit render cache/yt_E07OTlhncP0 --style bold-yellow
+clipit export cache/yt_E07OTlhncP0
 ```
 
 ---
 
 ## 📁 Publishing Output (`ready_to_post/`)
 
-When clips are exported, ClipForge organizes everything in `ready_to_post/<video_id>/`:
+When clips are exported, ClipIt organizes everything in `ready_to_post/<video_id>/`:
 * Final `.mp4` video files organized with viral titles and variant suffixes.
 * `copy_paste_pack.txt`: Ready-to-use YouTube Shorts / TikTok titles, descriptions, hashtags, and viral hooks.
 * `schedule.csv`: Structured publishing schedule spreadsheet for social media planners.
