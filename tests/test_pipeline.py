@@ -392,5 +392,16 @@ def test_storage_breakdown_and_bulk_deletion(tmp_path):
     assert not (p_out / "c02.mp4").exists()
 
 
+def test_get_source_stream_starts():
+    from clipit.stages.render import get_source_stream_starts
+    sample_mp4 = Path("tests/fixtures/sample.mp4")
+    v_st, a_st = get_source_stream_starts(sample_mp4)
+    assert isinstance(v_st, float)
+    assert isinstance(a_st, float)
+    assert v_st >= 0.0
+    assert a_st >= 0.0
+
+
+
 
 
