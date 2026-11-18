@@ -12,6 +12,42 @@ from clipit.stages.captions import generate_clip_ass
 from clipit.stages.vision_reframing import analyze_clip_vision
 
 
+def get_source_audio_start(source_video: Path) -> float:
+    """Get the audio stream start_time offset in seconds from the container.
+
+    In live stream chunks (HLS / MPEG-TS), containers have non-zero presentation timestamps (PTS).
+    When audio.wav is extracted, its samples start at t=0, which corresponds to the first audio packet's
+    PTS (audio_start). To keep video, audio, and ASS subtitles in 100% microsecond sync during render
+    with -copyts, trimming inside filtergraphs must start at (clip.start + audio_start).
+    """
+    try:
+        import json as _json
+        cmd = [
+            "ffprobe", "-v", "error",
+            "-show_entries", "stream=codec_type,start_time",
+            "-show_entries", "format=start_time",
+            "-of", "json",
+            str(source_video.resolve())
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = _json.loads(res.stdout)
+        for s in data.get("streams", []):
+            if s.get("codec_type") == "audio" and s.get("start_time") is not None:
+                try:
+                    return float(s["start_time"])
+                except (ValueError, TypeError):
+                    pass
+        fmt_st = data.get("format", {}).get("start_time")
+        if fmt_st is not None:
+            try:
+                return float(fmt_st)
+            except (ValueError, TypeError):
+                pass
+    except Exception:
+        pass
+    return 0.0
+
+
 def render_variant_file(
     clip: ClipItem,
     source_video: Path,
@@ -96,18 +132,18 @@ def render_variant_file(
 
     clip_dur = max(0.1, clip.end - clip.start)
 
-    # Input seeking with -copyts preserves container presentation timestamps (PTS)
-    # Fast seek seeks to nearest keyframe before clip.start (~5s buffer for decoder warmup).
-    # -copyts ensures video and audio retain identical absolute container timestamps.
-    # Trimming with absolute clip.start inside filtergraph guarantees:
-    # 1. 100% microsecond lockstep A/V synchronization (zero drift, zero keyframe skew)
-    # 2. Perfect word-by-word subtitle synchronization (burned at exact PTS=0 relative to clip cut)
-    fast_seek = max(0.0, clip.start - 5.0)
+    # Input seeking with -copyts preserves container presentation timestamps (PTS).
+    # Live stream chunks (HLS / MPEG-TS) have non-zero container PTS (e.g. audio_start = 1.400s).
+    # Since audio.wav was extracted starting at sample 0 (at PTS audio_start), clip.start is relative to audio_start.
+    # Therefore, absolute container PTS to cut at is (clip.start + audio_start).
+    audio_start = get_source_audio_start(source_video)
+    target_pts = clip.start + audio_start
+    fast_seek = max(0.0, target_pts - 5.0)
 
     # Force 1:1 square pixel aspect ratio via setsar=1 to avoid anamorphic container flags
     filter_complex = (
         f"{layout_filter};"
-        f"[base]trim=start={clip.start:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
+        f"[base]trim=start={target_pts:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
         f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v]"
     )
 
@@ -132,7 +168,7 @@ def render_variant_file(
         cmd.extend(["-crf", str(video_config.crf), "-preset", "fast"])
 
     audio_filter = (
-        f"atrim=start={clip.start:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,"
+        f"atrim=start={target_pts:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,"
         f"aresample=async=1:first_pts=0,"
         f"highpass=f=80,equalizer=f=3000:t=q:w=1.5:g=2.5,"
         f"acompressor=threshold=-18dB:ratio=3:attack=10:release=120:makeup=2dB,"
