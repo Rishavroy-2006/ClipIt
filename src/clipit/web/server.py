@@ -140,6 +140,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_approve_clip(data)
         elif path == "/api/export":
             return self.handle_export(data)
+        elif path == "/api/export-single-clip":
+            return self.handle_export_single_clip(data)
         elif path == "/api/delete-project":
             return self.handle_delete_project(data)
         elif path == "/api/delete-clip":
@@ -807,6 +809,78 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             })
         except Exception as e:
             self.send_json({"success": False, "error": str(e)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    def handle_export_single_clip(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        clip_id = data.get("clip_id")
+        filename = data.get("filename")  # e.g. pt01_c04.mp4 or pt01_c04_blur.mp4
+        title = data.get("title", "")
+        publishing_text = data.get("publishing_text", "")
+
+        if not video_id or not filename:
+            self.send_error(HTTPStatus.BAD_REQUEST, "Missing video_id or filename")
+            return
+
+        out_v = OUT_DIR / video_id
+        cache_v = CACHE_DIR / video_id
+
+        # 1. Locate the video file
+        candidate_paths = [
+            out_v / filename,
+            READY_DIR / video_id / filename,
+            cache_v / filename,
+        ]
+        if out_v.exists():
+            for pdir in sorted(out_v.glob("part_*")):
+                candidate_paths.append(pdir / filename)
+        if CACHE_DIR.exists():
+            for cdir in sorted(CACHE_DIR.glob(f"{video_id}_pt*")):
+                candidate_paths.append(cdir / filename)
+
+        target_video = next((p for p in candidate_paths if p.exists() and p.is_file()), None)
+        if not target_video:
+            self.send_error(HTTPStatus.NOT_FOUND, f"Video file not found: {filename}")
+            return
+
+        # 2. Target Downloads folder
+        downloads_dir = Path.home() / "Downloads"
+        try:
+            downloads_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+
+        # 3. Clean filenames for download
+        clean_title = re.sub(r"[^\w\-_\. ]", "", title).strip() or Path(filename).stem
+        clean_title = re.sub(r"\s+", "_", clean_title)
+
+        var_suffix = ""
+        if "_blur" in filename:
+            var_suffix = "_Letterbox"
+        elif "_reframed" in filename:
+            var_suffix = "_Deframed"
+
+        base_stem = f"{clean_title}{var_suffix}"
+        dest_video = downloads_dir / f"{base_stem}.mp4"
+        dest_txt = downloads_dir / f"{base_stem}_publishing_pack.txt"
+
+        import shutil
+        try:
+            shutil.copy2(target_video, dest_video)
+            with open(dest_txt, "w", encoding="utf-8") as f:
+                f.write(publishing_text.strip() + "\n")
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+            return
+
+        self.send_json({
+            "success": True,
+            "video_path": str(dest_video),
+            "txt_path": str(dest_txt),
+            "video_name": dest_video.name,
+            "txt_name": dest_txt.name,
+            "downloads_dir": str(downloads_dir),
+            "download_url": f"/api/download/{video_id}/{filename}",
+        })
 
     def handle_rerender_clip(self, data: Dict[str, Any]):
         video_id = data.get("video_id")
@@ -1560,10 +1634,20 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 pass
 
     def handle_download_video(self, video_id: str, filename: str):
+        out_v = OUT_DIR / video_id
+        cache_v = CACHE_DIR / video_id
         candidate_paths = [
-            OUT_DIR / video_id / filename,
+            out_v / filename,
             READY_DIR / video_id / filename,
+            cache_v / filename,
         ]
+        if out_v.exists():
+            for pdir in sorted(out_v.glob("part_*")):
+                candidate_paths.append(pdir / filename)
+        if CACHE_DIR.exists():
+            for cdir in sorted(CACHE_DIR.glob(f"{video_id}_pt*")):
+                candidate_paths.append(cdir / filename)
+
         target = next((p for p in candidate_paths if p.exists() and p.is_file()), None)
         if not target:
             self.send_error(HTTPStatus.NOT_FOUND, f"File not found: {filename}")

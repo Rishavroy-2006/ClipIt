@@ -1990,7 +1990,9 @@ function load(fresh) {
     vid.playbackRate = sp;
     if (was || fresh) vid.play().catch(() => {});
   };
+  S.currentVariant = v;
   $('#dl').href = `/api/download/${encodeURIComponent(S.vid)}/${encodeURIComponent(v.file)}`;
+  $('#dl').onclick = (e) => exportCurrentClip(e);
 }
 
 function inspect(c) {
@@ -2077,6 +2079,7 @@ function inspect(c) {
 
     <button class="wide" id="cropBtn" style="margin-top:10px;background:var(--ink);border:1px solid var(--lemon);color:var(--lemon);font-weight:700;">✂ Adjust Video Crop & Framing</button>
     <button class="wide" id="copy" style="margin-top:8px;">📋 Copy Description & Publishing Pack</button>
+    <button class="wide" id="exportCurrentClipBtn" style="margin-top:8px;background:linear-gradient(135deg, #2563eb, #1d4ed8);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,0.2);box-shadow:0 4px 12px rgba(37,99,235,0.3);">📥 Export This Clip & Text to Downloads</button>
     <div class="acts">
       <button class="ok ${c.status === 'approved' ? 'active' : ''}" id="ap">Approve [A]</button>
       <button class="no ${c.status === 'rejected' ? 'active' : ''}" id="rj">Reject [R]</button>
@@ -2140,6 +2143,8 @@ function inspect(c) {
 
   $('#cropBtn').onclick = () => openCropEditor(c);
   $('#copy').onclick = copyPack;
+  const expCur = $('#exportCurrentClipBtn');
+  if (expCur) expCur.onclick = (e) => exportCurrentClip(e);
   $('#ap').onclick = () => mark('approved');
   $('#rj').onclick = () => mark('rejected');
   $('#exp').onclick = exportAll;
@@ -2148,6 +2153,89 @@ function inspect(c) {
   if (delCurrent) {
     delCurrent.onclick = deleteCurrentClip;
   }
+}
+
+async function exportCurrentClip(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const c = S.clips[S.cur];
+  if (!c) return;
+
+  const v = S.currentVariant || (c.variants && c.variants[0]) || { file: `${c.id}.mp4`, label: 'Primary' };
+  const currentFile = v.file;
+
+  const cleanTitle = (c.title || c.hook || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '').trim();
+  const tags = (Array.isArray(c.tags) ? c.tags : String(c.tags || '').split(/\s+/)).filter(Boolean).map(t => t[0] === '#' ? t : '#' + t);
+  const tagStr = (tags.length ? tags : ['#gaming', '#shorts', '#viral', '#streamer', '#GTA6']).join(' ');
+  const streamerName = S.uploader || 'the original creator / streamer';
+
+  const disclaimer = [
+    '⚠️ Copyright Disclaimer & Credits:',
+    `All content, audio, and footage belong directly to ${streamerName}.`,
+    'I do not own, claim, or have any rights to this content or broadcast.',
+    'This video is clipped and shared solely for entertainment, commentary, and archival purposes under Fair Use.',
+    'If you are the copyright holder and wish for this clip to be removed, please contact me directly and it will be taken down immediately.'
+  ].join('\n');
+
+  const publishingText = [
+    `📌 TITLE (Copy-Paste into YouTube / TikTok):`,
+    `${cleanTitle}`,
+    '',
+    `📝 DESCRIPTION FOR POSTING:`,
+    `${cleanTitle} 🔥`,
+    '',
+    `${tagStr}`,
+    '',
+    `${disclaimer}`,
+    '',
+    `💡 WHY THIS GOES VIRAL:`,
+    `${c.why || 'High-energy emotional reaction with strong retention payoff.'}`,
+  ].join('\n');
+
+  try {
+    toast('Exporting video and publishing text to Downloads folder...');
+    const res = await post('/api/export-single-clip', {
+      video_id: S.vid,
+      clip_id: c.id,
+      filename: currentFile,
+      title: cleanTitle,
+      publishing_text: publishingText,
+    });
+
+    if (res.success) {
+      // Also trigger browser-side download so it appears in browser's Downloads bar/folder
+      triggerBrowserDownload(`/api/download/${encodeURIComponent(S.vid)}/${encodeURIComponent(currentFile)}`, res.video_name || currentFile);
+
+      const txtBlob = new Blob([publishingText], { type: 'text/plain;charset=utf-8' });
+      const txtUrl = URL.createObjectURL(txtBlob);
+      triggerBrowserDownload(txtUrl, res.txt_name || `${cleanTitle}_publishing_pack.txt`);
+      setTimeout(() => URL.revokeObjectURL(txtUrl), 5000);
+
+      toast(`✔ Saved "${res.video_name || currentFile}" + text to Downloads!`);
+    } else {
+      toast('Export failed: ' + (res.error || 'Unknown error'));
+    }
+  } catch (err) {
+    // Fallback to pure browser download if server endpoint errored
+    try {
+      triggerBrowserDownload(`/api/download/${encodeURIComponent(S.vid)}/${encodeURIComponent(currentFile)}`, currentFile);
+      const txtBlob = new Blob([publishingText], { type: 'text/plain;charset=utf-8' });
+      const txtUrl = URL.createObjectURL(txtBlob);
+      triggerBrowserDownload(txtUrl, `${cleanTitle}_publishing_pack.txt`);
+      setTimeout(() => URL.revokeObjectURL(txtUrl), 5000);
+      toast(`✔ Downloaded "${currentFile}" and text pack!`);
+    } catch (e2) {
+      toast('Export error: ' + err.message);
+    }
+  }
+}
+
+function triggerBrowserDownload(url, filename) {
+  const a = document.createElement('a');
+  a.href = url;
+  if (filename) a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 async function copyPack() {
