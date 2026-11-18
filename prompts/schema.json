@@ -107,6 +107,12 @@
       ],
       "title": "Source Permission",
       "type": "string"
+    },
+    "selector_engine": {
+      "default": "heuristic",
+      "description": "Model name or local-fallback",
+      "title": "Selector Engine",
+      "type": "string"
     }
   },
   "required": [

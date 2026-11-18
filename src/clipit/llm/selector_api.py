@@ -62,7 +62,7 @@ def select_clips_with_gemini(
         print("Warning: GEMINI_API_KEY not found in environment or .env.")
         return None
 
-    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=25000))
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=40000))
     models = model_chain or DEFAULT_MODEL_CHAIN
 
     # Build prompt input with targeted candidate transcript segments
@@ -103,12 +103,12 @@ def select_clips_with_gemini(
 
     # Strict maximum 30s overall deadline for Gemini API before auto-falling back
     start_time = time.time()
-    max_total_timeout = 30.0
+    max_total_timeout = 50.0
 
-    # Limit to top 2 model candidates, 1 attempt each to prevent any pipeline stall
-    for model_name in models[:2]:
+    # Try model chain candidates with short pause on transient 503 errors
+    for model_name in models[:4]:
         if time.time() - start_time > max_total_timeout:
-            print("Notice: Gemini API overall deadline reached (30s). Falling back to local heuristic selection.")
+            print("Notice: Gemini API overall deadline reached (50s). Falling back to local heuristic selection.")
             break
         try:
             print(f"Calling Gemini Director API ({model_name}, 25s timeout)...")
@@ -174,6 +174,7 @@ def select_clips_with_gemini(
                         item["source_permission"] = "clip-policy"
                     if "why_viral" not in item or len(str(item["why_viral"]).split()) < 5:
                         item["why_viral"] = "Strong emotional reaction with instant viewer hook and high short-form completion rate."
+                    item["selector_engine"] = model_name
                     clip = ClipItem(**item)
                     clips.append(clip)
                 except ValidationError as ve:
@@ -193,7 +194,10 @@ def select_clips_with_gemini(
                     return selected_clips
 
         except Exception as e:
-            print(f"Notice: Gemini API model {model_name} failed: {e}. Moving to next option...")
+            err_str = str(e)
+            print(f"Notice: Gemini API model {model_name} failed: {err_str[:120]}. Moving to next option...")
+            if "503" in err_str or "UNAVAILABLE" in err_str:
+                time.sleep(1.5)
 
     print("Gemini API models unavailable or timed out. Instantly falling back to local heuristic selection.")
     return None

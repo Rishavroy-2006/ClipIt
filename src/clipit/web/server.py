@@ -513,8 +513,25 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                             c_copy["variants"] = sc["variants"]
                         if "has_facecam" in sc:
                             c_copy["has_facecam"] = sc["has_facecam"]
+                        if "part" in sc and not c_copy.get("part"):
+                            c_copy["part"] = sc["part"]
+                        if "stream_window" in sc and not c_copy.get("stream_window"):
+                            c_copy["stream_window"] = sc["stream_window"]
+                        if "selector_engine" in sc and not c_copy.get("selector_engine"):
+                            c_copy["selector_engine"] = sc["selector_engine"]
                 except Exception:
                     pass
+
+            if not c_copy.get("selector_engine"):
+                if c_copy.get("score") == 65 or "audio loudness spike" in str(c_copy.get("why_viral", "")):
+                    c_copy["selector_engine"] = "local-fallback"
+                else:
+                    c_copy["selector_engine"] = "gemini-3.1-flash-lite"
+
+            if not c_copy.get("part") and cid and cid.startswith("pt"):
+                m = re.match(r"^pt0*(\d+)", cid)
+                if m:
+                    c_copy["part"] = f"Part {int(m.group(1))}"
 
             # If variants not in sidecar, check files on disk
             if "variants" not in c_copy or not c_copy["variants"]:

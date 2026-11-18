@@ -353,14 +353,15 @@ class LiveStreamMonitor:
             )
 
         # 5. Virality Selection
-        with console.status(f"[bold green]Selecting viral moments (AI/Heuristics)..."):
+        with console.status(f"[bold green]Selecting viral moments (AI Director)..."):
             raw_clips = run_select(
                 part_cache,
                 transcript,
                 candidates,
                 target_clips=self.target_clips + 2,
                 min_score=65,
-                selector_mode="file",
+                selector_mode="api",
+                force=True,
             )
 
         # 6. Boundary Refinement

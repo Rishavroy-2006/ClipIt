@@ -122,6 +122,7 @@ def run_select(
                 risk_flags=[],
                 layout="blur-fill",
                 source_permission="clip-policy",
+                selector_engine="local-fallback",
             )
             clips.append(clip)
 

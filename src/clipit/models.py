@@ -56,6 +56,7 @@ class ClipItem(BaseModel):
     trim_notes: Optional[str] = ""
     layout: Literal["blur-fill", "stack", "face-zoom", "split"] = "blur-fill"
     source_permission: Literal["owner", "granted", "clip-policy", "unknown"] = "clip-policy"
+    selector_engine: str = Field(default="heuristic", description="Model name or local-fallback")
 
     @field_validator("why_viral")
     @classmethod

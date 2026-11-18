@@ -294,6 +294,10 @@ When processing ongoing live broadcasts (e.g. YouTube Live, Twitch), `stages/liv
    - Clips generated across continuous live sessions can be identified either as `pt01_c01` or unprefixed `c01`.
    - `server.py` (`handle_get_project_detail` and `handle_stream_video`) seamlessly maps between `ptXX_cYY` and `cYY` representations, scanning top-level `out/<video_id>/`, subdirectories `out/<video_id>/part_XX/`, and `cache/<video_id>/` for sidecars, variants, vision metadata, and sample frames.
    - Prevents empty variant lists ("Select a clip") or 404 streaming errors when navigating between different stream parts.
+8. **Part-by-Part Visual Sectioning & Selector Fallback Transparency**:
+   - In Studio Step 3, clips from continuous live sessions are grouped into distinct visual Part sections with dedicated section headers, time window badges, and horizontal Part filter tabs (`[All Parts]`, `[Part 1]`, `[Part 2]`, ...).
+   - In the video player phone mockup, a live badge shows `🔴 Part X · <Variant>` directly on top of the stream.
+   - Every clip explicitly exposes its `selector_engine`: AI-ranked clips display `⚡ Gemini AI` and card details, while clips generated via offline audio/excitement heuristics explicitly show `⚙️ Local Fallback` across clip lists and inspector panels.
 
 ---
 

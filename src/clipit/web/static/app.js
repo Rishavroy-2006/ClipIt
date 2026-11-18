@@ -1663,31 +1663,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 /* Step 3: Studio & Curation */
-const norm = (c, i) => ({
-  id: c.id || c.clip_id || 'c' + String(i + 1).padStart(2, '0'),
-  title: c.title || 'Clip ' + (i + 1),
-  score: Math.round(c.score ?? c.virality_score ?? 0),
-  dur: c.duration ?? ((c.end ?? 0) - (c.start ?? 0)),
-  start: c.start,
-  end: c.end,
-  cat: c.category || c.type || 'reaction',
-  status: c.status || c.approval || 'pending',
-  why: c.why_viral || c.why || '',
-  hook: c.hook_line || c.hook || c.headline || c.title || '',
-  desc: c.description || '',
-  tags: c.hashtags || c.tags || [],
-  has_facecam: c.has_facecam !== false,
-  vision: c.vision || null,
-  sample_frame: c.sample_frame || null,
-  br: c.breakdown || c.scores || null,
-  variants: (c.variants || []).map((v, j) => {
-    if (typeof v === 'string') return { file: v, label: LABELS[j] || v };
-    return {
-      file: v.file || v.filename || v.name,
-      label: v.name || v.label || v.layout || LABELS[j] || 'Variant ' + (j + 1)
-    };
-  })
-});
+const norm = (c, i) => {
+  const cid = c.id || c.clip_id || 'c' + String(i + 1).padStart(2, '0');
+
+  // Extract Part info
+  let part = c.part || null;
+  if (!part && cid.startsWith('pt')) {
+    const m = cid.match(/^pt0*(\d+)/i);
+    if (m) part = `Part ${parseInt(m[1], 10)}`;
+  } else if (!part && c.stream_window) {
+    part = 'Part 1';
+  }
+
+  // Extract Selector Engine / Local Fallback
+  let selectorEngine = c.selector_engine || null;
+  let isFallback = false;
+  if (selectorEngine) {
+    isFallback = selectorEngine.toLowerCase().includes('heuristic') || selectorEngine.toLowerCase().includes('fallback');
+  } else {
+    // Detect heuristic from signature patterns
+    const why = (c.why_viral || c.why || '').toLowerCase();
+    if (why.includes('audio loudness spike') || c.score === 65) {
+      isFallback = true;
+      selectorEngine = 'local-fallback';
+    } else {
+      selectorEngine = 'gemini-3.1-flash-lite';
+    }
+  }
+
+  return {
+    id: cid,
+    title: c.title || 'Clip ' + (i + 1),
+    score: Math.round(c.score ?? c.virality_score ?? 0),
+    dur: c.duration ?? ((c.end ?? 0) - (c.start ?? 0)),
+    start: c.start,
+    end: c.end,
+    cat: c.category || c.type || 'reaction',
+    status: c.status || c.approval || 'pending',
+    why: c.why_viral || c.why || '',
+    hook: c.hook_line || c.hook || c.headline || c.title || '',
+    desc: c.description || '',
+    tags: c.hashtags || c.tags || [],
+    has_facecam: c.has_facecam !== false,
+    vision: c.vision || null,
+    sample_frame: c.sample_frame || null,
+    br: c.breakdown || c.scores || null,
+    part: part,
+    stream_window: c.stream_window || '',
+    selector_engine: selectorEngine,
+    is_fallback: isFallback,
+    variants: (c.variants || []).map((v, j) => {
+      if (typeof v === 'string') return { file: v, label: LABELS[j] || v };
+      return {
+        file: v.file || v.filename || v.name,
+        label: v.name || v.label || v.layout || LABELS[j] || 'Variant ' + (j + 1)
+      };
+    })
+  };
+};
 
 async function rerunAiDiagnostics(videoId) {
   if (!videoId) return;
@@ -1711,6 +1744,7 @@ async function openProject(id, push = true) {
     S.has_facecam = res.has_facecam !== false;
     S.clips = (res.clips || []).map(norm);
     S.cur = -1;
+    S.activePartFilter = 'all';
     go(3, push);
     $('#ptitle').textContent = S.title;
     const rerunBtn = $('#rerunAiBtn');
@@ -1744,19 +1778,96 @@ function stat() {
 
 function renderList() {
   stat();
-  $('#clipList').innerHTML = S.clips.map((c, i) => `
-    <li>
-      <button data-i="${i}" class="${i === S.cur ? 'on' : ''}">
-        <span class="score">${c.score}</span>
-        <span>
-          ${esc(c.title)}<br>
-          <small class="muted">${fmt(c.dur)} · ${esc(c.cat)}</small>
-          <span class="tag ${c.status}">${c.status}</span>
-        </span>
-      </button>
-    </li>
-  `).join('');
-  $$('#clipList button').forEach(b => b.onclick = () => select(+b.dataset.i));
+
+  // 1. Discover all distinct parts
+  const distinctParts = [];
+  const partMap = new Map();
+  S.clips.forEach(c => {
+    const p = c.part || null;
+    if (p && !partMap.has(p)) {
+      partMap.set(p, true);
+      distinctParts.push(p);
+    }
+  });
+
+  // 2. Render Part Filter Tabs if multiple parts exist
+  const tabsContainer = $('#partFilterTabs');
+  if (tabsContainer) {
+    if (distinctParts.length > 1) {
+      tabsContainer.style.display = 'flex';
+      tabsContainer.innerHTML = `
+        <button class="part-tab ${S.activePartFilter === 'all' ? 'on' : ''}" data-part="all">
+          All Parts (${S.clips.length})
+        </button>
+        ${distinctParts.map(p => {
+          const count = S.clips.filter(c => c.part === p).length;
+          return `<button class="part-tab ${S.activePartFilter === p ? 'on' : ''}" data-part="${esc(p)}">
+            ${esc(p)} (${count})
+          </button>`;
+        }).join('')}
+      `;
+      $$('#partFilterTabs button').forEach(b => {
+        b.onclick = () => {
+          S.activePartFilter = b.dataset.part;
+          renderList();
+        };
+      });
+    } else {
+      tabsContainer.style.display = 'none';
+    }
+  }
+
+  // 3. Group clips into distinct Part Sections
+  const partsToRender = (S.activePartFilter && S.activePartFilter !== 'all')
+    ? [S.activePartFilter]
+    : (distinctParts.length > 0 ? distinctParts : [null]);
+
+  let html = '';
+  for (const p of partsToRender) {
+    const groupClips = p ? S.clips.filter(c => c.part === p) : S.clips;
+    if (!groupClips.length) continue;
+
+    if (p) {
+      const windowStr = groupClips[0]?.stream_window ? ` · ${groupClips[0].stream_window}` : '';
+      html += `
+        <li class="part-section-divider">
+          <div class="part-section-header">
+            <span class="part-header-pill">🎬 ${esc(p)}</span>
+            <span class="part-header-meta">${groupClips.length} clips${esc(windowStr)}</span>
+          </div>
+        </li>
+      `;
+    }
+
+    for (const c of groupClips) {
+      const origIdx = S.clips.indexOf(c);
+      const isFallback = c.is_fallback;
+      const cleanTitleText = c.title.replace(/^\[Part\s*\d+\]\s*/i, '');
+      html += `
+        <li class="clip-item-row">
+          <button data-i="${origIdx}" class="${origIdx === S.cur ? 'on' : ''}">
+            <span class="score">${c.score}</span>
+            <span class="clip-text-col">
+              <span class="clip-title-line">
+                ${c.part ? `<span class="part-inline-badge">${esc(c.part)}</span>` : ''}
+                <span class="clip-title-text">${esc(cleanTitleText)}</span>
+              </span>
+              <small class="clip-meta-row muted">
+                <span>${fmt(c.dur)} · ${esc(c.cat)}</span>
+                <span class="tag ${c.status}">${c.status}</span>
+                ${isFallback
+                  ? `<span class="engine-badge fallback" title="Generated via local loudness & excitement heuristics">⚙️ Local Fallback</span>`
+                  : `<span class="engine-badge ai" title="Analyzed & scored by Gemini AI Director">⚡ Gemini AI</span>`}
+              </small>
+            </span>
+          </button>
+        </li>
+      `;
+    }
+  }
+
+  $('#clipList').innerHTML = html;
+  $$('#clipList button[data-i]').forEach(b => b.onclick = () => select(+b.dataset.i));
 }
 
 function select(i, keep) {
@@ -1808,6 +1919,18 @@ function load(fresh) {
     }
   }
 
+  // Update Phone Part Tag on player
+  const phonePartTag = $('#phonePartTag');
+  const phonePartText = $('#phonePartText');
+  if (phonePartTag && phonePartText) {
+    if (c && c.part) {
+      phonePartTag.style.display = 'inline-flex';
+      phonePartText.textContent = `${c.part} · ${v.label}`;
+    } else {
+      phonePartTag.style.display = 'none';
+    }
+  }
+
   const t = fresh ? 0 : vid.currentTime, was = !vid.paused, sp = vid.playbackRate;
   const bust = Date.now();
   vid.src = `/api/video/${encodeURIComponent(S.vid)}/${encodeURIComponent(v.file)}?t=${bust}`;
@@ -1827,12 +1950,38 @@ function inspect(c) {
     ['Retention Pacing', br.retention ?? br.retention_pacing]
   ];
 
+  const engineCard = c.is_fallback
+    ? `
+      <div class="inspect-engine-card fallback">
+        <span class="engine-card-icon">⚙️</span>
+        <div class="engine-card-info">
+          <div class="engine-card-title">Local Heuristic Fallback (Offline Mode)</div>
+          <div class="engine-card-sub">Clip extracted via local acoustic excitement, loudness spikes, and scene cuts without AI.</div>
+        </div>
+      </div>
+    `
+    : `
+      <div class="inspect-engine-card ai">
+        <span class="engine-card-icon">⚡</span>
+        <div class="engine-card-info">
+          <div class="engine-card-title">Gemini AI Director (${esc(c.selector_engine || 'Gemini 3.1 Flash Lite')})</div>
+          <div class="engine-card-sub">Viral hook, title, and 0-100 retention score generated by Gemini AI Director.</div>
+        </div>
+      </div>
+    `;
+
   $('#inspect').innerHTML = `
     <div class="inspect-top-row">
       <div class="big">${c.score}<small class="muted">/100</small></div>
-      <span class="facecam-meta-badge ${c.has_facecam ? 'on' : 'off'}">
-        <span class="dot"></span> ${c.has_facecam ? 'Facecam Active' : 'No Facecam'}
-      </span>
+      <div class="inspect-pill-group">
+        ${c.part ? `<span class="inspect-part-badge">🎬 ${esc(c.part)}</span>` : ''}
+        <span class="facecam-meta-badge ${c.has_facecam ? 'on' : 'off'}">
+          <span class="dot"></span> ${c.has_facecam ? 'Facecam Active' : 'No Facecam'}
+        </span>
+      </div>
+    </div>
+    <div class="inspect-meta-banner">
+      ${engineCard}
     </div>
     ${rows.map(([n, v]) => `
       <div class="meter">
