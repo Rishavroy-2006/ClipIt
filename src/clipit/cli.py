@@ -140,11 +140,15 @@ def check():
         )
 
     # 6. Gemini LLM API Key (Optional for smart AI selection)
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    if gemini_key:
-        table.add_row("Gemini Director API", "PASS", "GEMINI_API_KEY detected (AI Virality Selection enabled)")
+    from clipit.llm.selector_api import get_api_keys
+    keys = get_api_keys()
+    if len(keys) > 1:
+        table.add_row("Gemini Director API", "PASS", f"{len(keys)} API keys configured (Automatic Failover active)")
+    elif len(keys) == 1:
+        table.add_row("Gemini Director API", "PASS", "1 API key detected (AI Virality Selection enabled)")
     else:
         table.add_row("Gemini Director API", "INFO", "GEMINI_API_KEY unset (defaults to offline heuristic selector)")
+
 
     console.print(table)
 

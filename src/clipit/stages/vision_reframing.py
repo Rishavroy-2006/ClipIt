@@ -239,16 +239,12 @@ def analyze_clip_vision(
     analysis: Optional[Dict[str, Any]] = None
 
     if engine == "gemini":
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            env_file = Path(".env")
-            if env_file.exists():
-                for line in env_file.read_text().splitlines():
-                    if line.startswith("GEMINI_API_KEY="):
-                        api_key = line.split("=", 1)[1].strip()
-                        break
-        if api_key:
-            analysis = analyze_with_gemini_vision(mid_frame, api_key)
+        from clipit.llm.selector_api import get_api_keys
+        for key in get_api_keys():
+            analysis = analyze_with_gemini_vision(mid_frame, key)
+            if analysis:
+                break
+
 
     if not analysis:
         analysis = analyze_with_opencv_fallback(mid_frame)
