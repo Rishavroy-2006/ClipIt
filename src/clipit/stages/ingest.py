@@ -72,54 +72,79 @@ def run_ingest(
     }
 
     if is_url:
-        # Download best video + audio and live chat replay using yt-dlp
+        # Pre-probe to detect stream metadata and check if actively live
+        is_live = False
+        release_ts = None
+        info_cmd = ["yt-dlp", "--dump-json", "--no-download", url_or_path]
+        try:
+            res = subprocess.run(info_cmd, capture_output=True, text=True, check=True)
+            ytdl_meta = json.loads(res.stdout)
+            meta["title"] = ytdl_meta.get("title", meta["title"])
+            meta["uploader"] = ytdl_meta.get("uploader", "")
+            meta["duration"] = ytdl_meta.get("duration", 0)
+            is_live = bool(ytdl_meta.get("is_live", False))
+            release_ts = ytdl_meta.get("release_timestamp")
+        except Exception:
+            pass
+
+        # Handle active livestreams (auto-calculate duration from start till now)
+        if is_live and not end:
+            if release_ts:
+                elapsed_sec = max(30, int(now_ts - release_ts))
+            else:
+                elapsed_sec = 1200
+            hrs = elapsed_sec // 3600
+            mins = (elapsed_sec % 3600) // 60
+            secs = elapsed_sec % 60
+            end = f"{hrs:02d}:{mins:02d}:{secs:02d}"
+            start = start or "00:00:00"
+            meta["is_live"] = True
+            meta["duration"] = float(elapsed_sec)
+            print(f"🔴 Live Broadcast Detected: '{meta['title']}' (live for {hrs}h {mins}m {secs}s)")
+            print(f"📥 Capturing live DVR buffer from start ({start}) to current edge ({end})...")
+
+        # Download best video + audio
         cmd = [
             "yt-dlp",
             "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
             "--merge-output-format", "mp4",
-            "--write-info-json",
-            "--write-subs",
-            "--sub-langs", "live_chat",
             "-o", str(source_mp4),
             url_or_path,
         ]
-        if start and end:
-            cmd.extend(["--download-sections", f"*{start}-{end}"])
+
+        if is_live or start or end:
+            s_start = start or "00:00:00"
+            s_end = end or "inf"
+            cmd.extend([
+                "--downloader", "ffmpeg",
+                "--download-sections", f"*{s_start}-{s_end}",
+            ])
+        else:
+            cmd.extend(["--write-info-json", "--write-subs", "--sub-langs", "live_chat"])
+
         subprocess.run(cmd, check=True)
 
-        # Extract video info from downloaded info.json (fast, zero extra network latency)
-        info_json_file = cache.path("source.info.json")
-        if not info_json_file.exists():
-            for cand in cache.dir.glob("*.info.json"):
-                if cand.name != "info.json":
-                    info_json_file = cand
-                    break
+        # Extract video info from downloaded info.json if not already probed
+        if not meta.get("title") or meta.get("title") == "Online Stream":
+            info_json_file = cache.path("source.info.json")
+            if not info_json_file.exists():
+                for cand in cache.dir.glob("*.info.json"):
+                    if cand.name != "info.json":
+                        info_json_file = cand
+                        break
+            if info_json_file.exists():
+                try:
+                    with open(info_json_file, "r", encoding="utf-8") as f:
+                        ytdl_meta = json.load(f)
+                        meta["title"] = ytdl_meta.get("title", meta["title"])
+                        meta["uploader"] = ytdl_meta.get("uploader", "")
+                        meta["duration"] = ytdl_meta.get("duration", meta.get("duration", 0))
+                except Exception:
+                    pass
 
-        if info_json_file.exists():
-            try:
-                with open(info_json_file, "r", encoding="utf-8") as f:
-                    ytdl_meta = json.load(f)
-                    meta["title"] = ytdl_meta.get("title", meta["title"])
-                    meta["uploader"] = ytdl_meta.get("uploader", "")
-                    meta["duration"] = ytdl_meta.get("duration", 0)
-            except Exception:
-                pass
-        else:
-            # Fallback to remote metadata query only if info.json was not created
-            info_cmd = ["yt-dlp", "--dump-json", "--no-download", url_or_path]
-            try:
-                res = subprocess.run(info_cmd, capture_output=True, text=True, check=True)
-                ytdl_meta = json.loads(res.stdout)
-                meta["title"] = ytdl_meta.get("title", meta["title"])
-                meta["uploader"] = ytdl_meta.get("uploader", "")
-                meta["duration"] = ytdl_meta.get("duration", 0)
-            except Exception:
-                pass
-
-        # Check if live chat file was downloaded
+        # Check if live chat file was downloaded (available for past VODs)
         live_chat_file = cache.path("source.live_chat.json")
         if not live_chat_file.exists():
-            # Check for alternative yt-dlp naming
             for cand in cache.dir.glob("*.live_chat.json"):
                 live_chat_file = cand
                 break

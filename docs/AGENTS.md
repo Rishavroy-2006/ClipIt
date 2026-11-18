@@ -260,7 +260,40 @@ If you have an NVIDIA GPU, `clipit check` will detect `NVENC (NVIDIA)` and `fast
 
 ---
 
-## 7. GIT HYGIENE & FILE POLICIES
+## 8. 24/7 LIVE STREAM SENTINEL & CONTINUOUS CHUNKING ARCHITECTURE
+
+When processing ongoing live broadcasts (e.g. YouTube Live, Twitch), `stages/live_monitor.py` provides autonomous continuous clipping:
+
+### Core Mechanics:
+1. **Periodic Chunking (`--chunk-mins 30`)**:
+   - Downloads the live DVR segment using `yt-dlp` with `--download-sections *{start}-{end}`.
+   - Operates in isolated part caches (`cache/<video_id>_ptXX/`) so each chunk is clean and atomic.
+2. **Lookback Overlap Window (`--overlap-mins 5`)**:
+   - Each part slices from `start_sec = max(0, last_edge - overlap_sec)` to `end_sec = last_edge + chunk_sec`.
+   - Prevents boundary clips (moments happening right on the 30-min mark) from being split in half or missed.
+3. **Boundary Deduplication**:
+   - When new candidates are found in the overlap window, `deduplicate_clips()` compares their start timestamps against clips from prior parts.
+   - Duplicate moments are discarded; genuinely new viral moments that occurred across the seam are preserved.
+4. **Part Naming & Multi-Part Sidecars**:
+   - Clips are named `pt01_c01.mp4`, `pt02_c01.mp4`, etc., and staged into both `out/<video_id>/part_XX/` and `out/<video_id>/`.
+   - Sidecar metadata is enriched with `part: "Part 2"`, `stream_window: "00:22:07 - 00:57:07"`, and absolute stream timestamps.
+   - Master review dashboard (`out/<video_id>/review.html`) consolidates clips across all parts with part filter tabs.
+5. **Real-Time Web Studio SSE Bridge**:
+   - Every CLI sentinel run emits real-time events (`pipeline_start`, `stage_start`, `agent_log`, `stage_complete`) via `POST /api/internal/emit-event` to the local Studio server (`http://127.0.0.1:8765`).
+   - The Studio dashboard automatically displays the live running pipeline in `#v2` with live telemetry.
+   - Endpoints:
+     - `POST /api/live/start`: Starts live sentinel monitoring in a background thread.
+     - `GET /api/live/status`: Returns current watching state and part history.
+     - `POST /api/live/stop`: Gracefully stops the sentinel.
+6. **Microsecond A/V Synchronization Guarantee**:
+   - Video filterchain enforces `[base]setpts=PTS-STARTPTS,ass=...,setpts=PTS-STARTPTS[v]`.
+   - Audio filterchain enforces `asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0`.
+   - Output uses `-avoid_negative_ts make_zero`.
+   - Video streaming responses send `Cache-Control: no-cache, no-store, must-revalidate` to prevent HTTP 206 Range browser desync.
+
+---
+
+## 9. GIT HYGIENE & FILE POLICIES
 
 To keep the repository clean and avoid git bloat:
 1. **NEVER COMMIT VIDEOS OR AUDIO**: `.gitignore` is configured to ignore `cache/`, `out/`, `ready_to_post/`,

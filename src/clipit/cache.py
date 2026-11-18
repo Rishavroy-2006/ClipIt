@@ -9,11 +9,17 @@ from typing import Any, Optional
 def get_video_id(url_or_path: str) -> str:
     """Generate a clean, reproducible ID for a URL or local file path."""
     clean = url_or_path.strip()
+    if "youtube.com/live/" in clean:
+        vid = clean.split("youtube.com/live/")[1].split("?")[0].split("&")[0].split("/")[0]
+        return f"yt_{vid}"
+    if "youtube.com/shorts/" in clean:
+        vid = clean.split("youtube.com/shorts/")[1].split("?")[0].split("&")[0].split("/")[0]
+        return f"yt_{vid}"
     if "youtube.com/watch?v=" in clean:
         vid = clean.split("v=")[1].split("&")[0]
         return f"yt_{vid}"
     if "youtu.be/" in clean:
-        vid = clean.split("youtu.be/")[1].split("?")[0]
+        vid = clean.split("youtu.be/")[1].split("?")[0].split("&")[0]
         return f"yt_{vid}"
     # Local file or generic URL
     name = Path(clean).stem

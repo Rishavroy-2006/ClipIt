@@ -8,7 +8,8 @@ Works on **macOS (Apple Silicon Metal)** and **Windows (NVIDIA NVENC / AMD / Int
 
 ## ⚡ Highlights
 
-* **100% Local Video & Audio Pipeline**: High-speed demuxing, audio normalization, face tracking, and hardware rendering run entirely on your local machine via FFmpeg.
+* **100% Local Video & Audio Pipeline**: High-speed demuxing, audio normalization, face tracking, and hardware rendering run entirely on your local machine via FFmpeg with microsecond-accurate PTS A/V synchronization.
+* **24/7 Live Stream Sentinel & Continuous Chunking**: Monitors active livestreams (YouTube Live, Twitch), automatically cuts and processes 30-minute chunks with a 5-minute lookback overlap so boundary moments are never missed or cut in half, deduplicates across chunks, and organizes outputs by parts (`Part 1`, `Part 2`, ...).
 * **Smart Highlight Detection**: Evaluates vocal excitement, audio loudness Z-scores, chat velocity spikes, gaming keywords, and scene cuts.
 * **Auto Virality Selection**:
   * **Auto Mode**: Finds the top high-scoring clips ($1 \le N < 30$) automatically without filler.
@@ -82,6 +83,38 @@ Navigate to `http://localhost:8765`:
 1. **Ingest**: Paste a YouTube URL or drop a local MP4 file, choose your clipping preset and target clips (`Auto`, `3`, `5`, `10`).
 2. **Live Pipeline**: Real-time SSE monitor showing stage progress, active models, VOD scan head, and audio/chat velocity graphs.
 3. **Studio**: Preview all rendered variants, fine-tune vertical 9:16 crops with instant live preview, adjust facecam positioning, and export approved clips.
+
+---
+
+## 🔴 24/7 Continuous Live Stream Clipping
+
+When streamers broadcast 12-to-24-hour non-stop streams (e.g. GTA 6 premiere marathons, subathons, tournaments), you don't have to wait for the broadcast to finish. ClipIt's **Live Stream Sentinel** continuously monitors the stream, slices it into 30-minute processing chunks, applies an overlap window, and renders shorts in real-time.
+
+### How It Works:
+1. **Periodic Chunk Processing**: Every 30 minutes, ClipIt captures the newly broadcast segment directly from the YouTube HLS DVR buffer.
+2. **5-to-10 Minute Lookback Overlap**: If a viral moment spans across the 30-minute boundary, the overlap window ensures the moment is captured intact instead of being sliced in half.
+3. **Smart Boundary Deduplication**: Clips detected in the overlap window that were already processed in the previous part are automatically deduplicated.
+4. **Part-by-Part Cataloging**: Clips are rendered into `out/<video_id>/part_01/`, `part_02/`, etc., tagged as `[Part 1]`, `[Part 2]`, and merged into a single consolidated `review.html`.
+5. **Real-Time Visual Pipeline Bridge**: The CLI sentinel emits progress events back to ClipIt Studio on `http://localhost:8765`, lighting up the real-time agent workflow on the site.
+
+### Running Live Sentinel via CLI:
+
+```bash
+# 1. Start continuous 24/7 live clipping (default: 30-min chunks with 5-min overlap)
+clipit live "https://www.youtube.com/live/qSyo5d-dVzA"
+
+# 2. Custom chunk interval and lookback overlap
+clipit live "https://www.youtube.com/live/qSyo5d-dVzA" --chunk-mins 30 --overlap-mins 5 --target 6
+
+# 3. Process just the next pending 30-min chunk once and exit
+clipit live "https://www.youtube.com/live/qSyo5d-dVzA" --once
+```
+
+### Running Live Sentinel via Web Studio:
+1. Open `http://localhost:8765`.
+2. Paste any YouTube Live stream URL (`https://www.youtube.com/live/...`).
+3. The **🔴 24/7 Live Stream Sentinel Mode** switch activates automatically.
+4. Click **Start 24/7 Live Stream Clipper**. The pipeline monitor opens and streams live logs, audio waveforms, and rendering progress.
 
 ---
 

@@ -26,6 +26,18 @@
 
   <main>
     <section id="v1" class="view on">
+      <!-- Real-time Active Sentinel Banner (Auto-shown when a live stream is actively being processed) -->
+      <div id="activeSentinelBanner" class="active-sentinel-banner" style="display:none;">
+        <div class="sentinel-banner-left">
+          <span class="sentinel-pulse-dot"></span>
+          <div>
+            <div class="sentinel-banner-title" id="sentinelBannerTitle">🔴 Live Stream Sentinel Active</div>
+            <div class="sentinel-banner-subtitle" id="sentinelBannerSubtitle">Continuously cutting 30m stream windows with 5m overlap...</div>
+          </div>
+        </div>
+        <button type="button" class="btn-view-live-pipe" id="btnViewLivePipe">View Live Pipeline ➔</button>
+      </div>
+
       <div class="hero">
         <h1>Hours in.<br>Shorts out.</h1>
         <p>Paste a stream VOD. Eight agents find the loudest, funniest, most clippable moments and cut them to 9:16.</p>
@@ -76,6 +88,22 @@
             </div>
           </div>
         </div>
+
+        <!-- 24/7 Live Stream Sentinel Toggle -->
+        <div class="live-sentinel-bar" id="liveSentinelBar">
+          <div class="live-sentinel-info">
+            <span class="live-sentinel-dot"></span>
+            <div>
+              <div class="live-sentinel-title">24/7 Live Stream Sentinel Mode</div>
+              <div class="live-sentinel-desc">Continuously clips every 30m with 5m lookback overlap until the live stream ends.</div>
+            </div>
+          </div>
+          <label class="live-sentinel-switch" title="Toggle 24/7 continuous stream monitoring">
+            <input type="checkbox" id="liveModeToggle">
+            <span class="live-sentinel-slider"></span>
+          </label>
+        </div>
+
         <button id="launch" class="go">Launch pipeline</button>
       </div>
 

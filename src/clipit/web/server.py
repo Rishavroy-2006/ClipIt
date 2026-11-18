@@ -42,6 +42,9 @@ READY_DIR = ROOT_DIR / "ready_to_post"
 active_sessions: Dict[str, Dict[str, Any]] = {}
 session_lock = threading.Lock()
 
+# Active Live Stream Monitors
+active_live_monitors: Dict[str, Any] = {}
+
 
 class RangeRequestHandler(BaseHTTPRequestHandler):
     """Custom HTTP request handler with HTTP 206 Partial Content video streaming and SSE."""
@@ -106,6 +109,9 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_storage_details()
         elif path == "/api/active-session":
             return self.handle_get_active_session()
+        elif path == "/api/live/status":
+            vid = query.get("video_id", [None])[0]
+            return self.handle_get_live_status(vid)
 
         # 3. Fallback to static or 404
         target_file = STATIC_DIR / path.lstrip("/")
@@ -148,6 +154,12 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_delete_source(data)
         elif path == "/api/rerender-clip":
             return self.handle_rerender_clip(data)
+        elif path == "/api/live/start":
+            return self.handle_start_live_sentinel(data)
+        elif path == "/api/live/stop":
+            return self.handle_stop_live_sentinel(data)
+        elif path == "/api/internal/emit-event":
+            return self.handle_internal_emit_event(data)
         else:
             self.send_error(HTTPStatus.NOT_FOUND, f"Endpoint not found: {path}")
 
@@ -291,18 +303,112 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
     def handle_get_active_session(self):
         with session_lock:
-            if not active_sessions:
-                self.send_json({"active": False})
+            # 1. Check in-memory running sessions
+            active_list = [s for s in active_sessions.values() if not s.get("done", False)]
+            if active_list:
+                latest = sorted(active_list, key=lambda s: s.get("created_at", 0), reverse=True)[0]
+                self.send_json({
+                    "active": True,
+                    "session_id": latest["id"],
+                    "video_id": latest.get("video_id"),
+                    "url": latest.get("url"),
+                    "done": False,
+                    "created_at": latest.get("created_at"),
+                })
                 return
-            latest = sorted(active_sessions.values(), key=lambda s: s.get("created_at", 0), reverse=True)[0]
-            self.send_json({
-                "active": True,
-                "session_id": latest["id"],
-                "video_id": latest.get("video_id"),
-                "url": latest.get("url"),
-                "done": latest.get("done", False),
-                "created_at": latest.get("created_at"),
-            })
+
+            # 2. Check active in-process live monitors
+            for vid, m_info in active_live_monitors.items():
+                if m_info.get("thread") and m_info["thread"].is_alive():
+                    self.send_json({
+                        "active": True,
+                        "session_id": f"live_{vid}",
+                        "video_id": vid,
+                        "url": m_info.get("url", ""),
+                        "done": False,
+                        "created_at": m_info.get("start_time", time.time()),
+                    })
+                    return
+
+            # 3. Check disk for active live_session.json recently modified (< 1 hour)
+            for sess_path in CACHE_DIR.glob("*/live_session.json"):
+                try:
+                    if time.time() - sess_path.stat().st_mtime < 3600:
+                        sess_data = json.loads(sess_path.read_text(encoding="utf-8"))
+                        status = sess_data.get("status", "")
+                        if status in ("processing_part", "waiting_next_chunk", "active", "watching", "in_progress", "running"):
+                            vid = sess_data.get("video_id", sess_path.parent.name)
+                            sid = f"live_{vid}"
+                            if sid not in active_sessions:
+                                q = queue.Queue()
+                                active_sessions[sid] = {
+                                    "id": sid,
+                                    "url": sess_data.get("source_url", ""),
+                                    "queue": q,
+                                    "created_at": sess_data.get("start_time", sess_path.stat().st_mtime),
+                                    "status": "running",
+                                    "events": [],
+                                    "video_id": vid,
+                                    "done": False,
+                                }
+                            self.send_json({
+                                "active": True,
+                                "session_id": sid,
+                                "video_id": vid,
+                                "url": sess_data.get("source_url", ""),
+                                "done": False,
+                                "created_at": sess_data.get("start_time", sess_path.stat().st_mtime),
+                            })
+                            return
+                except Exception:
+                    continue
+
+            # 4. Fallback to latest session in memory if any
+            if active_sessions:
+                latest = sorted(active_sessions.values(), key=lambda s: s.get("created_at", 0), reverse=True)[0]
+                self.send_json({
+                    "active": not latest.get("done", False),
+                    "session_id": latest["id"],
+                    "video_id": latest.get("video_id"),
+                    "url": latest.get("url"),
+                    "done": latest.get("done", False),
+                    "created_at": latest.get("created_at"),
+                })
+                return
+
+            self.send_json({"active": False})
+
+    def handle_internal_emit_event(self, data: Dict[str, Any]):
+        session_id = data.get("session_id", "live_cli")
+        ev_type = data.get("event", "agent_log")
+        ev_data = data.get("data", {})
+        video_id = data.get("video_id") or ev_data.get("video_id")
+        url = data.get("url") or ev_data.get("url", "")
+
+        ev = {"event": ev_type, "data": ev_data}
+        with session_lock:
+            if session_id not in active_sessions:
+                active_sessions[session_id] = {
+                    "id": session_id,
+                    "url": url,
+                    "queue": queue.Queue(),
+                    "created_at": time.time(),
+                    "status": "running",
+                    "events": [],
+                    "video_id": video_id,
+                    "done": False,
+                }
+            sess = active_sessions[session_id]
+            if video_id and not sess.get("video_id"):
+                sess["video_id"] = video_id
+            if url and not sess.get("url"):
+                sess["url"] = url
+            sess["events"].append(ev)
+            if ev_type == "pipeline_complete":
+                sess["done"] = True
+            sess["queue"].put(ev)
+
+        self.send_json({"ok": True})
 
     def handle_delete_all_clips(self, data: Dict[str, Any]):
         video_id = data.get("video_id")
@@ -430,12 +536,25 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
+        # Check live session status
+        live_session_file = cache_v / "live_session.json"
+        if not live_session_file.exists():
+            live_session_file = out_v / "live_session.json"
+        live_session = None
+        if live_session_file.exists():
+            try:
+                with open(live_session_file, "r", encoding="utf-8") as f:
+                    live_session = json.load(f)
+            except Exception:
+                pass
+
         self.send_json({
             "video_id": video_id,
             "title": info.get("title", video_id),
             "project": info,
             "clips": enhanced_clips,
             "has_facecam": has_facecam,
+            "live_session": live_session,
             "metrics": {
                 "total_clips": len(enhanced_clips),
                 "approved_count": sum(1 for c in enhanced_clips if c.get("status") == "approved"),
@@ -578,6 +697,129 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             })
         except Exception as e:
             self.send_json({"success": False, "error": str(e)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    def handle_start_live_sentinel(self, data: Dict[str, Any]):
+        url = data.get("url", "").strip()
+        if not url:
+            self.send_json({"error": "Stream URL is required"}, status=HTTPStatus.BAD_REQUEST)
+            return
+
+        chunk_mins = int(data.get("chunk_mins", 30))
+        overlap_mins = int(data.get("overlap_mins", 5))
+        target_clips = int(data.get("target_clips", 6))
+        layout = data.get("layout", "stack")
+        style = data.get("style", "bold-yellow")
+        profile = data.get("profile", "ishowspeed")
+
+        from clipit.stages.live_monitor import LiveStreamMonitor
+        vid = get_video_id(url)
+
+        monitor = LiveStreamMonitor(
+            url=url,
+            chunk_mins=chunk_mins,
+            overlap_mins=overlap_mins,
+            target_clips=target_clips,
+            layout=layout,
+            style=style,
+            profile=profile,
+            out_base=OUT_DIR,
+            cache_base=CACHE_DIR,
+        )
+
+        stop_event = threading.Event()
+
+        def worker_sentinel():
+            while not stop_event.is_set():
+                try:
+                    monitor.run_next_pending_part()
+                    if monitor.state.get("status") == "completed":
+                        break
+                except Exception as ex:
+                    print(f"Live monitor exception: {ex}")
+                stop_event.wait(60)
+
+        session_id = f"live_{vid}"
+        q = queue.Queue()
+        with session_lock:
+            active_sessions[session_id] = {
+                "id": session_id,
+                "url": url,
+                "queue": q,
+                "created_at": time.time(),
+                "status": "running",
+                "events": [],
+                "video_id": vid,
+                "done": False,
+            }
+
+        t = threading.Thread(target=worker_sentinel, daemon=True)
+        active_live_monitors[vid] = {
+            "session_id": session_id,
+            "monitor": monitor,
+            "thread": t,
+            "stop_event": stop_event,
+            "started_at": time.time(),
+            "url": url,
+        }
+        t.start()
+
+        self.send_json({
+            "success": True,
+            "session_id": session_id,
+            "video_id": vid,
+            "status": "watching",
+            "session": monitor.state,
+        })
+
+    def handle_get_live_status(self, video_id: Optional[str] = None):
+        if not video_id:
+            res = {}
+            for vid, m_info in active_live_monitors.items():
+                res[vid] = {
+                    "running": m_info["thread"].is_alive(),
+                    "session": m_info["monitor"].state,
+                }
+            self.send_json({"active_monitors": res})
+            return
+
+        if video_id in active_live_monitors:
+            m_info = active_live_monitors[video_id]
+            self.send_json({
+                "video_id": video_id,
+                "running": m_info["thread"].is_alive(),
+                "session": m_info["monitor"].state,
+            })
+            return
+
+        sess_file = CACHE_DIR / video_id / "live_session.json"
+        if not sess_file.exists():
+            sess_file = OUT_DIR / video_id / "live_session.json"
+        if sess_file.exists():
+            try:
+                with open(sess_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self.send_json({
+                    "video_id": video_id,
+                    "running": False,
+                    "session": data,
+                })
+                return
+            except Exception:
+                pass
+
+        self.send_error(HTTPStatus.NOT_FOUND, f"No live monitor session found for {video_id}")
+
+    def handle_stop_live_sentinel(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        if not video_id or video_id not in active_live_monitors:
+            self.send_error(HTTPStatus.NOT_FOUND, "Monitor not active")
+            return
+        m_info = active_live_monitors[video_id]
+        m_info["stop_event"].set()
+        m_info["monitor"].state["status"] = "stopped"
+        m_info["monitor"].save_session()
+        del active_live_monitors[video_id]
+        self.send_json({"success": True, "video_id": video_id, "status": "stopped"})
 
     # ==========================================
     # Live Multi-Agent Workflow Simulation
@@ -768,6 +1010,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
                 self.send_header("Content-Length", str(chunk_len))
                 self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 self.send_cors_headers()
                 self.end_headers()
 
@@ -791,6 +1034,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(file_size))
             self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.send_cors_headers()
             self.end_headers()
 

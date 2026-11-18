@@ -84,12 +84,14 @@ def render_variant_file(
     except ValueError:
         escaped_fonts = fonts_dir.resolve().as_posix().replace(":", "\\:")
 
-    filter_complex = f"{layout_filter};[base]ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}'[v]"
+    filter_complex = f"{layout_filter};[base]setpts=PTS-STARTPTS,ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setpts=PTS-STARTPTS[v]"
+
+    clip_dur = max(0.1, clip.end - clip.start)
 
     cmd = [
         "ffmpeg", "-y",
         "-ss", f"{clip.start:.3f}",
-        "-to", f"{clip.end:.3f}",
+        "-t", f"{clip_dur:.3f}",
         "-i", str(source_video.resolve()),
         "-filter_complex", filter_complex,
         "-map", "[v]",
@@ -107,6 +109,7 @@ def render_variant_file(
         cmd.extend(["-crf", str(video_config.crf), "-preset", "fast"])
 
     audio_filter = (
+        f"asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0,"
         f"highpass=f=80,equalizer=f=3000:t=q:w=1.5:g=2.5,"
         f"acompressor=threshold=-18dB:ratio=3:attack=10:release=120:makeup=2dB,"
         f"loudnorm=I={video_config.audio_lufs}:LRA=9:TP=-1.0"
@@ -116,6 +119,7 @@ def render_variant_file(
         "-c:a", "aac",
         "-b:a", "192k",
         "-af", audio_filter,
+        "-avoid_negative_ts", "make_zero",
         "-movflags", "+faststart",
         str(out_mp4.resolve()),
     ])
@@ -127,7 +131,7 @@ def render_variant_file(
         fallback_cmd = [
             "ffmpeg", "-y",
             "-ss", f"{clip.start:.3f}",
-            "-to", f"{clip.end:.3f}",
+            "-t", f"{clip_dur:.3f}",
             "-i", str(source_video.resolve()),
             "-filter_complex", filter_complex,
             "-map", "[v]",
@@ -137,6 +141,7 @@ def render_variant_file(
             "-c:a", "aac",
             "-b:a", "192k",
             "-af", audio_filter,
+            "-avoid_negative_ts", "make_zero",
             "-movflags", "+faststart",
             str(out_mp4.resolve()),
         ]

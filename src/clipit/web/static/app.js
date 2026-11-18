@@ -164,13 +164,36 @@ function setCamPos(val) {
 $$('.cam button').forEach(b => b.onclick = () => setCamPos(b.dataset.v));
 $$('.cam-opt').forEach(b => b.onclick = () => setCamPos(b.dataset.cam));
 
+const liveToggle = $('#liveModeToggle');
+const liveBar = $('#liveSentinelBar');
+const launchBtn = $('#launch');
+
+function syncLiveModeUI() {
+  const urlVal = ($('#url').value || '').trim();
+  const isLiveUrl = urlVal.includes('/live/') || urlVal.includes('live_stream');
+  if (isLiveUrl && liveToggle && !liveToggle.checked) {
+    liveToggle.checked = true;
+  }
+  const isSentinel = liveToggle && liveToggle.checked;
+  if (liveBar) liveBar.classList.toggle('active', isSentinel);
+  if (launchBtn) {
+    launchBtn.textContent = isSentinel ? '🔴 Start 24/7 Live Stream Clipper' : 'Launch pipeline';
+  }
+}
+
+if (liveToggle) {
+  liveToggle.addEventListener('change', syncLiveModeUI);
+}
+
 $('#url').addEventListener('input', () => {
   $$('.chip').forEach(x => x.classList.toggle('on', x.dataset.url === $('#url').value));
+  syncLiveModeUI();
 });
 $('#url').addEventListener('keydown', e => { if (e.key === 'Enter') $('#launch').click(); });
 $('#paste').onclick = async () => {
   try {
     $('#url').value = (await navigator.clipboard.readText()).trim();
+    syncLiveModeUI();
     $('#url').focus();
   } catch (e) {
     toast('Clipboard access blocked. Use Ctrl+V / Cmd+V.');
@@ -439,18 +462,33 @@ $('#launch').onclick = async () => {
     $('#url').focus();
     return toast('Enter a valid stream URL starting with https://');
   }
+  const isSentinel = $('#liveModeToggle') && $('#liveModeToggle').checked;
   $('#launch').disabled = true;
   try {
     const targetPayload = S.target === 'auto' ? 0 : S.target;
-    const r = await post('/api/start-pipeline', {
-      url,
-      target_clips: targetPayload,
-      layout: S.layout,
-      style: $('#style').value,
-      profile: S.profile,
-      facecam: $('#face').value
-    });
-    startRun(r.session_id, url);
+    if (isSentinel) {
+      toast('🚀 Activating 24/7 Live Stream Sentinel (30m chunks with 5m overlap)...');
+      const r = await post('/api/live/start', {
+        url,
+        chunk_mins: 30,
+        overlap_mins: 5,
+        target_clips: targetPayload || 6,
+        layout: S.layout === 'all' ? 'stack' : S.layout,
+        style: $('#style').value,
+        profile: S.profile,
+      });
+      startRun(r.session_id, url);
+    } else {
+      const r = await post('/api/start-pipeline', {
+        url,
+        target_clips: targetPayload,
+        layout: S.layout,
+        style: $('#style').value,
+        profile: S.profile,
+        facecam: $('#face').value
+      });
+      startRun(r.session_id, url);
+    }
   } catch (e) {
     toast('Launch failed: ' + e.message);
   } finally {
@@ -1562,6 +1600,33 @@ function runDemoMode() {
   });
 }
 
+async function checkActiveSentinelBanner() {
+  try {
+    const res = await api('/api/active-session');
+    const banner = $('#activeSentinelBanner');
+    if (res && res.active && res.session_id) {
+      if (banner) {
+        banner.style.display = 'flex';
+        const titleEl = $('#sentinelBannerTitle');
+        const subEl = $('#sentinelBannerSubtitle');
+        if (titleEl) titleEl.textContent = `🔴 Active Live Pipeline: ${res.video_id || 'Live Stream'}`;
+        if (subEl) subEl.textContent = `Active Sentinel Session (${res.session_id}) · Click to watch real-time clipping pipeline`;
+      }
+      const viewBtn = $('#btnViewLivePipe');
+      if (viewBtn) {
+        viewBtn.onclick = () => {
+          go(2, false);
+          startRun(res.session_id, res.url || '', false);
+        };
+      }
+      return res;
+    } else {
+      if (banner) banner.style.display = 'none';
+    }
+  } catch (err) { }
+  return null;
+}
+
 // Check on page load for ?demo=1 or deep link state
 document.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -1569,6 +1634,9 @@ document.addEventListener('DOMContentLoaded', () => {
     runDemoMode();
     return;
   }
+
+  checkActiveSentinelBanner();
+  setInterval(checkActiveSentinelBanner, 8000);
 
   // Restore state from URL on initial load / reload
   const step = urlParams.get('step');

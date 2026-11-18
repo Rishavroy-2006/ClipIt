@@ -260,6 +260,35 @@ def run(
     ))
 
 
+@app.command(name="live")
+def live(
+    url: str = typer.Argument(..., help="YouTube Live Stream URL or video ID"),
+    chunk_mins: int = typer.Option(30, "--chunk-mins", "-c", help="Interval duration in minutes for each part (default: 30)"),
+    overlap_mins: int = typer.Option(5, "--overlap-mins", "-o", help="Lookback overlap in minutes to protect boundary clips (default: 5)"),
+    target_clips: int = typer.Option(6, "--target-clips", "-n", help="Target viral clips per part"),
+    layout: str = typer.Option("stack", "--layout", help="Layout style: stack, blur-fill, reframed"),
+    style: str = typer.Option("bold-yellow", "--style", help="Subtitle style preset"),
+    profile: Optional[str] = typer.Option(None, "--profile", help="Streamer profile preset (e.g. ishowspeed)"),
+    once: bool = typer.Option(False, "--once", help="Process only the next pending part and exit"),
+    max_parts: Optional[int] = typer.Option(None, "--max-parts", help="Maximum number of parts to process before stopping"),
+):
+    """Continuously monitor a YouTube live stream, fetch 30-min chunks with 5-min overlap, and clip until stream ends."""
+    from clipit.stages.live_monitor import LiveStreamMonitor
+    monitor = LiveStreamMonitor(
+        url=url,
+        chunk_mins=chunk_mins,
+        overlap_mins=overlap_mins,
+        target_clips=target_clips,
+        layout=layout,
+        style=style,
+        profile=profile,
+    )
+    if once:
+        monitor.run_next_pending_part()
+    else:
+        monitor.run_loop(max_parts=max_parts)
+
+
 @app.command()
 def export(
     video_id: str = typer.Argument(..., help="Video ID (e.g. yt_E07OTlhncP0)"),

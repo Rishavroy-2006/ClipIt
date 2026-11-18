@@ -406,7 +406,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         pill.onclick = () => {
           const currentTime = player.currentTime;
           const isPaused = player.paused;
-          player.src = v.file;
+          const isHttp = window.location.protocol.startsWith('http');
+          player.src = isHttp ? `${v.file}?t=${Date.now()}` : v.file;
           player.currentTime = currentTime;
           if (!isPaused) player.play().catch(() => {});
           c.selected_file = v.file;
@@ -428,7 +429,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
 
       const activeFile = c.selected_file || variants[0].file;
-      player.src = activeFile;
+      const isHttp = window.location.protocol.startsWith('http');
+      player.src = isHttp ? `${activeFile}?t=${Date.now()}` : activeFile;
       player.play().catch(() => {});
 
       document.getElementById('titleInput').value = c.title;
