@@ -457,6 +457,139 @@ def youtube_disconnect():
         console.print("[yellow]No active YouTube connection found.[/yellow]")
 
 
+@app.command(name="youtube-upload")
+def youtube_upload(
+    file_path: Path = typer.Argument(..., help="Path to vertical MP4 video file to upload"),
+    title: str = typer.Option("", "--title", "-t", help="Title for the YouTube Short"),
+    description: str = typer.Option("", "--desc", "-d", help="Description for the YouTube Short"),
+    privacy: str = typer.Option("unlisted", "--privacy", "-p", help="Privacy: public, unlisted, or private"),
+):
+    """Directly upload a video file as a YouTube Short to your linked channel."""
+    from clipit.youtube import is_connected, get_channel_info, upload_short
+    import json
+    import time
+
+    if not is_connected():
+        console.print("[red]YouTube channel is not connected. Run 'clipit youtube-auth' first.[/red]")
+        raise typer.Exit(1)
+
+    if not file_path.exists():
+        console.print(f"[red]Video file not found: {file_path}[/red]")
+        raise typer.Exit(1)
+
+    ch = get_channel_info() or {}
+    console.print(Panel.fit(f"[bold cyan]Publishing Short to YouTube Channel:[/bold cyan] {ch.get('title', 'YouTube')} ({ch.get('customUrl', '')})"))
+
+    # Auto-detect title and description from sidecar JSON if not provided
+    auto_title = title
+    auto_desc = description
+    sidecar_json = file_path.with_suffix(".json")
+    if not auto_title and sidecar_json.exists():
+        try:
+            with open(sidecar_json, "r", encoding="utf-8") as f:
+                c_data = json.load(f)
+                auto_title = c_data.get("title", "")
+                if not auto_desc:
+                    tags = " ".join(c_data.get("hashtags", ["#Shorts", "#Gaming"]))
+                    auto_desc = f"{auto_title}\n\n{tags}\n\n{c_data.get('why_viral', '')}"
+        except Exception:
+            pass
+
+    if not auto_title:
+        auto_title = file_path.stem.replace("_", " ").title()
+
+    console.print(f" • [bold]Title:[/bold] {auto_title}")
+    console.print(f" • [bold]File:[/bold] {file_path} ({file_path.stat().st_size / (1024**2):.1f} MB)")
+    console.print(f" • [bold]Privacy:[/bold] {privacy.upper()}")
+
+    with console.status("[bold green]Uploading video to YouTube...[/bold green]"):
+        t0 = time.time()
+        res = upload_short(
+            file_path=file_path,
+            title=auto_title,
+            description=auto_desc,
+            privacy_status=privacy,
+        )
+        elapsed = time.time() - t0
+
+    if res.get("success"):
+        console.print(f"\n[bold green]🎉 Published to YouTube Shorts in {elapsed:.1f}s![/bold green]")
+        console.print(f" • [bold]Video ID:[/bold] {res.get('video_id')}")
+        console.print(f" • [bold cyan]URL:[/bold cyan] {res.get('url')}")
+    else:
+        console.print(f"\n[bold red]Upload failed:[/bold red] {res.get('error')}")
+        raise typer.Exit(1)
+
+
+@app.command(name="test-keys")
+def test_keys():
+    """Test all configured Gemini API keys and check their health, latency, and quota."""
+    from clipit.llm.selector_api import get_api_keys
+    from google import genai
+    from google.genai import types
+    import time
+
+    keys = get_api_keys()
+    console.print(Panel.fit("[bold cyan]Gemini API Keys Diagnostic & Health Check[/bold cyan]"))
+
+    if not keys:
+        console.print("[yellow]No Gemini API keys found in environment or .env.[/yellow]")
+        console.print("Add GEMINI_API_KEY and GEMINI_API_KEY_2 to your .env file to enable AI virality selection.")
+        return
+
+    table = Table(title=f"Configured API Keys ({len(keys)} detected)")
+    table.add_column("Key #", style="bold")
+    table.add_column("Masked Key", style="dim")
+    table.add_column("Model")
+    table.add_column("Status")
+    table.add_column("Latency")
+    table.add_column("Details")
+
+    all_valid = True
+    for i, k in enumerate(keys, 1):
+        masked = k[:6] + "..." + k[-4:] if len(k) > 10 else "key"
+        model_name = "gemini-3.1-flash-lite"
+        t0 = time.time()
+        try:
+            client = genai.Client(api_key=k, http_options=types.HttpOptions(timeout=10000))
+            resp = client.models.generate_content(
+                model=model_name,
+                contents="Reply with the single word PONG",
+            )
+            lat = (time.time() - t0) * 1000
+            table.add_row(
+                f"#{i}",
+                masked,
+                model_name,
+                "[bold green]ACTIVE[/bold green]",
+                f"{lat:.0f} ms",
+                f"Valid (Response: {resp.text.strip()[:10]})",
+            )
+        except Exception as e:
+            all_valid = False
+            lat = (time.time() - t0) * 1000
+            err_str = str(e)
+            if "429" in err_str or "quota" in err_str.lower():
+                status_text = "[bold yellow]QUOTA EXHAUSTED[/bold yellow]"
+            else:
+                status_text = "[bold red]ERROR[/bold red]"
+            table.add_row(
+                f"#{i}",
+                masked,
+                model_name,
+                status_text,
+                f"{lat:.0f} ms",
+                err_str[:40] + "...",
+            )
+
+    console.print(table)
+    if len(keys) >= 2:
+        console.print("\n[bold green]✔ Dual-Key Automatic Failover is ACTIVE.[/bold green] If Key #1 hits rate limits, requests will automatically transition to Key #2 seamlessly.")
+    else:
+        console.print("\n[dim]Tip: Add GEMINI_API_KEY_2 in .env to enable automatic backup key failover.[/dim]")
+
+
+
 
 if __name__ == "__main__":
     app()
