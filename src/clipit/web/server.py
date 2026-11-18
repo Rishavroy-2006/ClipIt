@@ -112,6 +112,9 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         elif path == "/api/live/status":
             vid = query.get("video_id", [None])[0]
             return self.handle_get_live_status(vid)
+        elif path == "/api/youtube/status":
+            return self.handle_youtube_status()
+
 
         # 3. Fallback to static or 404
         target_file = STATIC_DIR / path.lstrip("/")
@@ -164,6 +167,12 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_stop_live_sentinel(data)
         elif path == "/api/internal/emit-event":
             return self.handle_internal_emit_event(data)
+        elif path == "/api/youtube/auth":
+            return self.handle_youtube_auth()
+        elif path == "/api/youtube/disconnect":
+            return self.handle_youtube_disconnect()
+        elif path == "/api/youtube/upload":
+            return self.handle_youtube_upload(data)
         else:
             self.send_error(HTTPStatus.NOT_FOUND, f"Endpoint not found: {path}")
 
@@ -1666,6 +1675,71 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 if not data:
                     break
                 self.wfile.write(data)
+
+    def handle_youtube_status(self):
+        from clipit.youtube import is_configured, is_connected, get_channel_info
+        configured = is_configured()
+        connected = is_connected()
+        channel = get_channel_info() if connected else None
+        self.send_json({
+            "configured": configured,
+            "connected": connected,
+            "channel": channel,
+        })
+
+    def handle_youtube_auth(self):
+        from clipit.youtube import authenticate_channel
+        res = authenticate_channel(open_browser=True)
+        status_code = HTTPStatus.OK if res.get("success") else HTTPStatus.INTERNAL_SERVER_ERROR
+        self.send_json(res, status=status_code)
+
+    def handle_youtube_disconnect(self):
+        from clipit.youtube import disconnect_channel
+        success = disconnect_channel()
+        self.send_json({"success": success})
+
+    def handle_youtube_upload(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        filename = data.get("filename")
+        title = data.get("title", "GTA 6 Viral Moment")
+        description = data.get("description", "")
+        tags = data.get("tags", ["#Shorts", "#Gaming"])
+        privacy = data.get("privacy", "public")
+
+        if not video_id or not filename:
+            self.send_json({"success": False, "error": "Missing video_id or filename"}, status=HTTPStatus.BAD_REQUEST)
+            return
+
+        out_v = OUT_DIR / video_id
+        cache_v = CACHE_DIR / video_id
+        candidate_paths = [
+            out_v / filename,
+            READY_DIR / video_id / filename,
+            cache_v / filename,
+        ]
+        if out_v.exists():
+            for pdir in sorted(out_v.glob("part_*")):
+                candidate_paths.append(pdir / filename)
+        if CACHE_DIR.exists():
+            for cdir in sorted(CACHE_DIR.glob(f"{video_id}_pt*")):
+                candidate_paths.append(cdir / filename)
+
+        target_video = next((p for p in candidate_paths if p.exists() and p.is_file()), None)
+        if not target_video:
+            self.send_json({"success": False, "error": f"Video file not found: {filename}"}, status=HTTPStatus.NOT_FOUND)
+            return
+
+        from clipit.youtube import upload_short
+        res = upload_short(
+            file_path=target_video,
+            title=title,
+            description=description,
+            tags=tags,
+            privacy_status=privacy,
+        )
+        status_code = HTTPStatus.OK if res.get("success") else HTTPStatus.INTERNAL_SERVER_ERROR
+        self.send_json(res, status=status_code)
+
 
     def serve_file(self, filepath: Path, content_type: str):
         if not filepath.exists():

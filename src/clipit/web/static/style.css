@@ -5044,3 +5044,347 @@ input[type=url]:focus {
   font-style: normal;
   font-weight: 600;
 }
+
+/* ==========================================================================
+   YouTube Channel Integration & Direct Upload
+   ========================================================================== */
+
+.yt-header-badge-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.yt-connect-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+.yt-connect-btn:hover {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.yt-play-icon {
+  font-size: 0.75rem;
+}
+
+.yt-channel-pill {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 20px;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #34d399;
+}
+
+.yt-dot-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse-dot 1.5s infinite;
+}
+
+.yt-pill-unlink {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0 2px;
+  margin-left: 2px;
+}
+
+.yt-pill-unlink:hover {
+  color: #ef4444;
+}
+
+.yt-upload-btn {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  transition: all 0.15s ease;
+}
+
+.yt-upload-btn:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.5);
+}
+
+.yt-upload-modal {
+  max-width: 580px;
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+}
+
+.yt-modal-header {
+  background: linear-gradient(180deg, #161b22, #0d1117);
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.yt-badge-tag {
+  display: inline-block;
+  background: rgba(220, 38, 38, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.yt-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.yt-channel-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #161b22;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.yt-channel-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.yt-channel-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.yt-channel-name {
+  font-weight: 700;
+  color: #f0f6fc;
+  font-size: 0.9rem;
+}
+
+.yt-channel-subtext {
+  font-size: 0.75rem;
+  color: #8b949e;
+}
+
+.yt-auth-action-btn {
+  background: #238636;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.yt-auth-action-btn:hover {
+  background: #2ea043;
+}
+
+.yt-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.yt-form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+.yt-form-row-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.yt-input, .yt-select, .yt-textarea {
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #f0f6fc;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.yt-input:focus, .yt-select:focus, .yt-textarea:focus {
+  outline: none;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.yt-textarea {
+  resize: vertical;
+  line-height: 1.45;
+  font-size: 0.8rem;
+}
+
+.yt-progress-wrap {
+  background: #161b22;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.yt-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c9d1d9;
+  margin-bottom: 8px;
+}
+
+.yt-progress-bar-bg {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.yt-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444, #f59e0b);
+  border-radius: 4px;
+  animation: pulse-bar 1.5s infinite linear;
+}
+
+@keyframes pulse-bar {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.yt-success-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.yt-success-icon {
+  font-size: 2rem;
+}
+
+.yt-success-text h4 {
+  margin: 0 0 4px;
+  color: #34d399;
+  font-size: 0.95rem;
+}
+
+.yt-success-text p {
+  margin: 0 0 10px;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.yt-watch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #10b981;
+  color: #000;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.yt-watch-btn:hover {
+  background: #34d399;
+}
+
+.yt-modal-footer {
+  padding: 16px 24px;
+  background: #161b22;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.yt-btn-publish {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+  transition: all 0.15s ease;
+}
+
+.yt-btn-publish:hover {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+}
+
+.yt-btn-publish:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+

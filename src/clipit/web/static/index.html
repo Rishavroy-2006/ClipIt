@@ -453,7 +453,18 @@
                 🗑 Delete Rejected (<span id="delRejectedCount">0</span>)
               </button>
             </div>
+            <div class="yt-header-badge-row" id="ytHeaderRow">
+              <button id="ytConnectHeaderBtn" class="yt-connect-btn" type="button" title="Connect your YouTube Channel for 1-click uploads">
+                <span class="yt-play-icon">▶</span> <span id="ytHeaderBtnText">Connect YouTube</span>
+              </button>
+              <div id="ytChannelPill" class="yt-channel-pill" style="display:none;">
+                <span class="yt-dot-live"></span>
+                <span id="ytPillName" class="yt-pill-name">Channel</span>
+                <button id="ytDisconnectPillBtn" class="yt-pill-unlink" title="Disconnect channel">✕</button>
+              </div>
+            </div>
           </div>
+
           <div id="partFilterTabs" class="part-filter-tabs" style="display:none;"></div>
           <ul id="clipList"></ul>
         </aside>
@@ -797,6 +808,95 @@
             <!-- Dynamically populated via JS -->
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direct YouTube Shorts Upload Modal -->
+  <div id="ytUploadModal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="ytUploadModalTitle">
+    <div class="crop-modal yt-upload-modal">
+      <div class="crop-modal-header yt-modal-header">
+        <div class="yt-modal-title-wrap">
+          <span class="yt-badge-tag">▶ YouTube Shorts</span>
+          <h2 id="ytUploadModalTitle">Upload Directly to YouTube</h2>
+          <span class="crop-modal-sub">Publish this short directly to your linked YouTube channel</span>
+        </div>
+        <button class="crop-close-btn" id="ytUploadCloseBtn" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="yt-modal-body">
+        <!-- Channel Connection Banner -->
+        <div class="yt-channel-card" id="ytModalChannelCard">
+          <div class="yt-channel-info">
+            <span class="yt-channel-avatar" id="ytModalAvatar">▶</span>
+            <div>
+              <div class="yt-channel-name" id="ytModalChannelName">Checking channel connection...</div>
+              <div class="yt-channel-subtext" id="ytModalChannelSubtext">Checking authorization status...</div>
+            </div>
+          </div>
+          <button id="ytModalAuthBtn" class="yt-auth-action-btn" type="button">Connect Channel</button>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="yt-form-group">
+          <label for="ytUploadTitleInput">Short Title (max 100 chars):</label>
+          <input type="text" id="ytUploadTitleInput" class="yt-input" maxlength="100" />
+        </div>
+
+        <div class="yt-form-row-grid">
+          <div class="yt-form-group">
+            <label for="ytUploadVariantSelect">Layout Variant:</label>
+            <select id="ytUploadVariantSelect" class="yt-select">
+              <option value="stack">Reaction Stacked</option>
+              <option value="blur">Reference Letterbox</option>
+              <option value="reframed">Content Only (Deframed)</option>
+            </select>
+          </div>
+
+          <div class="yt-form-group">
+            <label for="ytUploadPrivacySelect">Privacy Visibility:</label>
+            <select id="ytUploadPrivacySelect" class="yt-select">
+              <option value="public">Public (Live to viewers)</option>
+              <option value="unlisted" selected>Unlisted (Only with link)</option>
+              <option value="private">Private (Only you)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="yt-form-group">
+          <label for="ytUploadDescInput">Description & Copyright Disclaimer:</label>
+          <textarea id="ytUploadDescInput" class="yt-textarea" rows="6"></textarea>
+        </div>
+
+        <!-- Progress / Status Bar -->
+        <div id="ytUploadProgressWrap" class="yt-progress-wrap" style="display:none;">
+          <div class="yt-progress-header">
+            <span id="ytProgressStatus">Uploading to YouTube...</span>
+            <span id="ytProgressPercent">Processing…</span>
+          </div>
+          <div class="yt-progress-bar-bg">
+            <div id="ytProgressBarFill" class="yt-progress-bar-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Success Result Card -->
+        <div id="ytUploadSuccessCard" class="yt-success-card" style="display:none;">
+          <div class="yt-success-icon">🎉</div>
+          <div class="yt-success-text">
+            <h4>Successfully Published to YouTube Shorts!</h4>
+            <p>Your video is uploaded and processing.</p>
+            <a id="ytSuccessShortLink" class="yt-watch-btn" href="#" target="_blank" rel="noopener noreferrer">
+              ▶ Watch Short on YouTube
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="yt-modal-footer">
+        <button id="ytCancelBtn" class="crop-btn-cancel" type="button">Cancel</button>
+        <button id="ytSubmitUploadBtn" class="yt-btn-publish" type="button">
+          🚀 Publish to YouTube Shorts
+        </button>
       </div>
     </div>
   </div>

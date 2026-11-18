@@ -398,5 +398,61 @@ def cost(
         console.print("[dim]No metrics recorded yet.[/dim]")
 
 
+@app.command(name="youtube-status")
+def youtube_status():
+    """Check YouTube API configuration and channel connection status."""
+    from clipit.youtube import is_configured, is_connected, get_channel_info
+
+    configured = is_configured()
+    connected = is_connected()
+
+    console.print(Panel.fit("[bold cyan]YouTube Channel Status[/bold cyan]"))
+    if not configured:
+        console.print("[yellow]client_secrets.json not found in project root.[/yellow]")
+        console.print("Please place your downloaded OAuth client JSON in the project root as client_secrets.json.")
+        return
+
+    console.print("[green]✔ client_secrets.json configured.[/green]")
+    if not connected:
+        console.print("[yellow]Channel not connected yet. Run: [bold]clipit youtube-auth[/bold][/yellow]")
+        return
+
+    ch = get_channel_info()
+    if ch:
+        console.print(f"[bold green]✔ Connected to YouTube Channel:[/bold green] {ch.get('title')} ({ch.get('customUrl', '')})")
+        console.print(f"  Subscribers: {ch.get('subscribers')} | Total Videos: {ch.get('videoCount')}")
+    else:
+        console.print("[green]✔ Authorized token active.[/green]")
+
+
+@app.command(name="youtube-auth")
+def youtube_auth():
+    """Authorize and link your YouTube channel via Google OAuth2."""
+    from clipit.youtube import is_configured, authenticate_channel
+
+    if not is_configured():
+        console.print("[red]client_secrets.json not found. Please place it in the project root first.[/red]")
+        raise typer.Exit(1)
+
+    console.print("[bold cyan]Starting Google OAuth2 authorization in your default browser...[/bold cyan]")
+    res = authenticate_channel(open_browser=True)
+    if res.get("success"):
+        ch = res.get("channel") or {}
+        console.print(f"[bold green]🎉 Successfully linked channel:[/bold green] {ch.get('title', 'YouTube Channel')} ({ch.get('customUrl', '')})")
+    else:
+        console.print(f"[bold red]Authorization failed:[/bold red] {res.get('error')}")
+
+
+@app.command(name="youtube-disconnect")
+def youtube_disconnect():
+    """Unlink current YouTube channel and remove local token."""
+    from clipit.youtube import disconnect_channel
+    if disconnect_channel():
+        console.print("[green]✔ Successfully disconnected YouTube channel.[/green]")
+    else:
+        console.print("[yellow]No active YouTube connection found.[/yellow]")
+
+
+
 if __name__ == "__main__":
     app()

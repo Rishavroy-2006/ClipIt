@@ -402,6 +402,19 @@ def test_get_source_stream_starts():
     assert a_st >= 0.0
 
 
+def test_youtube_integration():
+    from clipit.youtube import is_configured, is_connected, get_channel_info, upload_short
+    assert is_configured() is True
+    # Without token, is_connected is False and info is None
+    assert is_connected() is False
+    assert get_channel_info() is None
+    # Upload without authentication fails gracefully
+    res = upload_short(Path("tests/fixtures/sample.mp4"), "Test Title", "Test Desc")
+    assert res["success"] is False
+    assert "Not authenticated" in res["error"]
+
+
+
 
 
 

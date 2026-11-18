@@ -65,6 +65,12 @@ window.addEventListener('popstate', e => {
     closeCropEditor(false);
     return;
   }
+  const ytModal = $('#ytUploadModal');
+  if (ytModal && ytModal.style.display === 'flex') {
+    closeYouTubeUploadModal();
+    return;
+  }
+
 
   const state = e.state;
   if (state && state.step) {
@@ -2080,6 +2086,7 @@ function inspect(c) {
     <button class="wide" id="cropBtn" style="margin-top:10px;background:var(--ink);border:1px solid var(--lemon);color:var(--lemon);font-weight:700;">✂ Adjust Video Crop & Framing</button>
     <button class="wide" id="copy" style="margin-top:8px;">📋 Copy Description & Publishing Pack</button>
     <button class="wide" id="exportCurrentClipBtn" style="margin-top:8px;background:linear-gradient(135deg, #2563eb, #1d4ed8);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,0.2);box-shadow:0 4px 12px rgba(37,99,235,0.3);">📥 Export This Clip & Text to Downloads</button>
+    <button class="wide yt-upload-btn" id="ytUploadBtn" style="margin-top:8px;">🚀 Upload Directly to YouTube Shorts</button>
     <div class="acts">
       <button class="ok ${c.status === 'approved' ? 'active' : ''}" id="ap">Approve [A]</button>
       <button class="no ${c.status === 'rejected' ? 'active' : ''}" id="rj">Reject [R]</button>
@@ -2145,6 +2152,8 @@ function inspect(c) {
   $('#copy').onclick = copyPack;
   const expCur = $('#exportCurrentClipBtn');
   if (expCur) expCur.onclick = (e) => exportCurrentClip(e);
+  const ytUp = $('#ytUploadBtn');
+  if (ytUp) ytUp.onclick = () => openYouTubeUploadModal(c);
   $('#ap').onclick = () => mark('approved');
   $('#rj').onclick = () => mark('rejected');
   $('#exp').onclick = exportAll;
@@ -3809,6 +3818,268 @@ function initStorageManager() {
 // Load workspace streams on startup
 loadProjects();
 initStorageManager();
+initYouTubeIntegration();
+
+/* ==========================================================================
+   YouTube Channel Integration & Direct Upload
+   ========================================================================== */
+
+let ytState = {
+  configured: false,
+  connected: false,
+  channel: null,
+  activeClip: null,
+};
+
+async function checkYouTubeStatus() {
+  try {
+    const res = await api('/api/youtube/status');
+    ytState.configured = !!res.configured;
+    ytState.connected = !!res.connected;
+    ytState.channel = res.channel || null;
+    updateYouTubeUI();
+  } catch (err) {
+    console.warn('Failed to check YouTube status:', err);
+  }
+}
+
+function updateYouTubeUI() {
+  const headerBtn = $('#ytConnectHeaderBtn');
+  const channelPill = $('#ytChannelPill');
+  const pillName = $('#ytPillName');
+
+  if (ytState.connected && ytState.channel) {
+    if (headerBtn) headerBtn.style.display = 'none';
+    if (channelPill) {
+      channelPill.style.display = 'inline-flex';
+      if (pillName) pillName.textContent = ytState.channel.title || 'Connected';
+    }
+  } else {
+    if (channelPill) channelPill.style.display = 'none';
+    if (headerBtn) {
+      headerBtn.style.display = 'inline-flex';
+      const btnText = $('#ytHeaderBtnText');
+      if (btnText) btnText.textContent = ytState.configured ? 'Connect YouTube' : 'Setup YouTube';
+    }
+  }
+
+  updateYouTubeModalChannelCard();
+}
+
+function updateYouTubeModalChannelCard() {
+  const nameEl = $('#ytModalChannelName');
+  const subEl = $('#ytModalChannelSubtext');
+  const authBtn = $('#ytModalAuthBtn');
+  const avatarEl = $('#ytModalAvatar');
+
+  if (ytState.connected && ytState.channel) {
+    if (nameEl) nameEl.textContent = ytState.channel.title || 'YouTube Channel';
+    if (subEl) subEl.textContent = `${ytState.channel.customUrl || ''} · ${ytState.channel.subscribers || '0'} subscribers`;
+    if (authBtn) {
+      authBtn.textContent = 'Switch Account';
+      authBtn.className = 'yt-auth-action-btn switch';
+    }
+    if (avatarEl) {
+      if (ytState.channel.thumbnail) {
+        avatarEl.innerHTML = `<img src="${ytState.channel.thumbnail}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+      } else {
+        avatarEl.textContent = '▶';
+      }
+    }
+  } else {
+    if (nameEl) nameEl.textContent = 'No Channel Connected';
+    if (subEl) subEl.textContent = ytState.configured ? 'Ready to connect via Google OAuth2' : 'client_secrets.json missing';
+    if (authBtn) {
+      authBtn.textContent = 'Connect Channel';
+      authBtn.className = 'yt-auth-action-btn';
+    }
+    if (avatarEl) avatarEl.textContent = '▶';
+  }
+}
+
+async function triggerYouTubeAuth() {
+  const authBtn = $('#ytModalAuthBtn');
+  const headerBtn = $('#ytConnectHeaderBtn');
+  if (authBtn) authBtn.textContent = 'Authenticating…';
+  if (headerBtn) headerBtn.textContent = 'Connecting…';
+
+  toast('Opening browser for Google account authorization…');
+  try {
+    const res = await post('/api/youtube/auth', {});
+    if (res && res.success) {
+      ytState.connected = true;
+      ytState.channel = res.channel;
+      updateYouTubeUI();
+      toast(`✔ Successfully connected channel: ${res.channel ? res.channel.title : 'YouTube'}!`);
+    } else {
+      toast('Authentication failed: ' + ((res && res.error) || 'Unknown error'));
+      await checkYouTubeStatus();
+    }
+  } catch (err) {
+    toast('Auth error: ' + err.message);
+    await checkYouTubeStatus();
+  }
+}
+
+async function disconnectYouTubeChannel() {
+  if (!confirm('Disconnect your linked YouTube channel?')) return;
+  try {
+    await post('/api/youtube/disconnect', {});
+    ytState.connected = false;
+    ytState.channel = null;
+    updateYouTubeUI();
+    toast('YouTube channel disconnected.');
+  } catch (err) {
+    toast('Error disconnecting: ' + err.message);
+  }
+}
+
+function openYouTubeUploadModal(c) {
+  ytState.activeClip = c;
+  const cleanTitle = (c.title || c.hook || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '').trim();
+  const tags = (Array.isArray(c.tags) ? c.tags : String(c.tags || '').split(/\s+/)).filter(Boolean).map(t => t[0] === '#' ? t : '#' + t);
+  const tagStr = (tags.length ? tags : ['#gaming', '#shorts', '#viral', '#streamer', '#GTA6']).join(' ');
+  const streamerName = S.uploader || 'the original creator / streamer';
+
+  const disclaimer = [
+    '⚠️ Copyright Disclaimer & Credits:',
+    `All content, audio, and footage belong directly to ${streamerName}.`,
+    'I do not own, claim, or have any rights to this content or broadcast.',
+    'This video is clipped and shared solely for entertainment, commentary, and archival purposes under Fair Use.',
+    'If you are the copyright holder and wish for this clip to be removed, please contact me directly and it will be taken down immediately.'
+  ].join('\n');
+
+  const desc = `${cleanTitle} 🔥\n\n${tagStr}\n\n${disclaimer}\n\n💡 Why Viral:\n${c.why || 'High-energy emotional reaction with strong retention payoff.'}`;
+
+  if ($('#ytUploadTitleInput')) $('#ytUploadTitleInput').value = cleanTitle;
+  if ($('#ytUploadDescInput')) $('#ytUploadDescInput').value = desc;
+
+  // Sync variant select
+  const v = S.currentVariant || (c.variants && c.variants[0]) || { id: 'stack', file: `${c.id}.mp4` };
+  const varSelect = $('#ytUploadVariantSelect');
+  if (varSelect) {
+    if (v.id === 'blur-fill' || (v.file && v.file.includes('_blur'))) varSelect.value = 'blur';
+    else if (v.id === 'reframed' || (v.file && v.file.includes('_reframed'))) varSelect.value = 'reframed';
+    else varSelect.value = 'stack';
+  }
+
+  // Reset progress & success states
+  if ($('#ytUploadProgressWrap')) $('#ytUploadProgressWrap').style.display = 'none';
+  if ($('#ytUploadSuccessCard')) $('#ytUploadSuccessCard').style.display = 'none';
+  if ($('#ytSubmitUploadBtn')) {
+    $('#ytSubmitUploadBtn').disabled = false;
+    $('#ytSubmitUploadBtn').textContent = '🚀 Publish to YouTube Shorts';
+  }
+
+  updateYouTubeModalChannelCard();
+  const modal = $('#ytUploadModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeYouTubeUploadModal() {
+  const modal = $('#ytUploadModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitYouTubeUpload() {
+  const c = ytState.activeClip;
+  if (!c) return;
+
+  if (!ytState.connected) {
+    toast('Please connect your YouTube channel first!');
+    triggerYouTubeAuth();
+    return;
+  }
+
+  const title = $('#ytUploadTitleInput').value.trim();
+  if (!title) {
+    toast('Please enter a title for the Short.');
+    return;
+  }
+
+  const desc = $('#ytUploadDescInput').value.trim();
+  const privacy = $('#ytUploadPrivacySelect').value;
+  const variant = $('#ytUploadVariantSelect').value;
+
+  // Resolve filename
+  let filename = `${c.id}.mp4`;
+  if (variant === 'blur') filename = `${c.id}_blur.mp4`;
+  else if (variant === 'reframed') filename = `${c.id}_reframed.mp4`;
+
+  const submitBtn = $('#ytSubmitUploadBtn');
+  const progressWrap = $('#ytUploadProgressWrap');
+  const successCard = $('#ytUploadSuccessCard');
+
+  try {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading to YouTube…';
+    progressWrap.style.display = 'block';
+    successCard.style.display = 'none';
+    $('#ytProgressStatus').textContent = 'Uploading video chunks to YouTube…';
+
+    const res = await post('/api/youtube/upload', {
+      video_id: S.vid,
+      filename: filename,
+      title: title,
+      description: desc,
+      privacy: privacy,
+    });
+
+    if (res && res.success) {
+      progressWrap.style.display = 'none';
+      successCard.style.display = 'flex';
+      const link = $('#ytSuccessShortLink');
+      if (link) {
+        link.href = res.url || `https://youtube.com/shorts/${res.video_id}`;
+        link.textContent = `▶ Watch Short (${res.video_id})`;
+      }
+      submitBtn.textContent = '✔ Published!';
+      toast(`🎉 Video successfully published to YouTube Shorts!`);
+    } else {
+      progressWrap.style.display = 'none';
+      submitBtn.disabled = false;
+      submitBtn.textContent = '🚀 Publish to YouTube Shorts';
+      toast('Upload failed: ' + ((res && res.error) || 'Unknown error'));
+    }
+  } catch (err) {
+    progressWrap.style.display = 'none';
+    submitBtn.disabled = false;
+    submitBtn.textContent = '🚀 Publish to YouTube Shorts';
+    toast('Upload error: ' + err.message);
+  }
+}
+
+function initYouTubeIntegration() {
+  const headerBtn = $('#ytConnectHeaderBtn');
+  const unlinkBtn = $('#ytDisconnectPillBtn');
+  const modalAuthBtn = $('#ytModalAuthBtn');
+  const closeBtn = $('#ytUploadCloseBtn');
+  const cancelBtn = $('#ytCancelBtn');
+  const submitBtn = $('#ytSubmitUploadBtn');
+  const modal = $('#ytUploadModal');
+
+  if (headerBtn) headerBtn.onclick = triggerYouTubeAuth;
+  if (unlinkBtn) unlinkBtn.onclick = disconnectYouTubeChannel;
+  if (modalAuthBtn) modalAuthBtn.onclick = triggerYouTubeAuth;
+  if (closeBtn) closeBtn.onclick = closeYouTubeUploadModal;
+  if (cancelBtn) cancelBtn.onclick = closeYouTubeUploadModal;
+  if (submitBtn) submitBtn.onclick = submitYouTubeUpload;
+
+  if (modal) {
+    modal.onclick = e => {
+      if (e.target === modal) closeYouTubeUploadModal();
+    };
+  }
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+      closeYouTubeUploadModal();
+    }
+  });
+
+  checkYouTubeStatus();
+}
+
 
 /* Background Animation */
 (() => {
