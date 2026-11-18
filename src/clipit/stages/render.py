@@ -96,20 +96,24 @@ def render_variant_file(
 
     clip_dur = max(0.1, clip.end - clip.start)
 
-    # Two-stage seek: fast-seek to 5s before clip.start, then fine-seek in decoder
-    # This guarantees microsecond A/V sync without keyframe lag or audio drift
+    # Two-stage seek: fast-seek to 5s before clip.start in input, then accurate trim in filtergraph.
+    # Trimming inside filtergraph BEFORE burning subtitles guarantees BOTH:
+    # 1. Microsecond frame-accurate A/V sync without keyframe lag or audio drift
+    # 2. Perfect word-by-word subtitle synchronization (burned at exact PTS=0 relative to clip cut)
     fast_seek = max(0.0, clip.start - 5.0)
     fine_seek = clip.start - fast_seek
 
     # Force 1:1 square pixel aspect ratio via setsar=1 to avoid anamorphic container flags
-    filter_complex = f"{layout_filter};[base]setpts=PTS-STARTPTS,ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v]"
+    filter_complex = (
+        f"{layout_filter};"
+        f"[base]trim=start={fine_seek:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
+        f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v]"
+    )
 
     cmd = [
         "ffmpeg", "-y",
         "-ss", f"{fast_seek:.3f}",
         "-i", str(source_video.resolve()),
-        "-ss", f"{fine_seek:.3f}",
-        "-t", f"{clip_dur:.3f}",
         "-filter_complex", filter_complex,
         "-map", "[v]",
         "-map", "0:a?",
@@ -126,7 +130,8 @@ def render_variant_file(
         cmd.extend(["-crf", str(video_config.crf), "-preset", "fast"])
 
     audio_filter = (
-        f"asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0,"
+        f"atrim=start={fine_seek:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,"
+        f"aresample=async=1:first_pts=0,"
         f"highpass=f=80,equalizer=f=3000:t=q:w=1.5:g=2.5,"
         f"acompressor=threshold=-18dB:ratio=3:attack=10:release=120:makeup=2dB,"
         f"loudnorm=I={video_config.audio_lufs}:LRA=9:TP=-1.0"
@@ -150,8 +155,6 @@ def render_variant_file(
             "ffmpeg", "-y",
             "-ss", f"{fast_seek:.3f}",
             "-i", str(source_video.resolve()),
-            "-ss", f"{fine_seek:.3f}",
-            "-t", f"{clip_dur:.3f}",
             "-filter_complex", filter_complex,
             "-map", "[v]",
             "-map", "0:a?",
