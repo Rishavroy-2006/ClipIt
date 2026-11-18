@@ -382,12 +382,11 @@ class LiveStreamMonitor:
         self.emit_event("stage_start", {"stage_id": "candidates", "name": "Boundary Deduplication"})
         self.emit_event("agent_log", {"stage_id": "candidates", "log": f"[DEDUP] Evaluated candidates across {self.overlap_mins}m boundary. Approved {len(final_clips)} viral moments for {part_name}."})
 
-        # Rename clip IDs and titles with Part prefix
+        # Rename clip IDs with Part prefix (keep title clean without [Part X] prefix)
         for idx, c in enumerate(final_clips, 1):
             c.id = f"pt{part_index:02d}_c{idx:02d}"
             c.layout = self.layout
-            if not c.title.startswith("[Part"):
-                c.title = f"[{part_name}] {c.title}"
+            c.title = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", c.title, flags=re.IGNORECASE).strip()
 
         console.print(f"✔ Finalized {len(final_clips)} viral clips for {part_name} (after deduplication)")
 

@@ -154,6 +154,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             return self.handle_delete_source(data)
         elif path == "/api/rerender-clip":
             return self.handle_rerender_clip(data)
+        elif path == "/api/update-clip-title":
+            return self.handle_update_clip_title(data)
         elif path == "/api/live/start":
             return self.handle_start_live_sentinel(data)
         elif path == "/api/live/stop":
@@ -718,6 +720,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         for c in enhanced_clips:
             c["status"] = approved_map.get(c["id"], "pending")
+            if c.get("title"):
+                c["title"] = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", str(c["title"]), flags=re.IGNORECASE).strip()
 
         # Check facecam status
         has_facecam = True
@@ -867,6 +871,19 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             vision_info["text_position"] = str(data["text_position"])
         if "content_zoom" in data:
             vision_info["content_zoom"] = float(data["content_zoom"])
+        if "title" in data and data["title"]:
+            clean_t = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", str(data["title"]), flags=re.IGNORECASE).strip()
+            vision_info["title"] = clean_t
+        if "title_size" in data and data["title_size"]:
+            try:
+                vision_info["title_size"] = int(data["title_size"])
+            except Exception:
+                pass
+        if "caption_size" in data and data["caption_size"]:
+            try:
+                vision_info["caption_size"] = int(data["caption_size"])
+            except Exception:
+                pass
 
         cache.save_json(vision_file, vision_info)
         if active_cache_v != cache_v:
@@ -936,6 +953,10 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         layout_target = data.get("layout", "all")
 
         valid_keys = {"id", "start", "end", "score", "title", "title_alts", "hook_line", "hooks", "why_viral", "category", "signals", "risk_flags", "trim_notes", "layout", "source_permission"}
+        if "title" in vision_info:
+            clip_dict["title"] = vision_info["title"]
+        else:
+            clip_dict["title"] = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", str(clip_dict.get("title", "")), flags=re.IGNORECASE).strip()
         filtered_clip = {k: v for k, v in clip_dict.items() if k in valid_keys}
         clip = ClipItem(**filtered_clip)
 
@@ -966,6 +987,21 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             if sidecar_p.exists():
                 with open(sidecar_p, "r", encoding="utf-8") as f:
                     sidecar = json.load(f)
+                if "title" in vision_info:
+                    sidecar["title"] = vision_info["title"]
+                    with open(sidecar_p, "w", encoding="utf-8") as f:
+                        json.dump(sidecar, f, indent=2)
+
+            if part_out_v and (part_out_v / f"{clip_id}.json").exists():
+                try:
+                    with open(part_out_v / f"{clip_id}.json", "r", encoding="utf-8") as f:
+                        psd = json.load(f)
+                    if "title" in vision_info:
+                        psd["title"] = vision_info["title"]
+                        with open(part_out_v / f"{clip_id}.json", "w", encoding="utf-8") as f:
+                            json.dump(psd, f, indent=2)
+                except Exception:
+                    pass
 
             if "variants" in sidecar:
                 for v in sidecar["variants"]:
@@ -976,6 +1012,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             self.send_json({
                 "success": True,
                 "clip_id": clip_id,
+                "title": clip_dict.get("title"),
                 "vision": vision_info,
                 "sidecar": sidecar,
                 "layout_target": layout_target,
@@ -983,6 +1020,70 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             })
         except Exception as e:
             self.send_json({"success": False, "error": str(e)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    def handle_update_clip_title(self, data: Dict[str, Any]):
+        video_id = data.get("video_id")
+        clip_id = data.get("clip_id")
+        new_title = data.get("title", "").strip()
+        new_title = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", new_title, flags=re.IGNORECASE).strip()
+
+        if not video_id or not clip_id or not new_title:
+            self.send_error(HTTPStatus.BAD_REQUEST, "Missing video_id, clip_id, or title")
+            return
+
+        cache_v = CACHE_DIR / video_id
+        out_v = OUT_DIR / video_id
+
+        m = re.match(r"^pt0*(\d+)", clip_id)
+        part_num = int(m.group(1)) if m else None
+        part_out_v = (out_v / f"part_{part_num:02d}") if part_num and part_num > 1 else None
+
+        candidates = [
+            out_v / f"{clip_id}.json",
+            (part_out_v / f"{clip_id}.json") if part_out_v else None,
+            cache_v / f"{clip_id}.json",
+        ]
+        for p in candidates:
+            if p and p.exists():
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        d = json.load(f)
+                    d["title"] = new_title
+                    with open(p, "w", encoding="utf-8") as f:
+                        json.dump(d, f, indent=2)
+                except Exception:
+                    pass
+
+        # Update vision json
+        for cdir in (cache_v, (CACHE_DIR / f"{video_id}_pt{part_num:02d}") if part_num and part_num > 1 else None):
+            if cdir and cdir.exists():
+                vis_p = cdir / f"vision_{clip_id}.json"
+                if vis_p.exists():
+                    try:
+                        with open(vis_p, "r", encoding="utf-8") as f:
+                            vd = json.load(f)
+                        vd["title"] = new_title
+                        with open(vis_p, "w", encoding="utf-8") as f:
+                            json.dump(vd, f, indent=2)
+                    except Exception:
+                        pass
+
+        # Update live_session.json
+        for sess_p in (cache_v / "live_session.json", out_v / "live_session.json"):
+            if sess_p.exists():
+                try:
+                    with open(sess_p, "r", encoding="utf-8") as f:
+                        sess_d = json.load(f)
+                    for pt in sess_d.get("parts", []):
+                        for c in pt.get("clips", []):
+                            if c.get("id") == clip_id:
+                                c["title"] = new_title
+                    with open(sess_p, "w", encoding="utf-8") as f:
+                        json.dump(sess_d, f, indent=2)
+                except Exception:
+                    pass
+
+        self.send_json({"success": True, "clip_id": clip_id, "title": new_title})
 
     def handle_start_live_sentinel(self, data: Dict[str, Any]):
         url = data.get("url", "").strip()

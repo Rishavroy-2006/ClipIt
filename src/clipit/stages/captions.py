@@ -20,7 +20,7 @@ PlayResY: 1920
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,{font},{size},{primary_color},&H000000FF,{outline_color},{shadow_color},-1,0,0,0,100,100,0,0,1,{outline},{shadow},2,60,60,{margin_v},1
 Style: HookBanner,{font},54,&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,100,100,0,0,3,10,0,8,80,80,90,1
-Style: TopHeader,{font},{top_fs},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,{top_sx},100,2,0,1,8,3,8,20,20,{top_margin_v},1
+Style: TopHeader,{font},{top_fs},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,{top_sx},100,2,0,1,8,3,8,40,40,{top_margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -134,6 +134,8 @@ def generate_clip_ass(
     topic_name: Optional[str] = "GTA 6 TRAILER 2",
     text_position: Optional[str] = None,
     content_ratio: Optional[str] = "3:4",
+    title_size: Optional[int] = None,
+    caption_size: Optional[int] = None,
 ) -> Path:
     """Generate an animated word-by-word ASS subtitle file with auto-emojis, layout-aware headlines, and custom text positioning."""
     style = load_style(style_path_or_name)
@@ -173,42 +175,70 @@ def generate_clip_ass(
 
     # 2. Heading Sizes for Blur-Fill or 3:4 Letterboxed Title
     clean_title = strip_unsupported_ass_chars(clip.title)
+    clean_title = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", clean_title, flags=re.IGNORECASE)
     clean_title = re.sub(r"[#@].*", "", clean_title).strip().upper()
     if not clean_title:
         clean_title = strip_unsupported_ass_chars(clip.hook_line or "VIRAL MOMENT").upper()
 
+    def wrap_title_text(text: str, max_chars_per_line: int = 17) -> Tuple[str, int]:
+        words = text.split()
+        if len(text) <= max_chars_per_line or len(words) < 2:
+            return text, len(text)
+        lines = []
+        curr_words = []
+        curr_len = 0
+        for w in words:
+            add_len = len(w) + (1 if curr_words else 0)
+            if curr_len + add_len > max_chars_per_line and curr_words:
+                lines.append(" ".join(curr_words))
+                curr_words = [w]
+                curr_len = len(w)
+            else:
+                curr_words.append(w)
+                curr_len += add_len
+        if curr_words:
+            lines.append(" ".join(curr_words))
+        return "\\N".join(lines), max(len(l) for l in lines)
+
     if layout_name == "blur-fill":
         l1 = f"{creator_name.upper()} REACTS" if creator_name else "LIVE REACTION"
-        l2_raw = clean_title
         l3 = topic_name.upper() if topic_name else "GTA 6 TRAILER 2"
+        l2_raw, max_line_len = wrap_title_text(clean_title, 17)
 
-        max_len = max(len(l1), len(l2_raw), len(l3))
-        if max_len <= 16:
-            top_fs, top_sx = 162, 135
-        elif max_len <= 19:
-            top_fs, top_sx = 154, 130
-        elif max_len <= 23:
-            top_fs, top_sx = 138, 125
-        else:
-            top_fs, top_sx = 120, 120
-        top_margin_v = 115
+        max_len = max(len(l1), max_line_len, len(l3))
+        # Available safe width is 920px inside 1080px resolution
+        # In Anton font with ScaleX=100%, 1 char ≈ 0.54 * font_size
+        safe_fs = int(920.0 / (max(8, max_len) * 0.54))
+
+        base_target_fs = title_size if title_size and title_size > 30 else 104
+        top_fs = max(42, min(base_target_fs, safe_fs))
+        top_sx = 100
+        top_margin_v = 110
     elif layout_name == "reframed" and content_ratio in ("3:4", "1:1", "4:5"):
         # Podcast / Hormozi style: bold 2-line header in top black bar
         words = clean_title.split()
-        if len(words) >= 4:
+        if len(clean_title) > 18 and len(words) >= 2:
             split_idx = len(words) // 2
             l1 = " ".join(words[:split_idx])
             l2_raw = " ".join(words[split_idx:])
+            max_line_len = max(len(l1), len(l2_raw))
         else:
             l1 = clean_title
             l2_raw = ""
-        top_fs = 74 if len(clean_title) < 25 else 62
-        top_sx = 105
+            max_line_len = len(clean_title)
+
+        safe_fs = int(920.0 / (max(8, max_line_len) * 0.55))
+        base_target_fs = title_size if title_size and title_size > 30 else (72 if max_line_len < 20 else 60)
+        top_fs = max(38, min(base_target_fs, safe_fs))
+        top_sx = 100
         top_margin_v = 55
+
+    # Subtitle / caption font size
+    caption_fs = caption_size if caption_size and caption_size >= 40 else style.get("size", 80)
 
     header = DEFAULT_ASS_HEADER.format(
         font=style.get("font", "Anton"),
-        size=style.get("size", 80),
+        size=caption_fs,
         primary_color=style.get("primary_color", "&H00FFFFFF"),
         outline_color=style.get("outline_color", "&H00000000"),
         shadow_color=style.get("shadow_color", "&H80000000"),

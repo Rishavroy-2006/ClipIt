@@ -458,8 +458,7 @@
           <ul id="clipList"></ul>
         </aside>
         <div class="stage">
-          <div class="phone">
-            <video id="vid" playsinline preload="metadata"></video>
+          <div class="phone-external-meta" id="phoneExternalMeta">
             <div class="phone-cam-status" id="phoneCamStatus">
               <span class="cam-status-dot"></span>
               <span id="phoneCamText">Facecam: Active (YuNet)</span>
@@ -468,6 +467,9 @@
               <span class="live-pulse-dot"></span>
               <span id="phonePartText">Part 1</span>
             </div>
+          </div>
+          <div class="phone">
+            <video id="vid" playsinline preload="metadata"></video>
             <div id="empty" class="empty">Select a clip</div>
           </div>
           <div class="variants" id="variants"></div>
@@ -594,6 +596,41 @@
               <button class="crop-btn" data-pos="above">⬆ Above / Top</button>
               <button class="crop-btn" data-pos="middle">⏺ Middle</button>
               <button class="crop-btn on" data-pos="bottom">⬇ Bottom</button>
+            </div>
+          </div>
+
+          <!-- Title & Headline Customization -->
+          <div class="crop-ctrl-group" id="cropTitleGroup">
+            <div class="crop-slider-header">
+              <label for="cropTitleInput">Clip Title / Headline</label>
+              <span id="cropTitleCharCount" style="color:var(--sub);font-size:0.75rem;">0 chars</span>
+            </div>
+            <input type="text" id="cropTitleInput" class="crop-text-input" placeholder="Enter headline title..." />
+          </div>
+
+          <div class="crop-ctrl-group" id="cropTitleSizeGroup">
+            <div class="crop-slider-header">
+              <label for="cropTitleSizeSlider">Headline Font Size</label>
+              <span id="cropTitleSizeVal" style="color:var(--lemon);">95 px</span>
+            </div>
+            <input type="range" id="cropTitleSizeSlider" min="50" max="140" value="95" step="1" />
+            <div class="crop-slider-ticks">
+              <span>Compact (50px)</span>
+              <span>Default (95px)</span>
+              <span>Extra Bold (140px)</span>
+            </div>
+          </div>
+
+          <div class="crop-ctrl-group" id="cropCaptionSizeGroup">
+            <div class="crop-slider-header">
+              <label for="cropCaptionSizeSlider">Captions / Subtitles Font Size</label>
+              <span id="cropCaptionSizeVal" style="color:var(--lemon);">80 px</span>
+            </div>
+            <input type="range" id="cropCaptionSizeSlider" min="45" max="130" value="80" step="1" />
+            <div class="crop-slider-ticks">
+              <span>Small (45px)</span>
+              <span>Default (80px)</span>
+              <span>Large (130px)</span>
             </div>
           </div>
 

@@ -1884,14 +1884,13 @@ function renderList() {
     for (const c of groupClips) {
       const origIdx = S.clips.indexOf(c);
       const isFallback = c.is_fallback;
-      const cleanTitleText = c.title.replace(/^\[Part\s*\d+\]\s*/i, '');
+      const cleanTitleText = (c.title || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '');
       html += `
         <li class="clip-item-row">
           <button data-i="${origIdx}" class="${origIdx === S.cur ? 'on' : ''}">
             <span class="score">${c.score}</span>
             <span class="clip-text-col">
               <span class="clip-title-line">
-                ${c.part ? `<span class="part-inline-badge">${esc(c.part)}</span>` : ''}
                 <span class="clip-title-text">${esc(cleanTitleText)}</span>
               </span>
               <small class="clip-meta-row muted">
@@ -1994,6 +1993,7 @@ function load(fresh) {
 }
 
 function inspect(c) {
+  const cleanTitle = (c.title || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '').trim();
   const br = c.br || { hook: Math.min(100, c.score + 3), acoustic: Math.max(0, c.score - 6), retention: Math.max(0, c.score - 2) };
   const rows = [
     ['Hook Velocity', br.hook ?? br.hook_velocity],
@@ -2040,6 +2040,20 @@ function inspect(c) {
         <i><u style="width:${Math.min(100, v || 0)}%"></u></i>
       </div>
     `).join('')}
+    <div class="inspect-title-section">
+      <div class="inspect-section-header">
+        <h3>Headline Title</h3>
+        <button class="inspect-edit-title-btn" id="inspectEditTitleBtn" title="Edit clip headline title">✏️ Edit</button>
+      </div>
+      <div id="inspectTitleDisplay" class="inspect-clip-title">${esc(cleanTitle)}</div>
+      <div id="inspectTitleEditRow" class="inspect-title-edit-row" style="display:none;">
+        <input type="text" id="inspectTitleInput" class="inspect-title-input" value="${esc(cleanTitle)}" />
+        <div class="inspect-title-actions">
+          <button id="inspectTitleSaveBtn" class="btn-save-sm">Save</button>
+          <button id="inspectTitleCancelBtn" class="btn-cancel-sm">Cancel</button>
+        </div>
+      </div>
+    </div>
     <h3>Top hook</h3>
     <div class="hook">${esc(c.hook)}</div>
     <h3>Why this goes viral</h3>
@@ -2055,6 +2069,57 @@ function inspect(c) {
     ` : ''}
     <button class="wide export" id="exp">Export approved to Ready-to-Post</button>
   `;
+
+  const editTitleBtn = $('#inspectEditTitleBtn');
+  const titleDisplay = $('#inspectTitleDisplay');
+  const titleEditRow = $('#inspectTitleEditRow');
+  const titleInput = $('#inspectTitleInput');
+  const titleSaveBtn = $('#inspectTitleSaveBtn');
+  const titleCancelBtn = $('#inspectTitleCancelBtn');
+
+  if (editTitleBtn && titleEditRow) {
+    editTitleBtn.onclick = () => {
+      titleEditRow.style.display = 'flex';
+      titleDisplay.style.display = 'none';
+      editTitleBtn.style.display = 'none';
+      titleInput.focus();
+    };
+    titleCancelBtn.onclick = () => {
+      titleEditRow.style.display = 'none';
+      titleDisplay.style.display = 'block';
+      editTitleBtn.style.display = 'inline-block';
+      titleInput.value = cleanTitle;
+    };
+    titleSaveBtn.onclick = async () => {
+      const newTitle = titleInput.value.trim().replace(/^\[?Part\s*\d+\]?:?\s*/i, '');
+      if (!newTitle) return toast('Title cannot be empty');
+      try {
+        titleSaveBtn.disabled = true;
+        titleSaveBtn.textContent = 'Saving…';
+        const res = await post('/api/update-clip-title', {
+          video_id: S.vid,
+          clip_id: c.id,
+          title: newTitle,
+        });
+        if (res && res.success) {
+          c.title = res.title;
+          titleDisplay.textContent = res.title;
+          titleEditRow.style.display = 'none';
+          titleDisplay.style.display = 'block';
+          editTitleBtn.style.display = 'inline-block';
+          renderList();
+          toast('Title updated! Re-render in Crop Editor to update video text.');
+        } else {
+          toast('Failed to update title');
+        }
+      } catch (err) {
+        toast('Error saving title: ' + err.message);
+      } finally {
+        titleSaveBtn.disabled = false;
+        titleSaveBtn.textContent = 'Save';
+      }
+    };
+  }
 
   $('#cropBtn').onclick = () => openCropEditor(c);
   $('#copy').onclick = copyPack;
@@ -2238,6 +2303,12 @@ let cropState = {
   streamerBox: [400, 0, 950, 280],
   camSizePct: 28,
   activePreset: 'bl',
+  title: '',
+  titleSize: 95,
+  captionSize: 80,
+  autoTitle: '',
+  autoTitleSize: 95,
+  autoCaptionSize: 80,
   autoFocusX: 500,
   autoSplitPct: 38,
   autoHasFacecam: true,
@@ -2296,7 +2367,15 @@ function openCropEditor(c) {
   cropState.activePreset = matchFacecamPreset(cropState.streamerBox);
   cropState.camSizePct = Math.round((cropState.streamerBox[3] - cropState.streamerBox[1]) / 10) || 28;
 
+  const cleanTitle = (c.title || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '').trim();
+  cropState.title = vis.title || cleanTitle;
+  cropState.titleSize = vis.title_size || 95;
+  cropState.captionSize = vis.caption_size || 80;
+
   // Save auto-detected defaults for Reset button
+  cropState.autoTitle = cleanTitle;
+  cropState.autoTitleSize = 95;
+  cropState.autoCaptionSize = 80;
   cropState.autoHasFacecam = cropState.hasFacecam;
   cropState.autoSplitPct = cropState.splitPct;
   cropState.autoFocusX = cropState.focusX;
@@ -2307,7 +2386,7 @@ function openCropEditor(c) {
 
   // Update modal titles & images
   $('#cropModalTitle').textContent = `Adjust Video Crop · ${c.id.toUpperCase()}`;
-  $('#cropModalSub').textContent = `Interactive framing and aspect ratios for "${c.title}"`;
+  $('#cropModalSub').textContent = `Interactive framing, text sizing, and aspect ratios for "${cleanTitle}"`;
   
   const frameUrl = c.sample_frame || `/api/video/${encodeURIComponent(S.vid)}/vision_${c.id}_mid.jpg`;
   const frameImg = $('#cropFrameImg');
@@ -2349,6 +2428,18 @@ function openCropEditor(c) {
   if ($('#cropFocusSlider')) {
     $('#cropFocusSlider').value = cropState.focusX;
     $('#cropFocusVal').textContent = `${Math.round(cropState.focusX / 10)}% (${cropState.focusX < 450 ? 'Left' : cropState.focusX > 550 ? 'Right' : 'Center'})`;
+  }
+  if ($('#cropTitleInput')) {
+    $('#cropTitleInput').value = cropState.title;
+    if ($('#cropTitleCharCount')) $('#cropTitleCharCount').textContent = `${cropState.title.length} chars`;
+  }
+  if ($('#cropTitleSizeSlider')) {
+    $('#cropTitleSizeSlider').value = cropState.titleSize;
+    if ($('#cropTitleSizeVal')) $('#cropTitleSizeVal').textContent = `${cropState.titleSize} px`;
+  }
+  if ($('#cropCaptionSizeSlider')) {
+    $('#cropCaptionSizeSlider').value = cropState.captionSize;
+    if ($('#cropCaptionSizeVal')) $('#cropCaptionSizeVal').textContent = `${cropState.captionSize} px`;
   }
 
   updateCropPreview();
@@ -2565,6 +2656,30 @@ function drawLive916Preview() {
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, cw, ch);
 
+  function wrapTitleLines(text, maxChars = 16) {
+    const words = text.split(/\s+/);
+    if (text.length <= maxChars || words.length < 2) return [text];
+    const lines = [];
+    let cur = [];
+    let len = 0;
+    for (const w of words) {
+      const add = w.length + (cur.length ? 1 : 0);
+      if (len + add > maxChars && cur.length) {
+        lines.push(cur.join(' '));
+        cur = [w];
+        len = w.length;
+      } else {
+        cur.push(w);
+        len += add;
+      }
+    }
+    if (cur.length) lines.push(cur.join(' '));
+    return lines;
+  }
+
+  // Caption font size scaled to 270x480 canvas
+  const captionFs = Math.max(9, Math.min(18, Math.round((cropState.captionSize || 80) * 0.175)));
+
   if (cropState.layout === 'stack') {
     if (cropState.hasFacecam) {
       // 1. Reaction Stacked: Top Tier (Streamer Facecam)
@@ -2616,7 +2731,7 @@ function drawLive916Preview() {
       // Subtitles
       ctx.save();
       ctx.textAlign = 'center';
-      ctx.font = '800 14px var(--d, Anton, system-ui)';
+      ctx.font = `800 ${captionFs}px var(--d, Anton, system-ui)`;
       if (cropState.textPosition === 'above') {
         ctx.fillStyle = '#00F2FE';
         ctx.shadowColor = '#00F2FE';
@@ -2646,7 +2761,7 @@ function drawLive916Preview() {
       // Subtitles
       ctx.save();
       ctx.textAlign = 'center';
-      ctx.font = '800 14px var(--d, Anton, system-ui)';
+      ctx.font = `800 ${captionFs}px var(--d, Anton, system-ui)`;
       ctx.fillStyle = '#00F2FE';
       ctx.shadowColor = '#00F2FE';
       ctx.shadowBlur = 8;
@@ -2667,54 +2782,54 @@ function drawLive916Preview() {
     ctx.drawImage(img, 0, 0, nw, nh, 0, lbY, cw, lbH);
 
     // 3-Line Bold Headline in Top Black Letterbox Bar (Exact Reference Short Style)
-    const clipTitle = cropState.clip?.title || 'GOING OVER GTA 6';
-    const cleanTitle = clipTitle.replace(/[#@].*/, '').trim().toUpperCase();
-    const words = cleanTitle.split(/\s+/);
+    const rawTitle = cropState.title || cropState.clip?.title || 'GOING OVER GTA 6';
+    const cleanTitle = rawTitle.replace(/^\[?Part\s*\d+\]?:?\s*/i, '').replace(/[#@].*/, '').trim().toUpperCase();
 
-    let l1 = 'LIVE REACTION';
-    let l2 = cleanTitle;
-    let l3 = 'GTA 6';
-    if (words.length >= 4) {
-      const p1 = Math.ceil(words.length / 3);
-      const p2 = Math.ceil((words.length * 2) / 3);
-      l1 = words.slice(0, p1).join(' ');
-      l2 = words.slice(p1, p2).join(' ');
-      l3 = words.slice(p2).join(' ');
-    } else if (words.length >= 2) {
-      l1 = words[0];
-      l2 = words.slice(1).join(' ');
-      l3 = '';
-    }
+    const l1 = 'LIVE REACTION';
+    const l2_lines = wrapTitleLines(cleanTitle, 16);
+    const l3 = 'GTA 6';
+
+    const maxLineLen = Math.max(l1.length, ...l2_lines.map(l => l.length), l3.length, 8);
+    // Dynamic calculation: safe fit inside cw (270px) with 16px margins
+    const fitFs = Math.floor((cw - 32) / (maxLineLen * 0.54));
+    const targetFs = Math.round((cropState.titleSize || 95) * 0.14); // 95 -> 13px
+    const headlineFs = Math.max(9, Math.min(targetFs, fitFs));
+
+    const lineH = Math.round(headlineFs * 1.3);
+    const totalH = (2 + l2_lines.length) * lineH;
+    let currY = Math.max(16, lbY - totalH - 8);
 
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.font = '800 13px var(--d, Anton, system-ui)';
+    ctx.font = `800 ${headlineFs}px var(--d, Anton, system-ui)`;
     ctx.fillStyle = '#FFFFFF';
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowBlur = 4;
-    ctx.fillText(l1, cw / 2, Math.max(32, lbY - 80));
+    ctx.fillText(l1, cw / 2, currY + headlineFs);
+    currY += lineH;
 
     ctx.fillStyle = '#00F2FE';
     ctx.shadowColor = '#00F2FE';
     ctx.shadowBlur = 8;
-    ctx.fillText(l2, cw / 2, Math.max(54, lbY - 55));
-
-    if (l3) {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
-      ctx.shadowBlur = 4;
-      ctx.fillText(l3, cw / 2, Math.max(76, lbY - 30));
+    for (const line of l2_lines) {
+      ctx.fillText(line, cw / 2, currY + headlineFs);
+      currY += lineH;
     }
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(l3, cw / 2, currY + headlineFs);
     ctx.restore();
 
     // Kinetic Subtitles in Bottom Black Letterbox Bar
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.font = '800 14px var(--d, Anton, system-ui)';
+    ctx.font = `800 ${captionFs}px var(--d, Anton, system-ui)`;
     ctx.fillStyle = '#00F2FE';
     ctx.shadowColor = '#00F2FE';
     ctx.shadowBlur = 8;
-    const subY = cropState.textPosition === 'above' ? Math.max(26, lbY - 14) : cropState.textPosition === 'middle' ? ch / 2 : lbY + lbH + 50;
+    const subY = cropState.textPosition === 'above' ? Math.max(26, lbY - 14) : cropState.textPosition === 'middle' ? ch / 2 : lbY + lbH + 38;
     ctx.fillText('DISTILL FIVE TO', cw / 2, subY);
     ctx.restore();
   } else {
@@ -2761,31 +2876,34 @@ function drawLive916Preview() {
 
     // Reference style Top Hook Header in top black space (if ratio has top letterbox and position isn't above)
     if (ratio !== '9:16' && cropState.textPosition !== 'above') {
-      const hookText = cropState.clip?.title || cropState.clip?.hook_line || 'WHY YOU SHOULD IGNORE ADVICE';
-      const cleanHook = hookText.replace(/[#@].*/, '').trim().toUpperCase();
-      const words = cleanHook.split(/\s+/);
-
-      let l1 = 'WHY YOU SHOULD';
-      let l2 = 'IGNORE ADVICE';
-      if (words.length >= 3) {
-        const splitIdx = Math.ceil(words.length / 2);
-        l1 = words.slice(0, splitIdx).join(' ');
-        l2 = words.slice(splitIdx).join(' ');
-      }
+      const hookText = cropState.title || cropState.clip?.title || cropState.clip?.hook_line || 'WHY YOU SHOULD IGNORE ADVICE';
+      const cleanHook = hookText.replace(/^\[?Part\s*\d+\]?:?\s*/i, '').replace(/[#@].*/, '').trim().toUpperCase();
+      const hookLines = wrapTitleLines(cleanHook, 16);
+      const maxLineLen = Math.max(...hookLines.map(l => l.length), 8);
+      const fitFs = Math.floor((cw - 32) / (maxLineLen * 0.54));
+      const targetFs = Math.round((cropState.titleSize || 95) * 0.14);
+      const hookFs = Math.max(9, Math.min(targetFs, fitFs));
+      const lineH = Math.round(hookFs * 1.3);
+      let currY = Math.max(12, destY - (hookLines.length * lineH) - 6);
 
       ctx.save();
       ctx.textAlign = 'center';
-      ctx.font = '800 13px var(--d, Anton, system-ui)';
+      ctx.font = `800 ${hookFs}px var(--d, Anton, system-ui)`;
       ctx.fillStyle = '#FFFFFF';
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = 4;
-      ctx.fillText(l1, cw / 2, Math.max(22, destY - 26));
-
-      if (l2) {
-        ctx.fillStyle = '#00F2FE';
-        ctx.shadowColor = '#00F2FE';
-        ctx.shadowBlur = 8;
-        ctx.fillText(l2, cw / 2, Math.max(38, destY - 10));
+      for (let idx = 0; idx < hookLines.length; idx++) {
+        if (idx === 1) {
+          ctx.fillStyle = '#00F2FE';
+          ctx.shadowColor = '#00F2FE';
+          ctx.shadowBlur = 8;
+        } else {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.shadowColor = 'rgba(0,0,0,0.8)';
+          ctx.shadowBlur = 4;
+        }
+        ctx.fillText(hookLines[idx], cw / 2, currY + hookFs);
+        currY += lineH;
       }
       ctx.restore();
     }
@@ -2793,7 +2911,7 @@ function drawLive916Preview() {
     // Subtitle Text Preview according to chosen textPosition
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.font = '800 14px var(--d, Anton, system-ui)';
+    ctx.font = `800 ${captionFs}px var(--d, Anton, system-ui)`;
 
     if (cropState.textPosition === 'above') {
       ctx.fillStyle = '#00F2FE';
@@ -3096,6 +3214,24 @@ if ($('#cropFocusSlider')) $('#cropFocusSlider').oninput = function() {
   updateCropPreview();
 };
 
+if ($('#cropTitleInput')) $('#cropTitleInput').oninput = function() {
+  cropState.title = this.value;
+  if ($('#cropTitleCharCount')) $('#cropTitleCharCount').textContent = `${this.value.length} chars`;
+  drawLive916Preview();
+};
+
+if ($('#cropTitleSizeSlider')) $('#cropTitleSizeSlider').oninput = function() {
+  cropState.titleSize = +this.value;
+  if ($('#cropTitleSizeVal')) $('#cropTitleSizeVal').textContent = `${this.value} px`;
+  drawLive916Preview();
+};
+
+if ($('#cropCaptionSizeSlider')) $('#cropCaptionSizeSlider').oninput = function() {
+  cropState.captionSize = +this.value;
+  if ($('#cropCaptionSizeVal')) $('#cropCaptionSizeVal').textContent = `${this.value} px`;
+  drawLive916Preview();
+};
+
 if ($('#cropResetBtn')) $('#cropResetBtn').onclick = () => {
   cropState.focusX = cropState.autoFocusX;
   cropState.splitPct = cropState.autoSplitPct;
@@ -3106,7 +3242,16 @@ if ($('#cropResetBtn')) $('#cropResetBtn').onclick = () => {
   cropState.streamerBox = [...cropState.autoStreamerBox];
   cropState.activePreset = matchFacecamPreset(cropState.streamerBox);
   cropState.camSizePct = Math.round((cropState.streamerBox[3] - cropState.streamerBox[1]) / 10);
+  cropState.title = cropState.autoTitle;
+  cropState.titleSize = cropState.autoTitleSize;
+  cropState.captionSize = cropState.autoCaptionSize;
 
+  if ($('#cropTitleInput')) $('#cropTitleInput').value = cropState.title;
+  if ($('#cropTitleCharCount')) $('#cropTitleCharCount').textContent = `${cropState.title.length} chars`;
+  if ($('#cropTitleSizeSlider')) $('#cropTitleSizeSlider').value = cropState.titleSize;
+  if ($('#cropTitleSizeVal')) $('#cropTitleSizeVal').textContent = `${cropState.titleSize} px`;
+  if ($('#cropCaptionSizeSlider')) $('#cropCaptionSizeSlider').value = cropState.captionSize;
+  if ($('#cropCaptionSizeVal')) $('#cropCaptionSizeVal').textContent = `${cropState.captionSize} px`;
   if ($('#cropFocusSlider')) $('#cropFocusSlider').value = cropState.focusX;
   if ($('#cropSplitSlider')) $('#cropSplitSlider').value = cropState.splitPct;
   if ($('#cropCamSizeSlider')) $('#cropCamSizeSlider').value = cropState.camSizePct;
@@ -3140,11 +3285,17 @@ if ($('#cropApplyBtn')) $('#cropApplyBtn').onclick = async () => {
       content_ratio: cropState.contentRatio,
       text_position: cropState.textPosition,
       content_zoom: cropState.contentZoom,
+      title: cropState.title,
+      title_size: cropState.titleSize,
+      caption_size: cropState.captionSize,
     });
 
     if (res && res.success) {
       c.vision = res.vision;
       c.has_facecam = res.vision.has_facecam !== false;
+      if (res.title) c.title = res.title;
+      else if (cropState.title) c.title = cropState.title;
+
       if (res.sidecar && res.sidecar.variants) {
         c.variants = res.sidecar.variants.map((v, j) => ({
           file: v.file,
@@ -3168,10 +3319,14 @@ if ($('#cropApplyBtn')) $('#cropApplyBtn').onclick = async () => {
       if (newVi < 0) newVi = 0;
       S.vi = newVi;
 
+      // Ensure stable clip index
+      const clipIdx = S.clips.findIndex(x => x.id === c.id);
+      if (clipIdx >= 0) S.cur = clipIdx;
+
       // Fully re-render list, variant buttons, inspector, and reload video player
       select(S.cur, true);
 
-      toast(`Clip ${c.id.toUpperCase()} re-rendered with new facecam framing!`);
+      toast(`Clip ${c.id.toUpperCase()} re-rendered successfully!`);
       closeCropEditor();
     } else {
       toast('Re-render failed: ' + (res?.error || 'Unknown error'));

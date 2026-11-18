@@ -58,6 +58,14 @@ def render_variant_file(
     ass_path = cache.path(f"{clip.id}{ass_suffix}.ass")
     text_pos = vision_info.get("text_position") if vision_info else None
     content_ratio = vision_info.get("content_ratio", "3:4") if vision_info else "3:4"
+    title_size = vision_info.get("title_size") if vision_info else None
+    caption_size = vision_info.get("caption_size") if vision_info else None
+    custom_title = vision_info.get("title") if vision_info else None
+    if custom_title:
+        clip.title = custom_title
+    if clip.title:
+        import re
+        clip.title = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", clip.title, flags=re.IGNORECASE).strip()
 
     generate_clip_ass(
         clip,
@@ -69,6 +77,8 @@ def render_variant_file(
         layout_name=layout_name,
         text_position=text_pos,
         content_ratio=content_ratio,
+        title_size=title_size,
+        caption_size=caption_size,
     )
 
     # Cross-platform relative path handling to avoid Windows drive letter colons in FFmpeg filtergraph
@@ -170,6 +180,11 @@ def render_single_clip(
     3. Content Deframed 9:16 (<clip.id>_reframed.mp4)
     """
     vision_info = analyze_clip_vision(clip, source_video, cache)
+    if vision_info.get("title"):
+        clip.title = vision_info["title"]
+    if clip.title:
+        import re
+        clip.title = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", clip.title, flags=re.IGNORECASE).strip()
     has_facecam = vision_info.get("has_facecam", bool(face_box))
 
     # Inherit global facecam coordinates from cache if local frame was ambiguous
