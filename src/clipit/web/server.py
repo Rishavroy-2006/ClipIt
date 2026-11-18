@@ -209,8 +209,21 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                     else:
                         thumb_url = local_thumb_url
 
-                    # Count clips
-                    clips_count = len(list(d.glob("c*.mp4"))) // 3  # ~3 variants per clip
+                    # Count clips from rendered sidecars across out_v and part_* dirs
+                    sidecars_count = 0
+                    if d.exists():
+                        sc_ids = set()
+                        for sp in d.glob("*.json"):
+                            if sp.name not in ("info.json", "live_session.json", "approved.json", "project.json", "review.json"):
+                                sc_ids.add(re.sub(r"^pt01_", "", sp.stem))
+                        for pdir in d.glob("part_*"):
+                            if pdir.is_dir():
+                                for sp in pdir.glob("*.json"):
+                                    if sp.name not in ("info.json", "live_session.json", "approved.json"):
+                                        sc_ids.add(sp.stem)
+                        sidecars_count = len(sc_ids)
+
+                    clips_count = sidecars_count if sidecars_count > 0 else (len(list(d.glob("c*.mp4"))) // 3)
                     if clips_count == 0:
                         clips_count = len(list(d.glob("c*.mp4")))
 
@@ -330,10 +343,10 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                     })
                     return
 
-            # 3. Check disk for active live_session.json recently modified (< 1 hour)
+            # 3. Check disk for active live_session.json recently modified (< 60 seconds)
             for sess_path in CACHE_DIR.glob("*/live_session.json"):
                 try:
-                    if time.time() - sess_path.stat().st_mtime < 3600:
+                    if time.time() - sess_path.stat().st_mtime < 60:
                         sess_data = json.loads(sess_path.read_text(encoding="utf-8"))
                         status = sess_data.get("status", "")
                         if status in ("processing_part", "waiting_next_chunk", "active", "watching", "in_progress", "running"):
@@ -362,19 +375,6 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                             return
                 except Exception:
                     continue
-
-            # 4. Fallback to latest session in memory if any
-            if active_sessions:
-                latest = sorted(active_sessions.values(), key=lambda s: s.get("created_at", 0), reverse=True)[0]
-                self.send_json({
-                    "active": not latest.get("done", False),
-                    "session_id": latest["id"],
-                    "video_id": latest.get("video_id"),
-                    "url": latest.get("url"),
-                    "done": latest.get("done", False),
-                    "created_at": latest.get("created_at"),
-                })
-                return
 
             self.send_json({"active": False})
 
@@ -501,54 +501,106 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-        # Load clips from sidecars or refined_clips.json
-        clips_data = []
+        # 1. Gather all sidecar JSONs across out_v and part_* dirs
+        sidecars = {}
+        if out_v.exists():
+            for p in sorted(out_v.glob("*.json")):
+                if p.name not in ("info.json", "live_session.json", "approved.json", "project.json", "review.json"):
+                    try:
+                        with open(p, "r", encoding="utf-8") as f:
+                            d = json.load(f)
+                            cid = d.get("id", p.stem)
+                            sidecars[cid] = d
+                    except Exception:
+                        pass
+            for part_dir in sorted(out_v.glob("part_*")):
+                if part_dir.is_dir():
+                    for p in sorted(part_dir.glob("*.json")):
+                        if p.name not in ("info.json", "live_session.json", "approved.json"):
+                            try:
+                                with open(p, "r", encoding="utf-8") as f:
+                                    d = json.load(f)
+                                    cid = d.get("id", p.stem)
+                                    sidecars[cid] = d
+                            except Exception:
+                                pass
+
+        # 2. Gather clips from live_session.json
+        live_clips = {}
+        live_sess_p = cache_v / "live_session.json"
+        if not live_sess_p.exists():
+            live_sess_p = out_v / "live_session.json"
+        if live_sess_p.exists():
+            try:
+                with open(live_sess_p, "r", encoding="utf-8") as f:
+                    sess_d = json.load(f)
+                    for part in sess_d.get("parts", []):
+                        for c in part.get("clips", []):
+                            cid = c.get("id")
+                            if cid:
+                                live_clips[cid] = c
+                    for c in sess_d.get("clips", []):
+                        cid = c.get("id")
+                        if cid:
+                            live_clips[cid] = c
+            except Exception:
+                pass
+
+        # 3. Gather clips from refined_clips.json
+        refined_clips = {}
         refined_p = cache_v / "refined_clips.json"
         if refined_p.exists():
             try:
                 with open(refined_p, "r", encoding="utf-8") as f:
-                    clips_data = json.load(f)
+                    r_list = json.load(f)
+                    for c in r_list:
+                        cid = c.get("id")
+                        if cid:
+                            refined_clips[cid] = c
             except Exception:
-                clips_data = []
+                pass
 
-        if not clips_data:
-            live_sess_p = cache_v / "live_session.json"
-            if not live_sess_p.exists():
-                live_sess_p = out_v / "live_session.json"
-            if live_sess_p.exists():
-                try:
-                    with open(live_sess_p, "r", encoding="utf-8") as f:
-                        sess_d = json.load(f)
-                        clips_data = sess_d.get("clips", [])
-                except Exception:
-                    pass
+        # 4. Deduplicate: if pt01_c01 exists, drop plain c01
+        for k in list(sidecars.keys()):
+            if not k.startswith("pt") and (f"pt01_{k}" in sidecars):
+                del sidecars[k]
+        for k in list(live_clips.keys()):
+            if not k.startswith("pt") and (f"pt01_{k}" in live_clips or f"pt01_{k}" in sidecars):
+                del live_clips[k]
+        for k in list(refined_clips.keys()):
+            if not k.startswith("pt") and (f"pt01_{k}" in refined_clips or f"pt01_{k}" in sidecars):
+                del refined_clips[k]
 
-        # Enhance with sidecar JSONs (variants, facecam status, vision info)
+        all_cids = list(dict.fromkeys(list(sidecars.keys()) + list(live_clips.keys()) + list(refined_clips.keys())))
+
+        def find_video_file(name_variants):
+            for name in name_variants:
+                if (out_v / name).exists():
+                    return name
+                if out_v.exists():
+                    for pdir in out_v.glob("part_*"):
+                        if (pdir / name).exists():
+                            return name
+            return None
+
         enhanced_clips = []
-        for c in clips_data:
-            cid = c.get("id")
+        for cid in all_cids:
             stripped_cid = cid.split("_", 1)[1] if (cid and cid.startswith("pt") and "_" in cid) else cid
-            c_copy = dict(c)
 
-            # Find sidecar json across out_v and part_* dirs
-            sidecar_candidates = [
-                out_v / f"{cid}.json",
-                out_v / f"{stripped_cid}.json",
-            ]
-            if out_v.exists():
-                for part_dir in out_v.glob("part_*"):
-                    if part_dir.is_dir():
-                        sidecar_candidates.append(part_dir / f"{cid}.json")
-                        sidecar_candidates.append(part_dir / f"{stripped_cid}.json")
-            sidecar_p = next((p for p in sidecar_candidates if p.exists() and p.is_file()), None)
+            base_data = dict(live_clips.get(cid) or refined_clips.get(cid) or {})
+            sidecar_data = sidecars.get(cid) or sidecars.get(stripped_cid) or {}
 
-            # Load vision info & sample frame if available
+            # Merge: sidecar takes precedence as ground truth
+            c_copy = {**base_data, **sidecar_data}
+            c_copy["id"] = cid
+
+            # Vision info & sample frame
             vis_candidates = [
                 cache_v / f"vision_{cid}.json",
                 cache_v / f"vision_{stripped_cid}.json",
             ]
             vis_p = next((p for p in vis_candidates if p.exists() and p.is_file()), None)
-            if vis_p:
+            if vis_p and "vision" not in c_copy:
                 try:
                     with open(vis_p, "r", encoding="utf-8") as f:
                         c_copy["vision"] = json.load(f)
@@ -563,52 +615,32 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             if sample_p:
                 c_copy["sample_frame"] = f"/api/video/{video_id}/{sample_p.name}"
 
-            if sidecar_p:
-                try:
-                    with open(sidecar_p, "r", encoding="utf-8") as f:
-                        sc = json.load(f)
-                        if "variants" in sc:
-                            c_copy["variants"] = sc["variants"]
-                        if "has_facecam" in sc:
-                            c_copy["has_facecam"] = sc["has_facecam"]
-                        if "part" in sc and not c_copy.get("part"):
-                            c_copy["part"] = sc["part"]
-                        if "stream_window" in sc and not c_copy.get("stream_window"):
-                            c_copy["stream_window"] = sc["stream_window"]
-                        if "selector_engine" in sc and not c_copy.get("selector_engine"):
-                            c_copy["selector_engine"] = sc["selector_engine"]
-                except Exception:
-                    pass
+            # Set part if not already present
+            if not c_copy.get("part"):
+                if cid.startswith("pt"):
+                    m = re.match(r"^pt0*(\d+)", cid)
+                    if m:
+                        c_copy["part"] = f"Part {int(m.group(1))}"
+                else:
+                    c_copy["part"] = "Part 1"
 
+            # Set selector_engine if not present
             if not c_copy.get("selector_engine"):
                 if c_copy.get("score") == 65 or "audio loudness spike" in str(c_copy.get("why_viral", "")):
                     c_copy["selector_engine"] = "local-fallback"
                 else:
                     c_copy["selector_engine"] = "gemini-3.1-flash-lite"
 
-            if not c_copy.get("part") and cid and cid.startswith("pt"):
-                m = re.match(r"^pt0*(\d+)", cid)
-                if m:
-                    c_copy["part"] = f"Part {int(m.group(1))}"
-
-            # If variants not in sidecar, check files on disk
-            if "variants" not in c_copy or not c_copy["variants"]:
-                def find_video_file(name_variants):
-                    for name in name_variants:
-                        if (out_v / name).exists():
-                            return name
-                        if out_v.exists():
-                            for pdir in out_v.glob("part_*"):
-                                if (pdir / name).exists():
-                                    return name
-                    return None
-
+            # Resolve / populate variants
+            variants = c_copy.get("variants") or []
+            if not variants:
                 variants = []
                 stack_file = find_video_file([f"{cid}.mp4", f"{stripped_cid}.mp4"])
                 if stack_file:
                     variants.append({
                         "id": "stack",
                         "name": "Reaction Stacked",
+                        "label": "Reaction Stacked",
                         "file": stack_file,
                         "description": "Streamer reaction on top, reframed gameplay on bottom with seam captions"
                     })
@@ -617,6 +649,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                     variants.append({
                         "id": "blur-fill",
                         "name": "Reference Letterbox",
+                        "label": "Reference Letterbox",
                         "file": blur_file,
                         "description": "Full 16:9 stream with corner webcam + bold 3-line headline at top + lower subtitles"
                     })
@@ -625,12 +658,29 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                     variants.append({
                         "id": "reframed",
                         "name": "Content (Deframed 9:16)",
+                        "label": "Content (Deframed 9:16)",
                         "file": reframed_file,
                         "description": "Full-bleed 9:16 vertical crop focused on the action"
                     })
-                c_copy["variants"] = variants
+            else:
+                for v in variants:
+                    lbl = v.get("label") or v.get("name") or "Variant"
+                    v["name"] = lbl
+                    v["label"] = lbl
 
+            c_copy["variants"] = variants
             enhanced_clips.append(c_copy)
+
+        # Sort clips by part index then clip index
+        def clip_sort_key(c):
+            cid = c.get("id", "")
+            pm = re.search(r'pt0*(\d+)', cid)
+            part_num = int(pm.group(1)) if pm else (c.get("part_index") or 1)
+            cm = re.search(r'c0*(\d+)', cid)
+            clip_num = int(cm.group(1)) if cm else 1
+            return (part_num, clip_num)
+
+        enhanced_clips.sort(key=clip_sort_key)
 
         # Check approvals
         approved_map = {}
@@ -1259,6 +1309,9 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(content)))
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         self.send_cors_headers()
         self.end_headers()
         self.wfile.write(content)

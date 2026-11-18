@@ -1919,8 +1919,12 @@ function select(i, keep) {
   const c = S.clips[i];
   renderList();
 
-  $('#variants').innerHTML = c.variants.map((v, j) => `
-    <button data-j="${j}" class="${j === S.vi ? 'on' : ''}">${j + 1} · ${esc(v.label)}</button>
+  const variants = c.variants && c.variants.length ? c.variants : [
+    { file: `${c.id}.mp4`, label: 'Content (Deframed 9:16)', name: 'Content (Deframed 9:16)' }
+  ];
+
+  $('#variants').innerHTML = variants.map((v, j) => `
+    <button data-j="${j}" class="${j === S.vi ? 'on' : ''}">${j + 1} · ${esc(v.label || v.name || 'Variant ' + (j + 1))}</button>
   `).join('');
   $$('#variants button').forEach(b => b.onclick = () => variant(+b.dataset.j));
 
@@ -1930,14 +1934,19 @@ function select(i, keep) {
 
 function variant(j) {
   const c = S.clips[S.cur];
-  if (!c || !c.variants[j]) return;
+  const variants = c && c.variants && c.variants.length ? c.variants : [];
+  if (!variants[j]) return;
   S.vi = j;
   $$('#variants button').forEach((b, k) => b.classList.toggle('on', k === j));
   load(false);
 }
 
 function load(fresh) {
-  const c = S.clips[S.cur], v = c && c.variants[S.vi];
+  const c = S.clips[S.cur];
+  const variants = c && c.variants && c.variants.length ? c.variants : [
+    { file: `${c ? c.id : ''}.mp4`, label: 'Content (Deframed 9:16)', name: 'Content (Deframed 9:16)' }
+  ];
+  const v = variants[S.vi] || variants[0];
   $('#empty').style.display = v ? 'none' : 'grid';
   if (!v) {
     vid.removeAttribute('src');

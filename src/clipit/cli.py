@@ -21,6 +21,7 @@ from clipit.stages.refine import run_refine
 from clipit.stages.render import run_render
 from clipit.stages.review import generate_review_html
 from clipit.stages.export import run_export
+from clipit.llm.selector_api import get_api_key
 
 app = typer.Typer(
     name="clipit",
@@ -155,7 +156,7 @@ def run(
     min_score: int = typer.Option(70, "--min-score", help="Minimum virality score (0-100)"),
     layout: str = typer.Option("blur-fill", "--layout", help="Layout style: blur-fill, stack, split"),
     selector: str = typer.Option(
-        "file", "--selector", help="Selection mode: 'file' (offline/subscription) or 'api'"
+        "api" if get_api_key() else "file", "--selector", help="Selection mode: 'api', 'file', or 'heuristic'"
     ),
     from_stage: Optional[str] = typer.Option(
         None, "--from", help="Resume from stage: ingest, transcribe, signals, candidates, select, refine, render"

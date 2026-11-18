@@ -29,9 +29,9 @@ def run_select(
 
     clips: List[ClipItem] = []
 
-    # 1. If API mode is requested and API key exists in .env, attempt Gemini selection
+    # 1. If API key exists in .env or environment, attempt Gemini selection
     api_key = get_api_key()
-    if selector_mode == "api" and api_key and selector_mode not in ("heuristic", "file-only"):
+    if api_key and selector_mode not in ("heuristic", "file-only"):
         gemini_clips = select_clips_with_gemini(
             video_title=video_title,
             streamer=streamer,

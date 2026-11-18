@@ -117,7 +117,7 @@ class LiveStreamMonitor:
         self.video_id = get_video_id(url)
         self.chunk_mins = max(5, int(chunk_mins))
         self.overlap_mins = max(1, min(self.chunk_mins - 1, int(overlap_mins)))
-        self.target_clips = int(target_clips)
+        self.target_clips = 0 if str(target_clips).lower() in ("auto", "0") else max(1, int(target_clips))
         self.layout = layout
         self.style = style
         self.profile = profile or ("ishowspeed" if "speed" in url.lower() or "speed" in self.video_id.lower() else None)
@@ -358,7 +358,7 @@ class LiveStreamMonitor:
                 part_cache,
                 transcript,
                 candidates,
-                target_clips=self.target_clips + 2,
+                target_clips=0 if self.target_clips <= 0 else self.target_clips + 2,
                 min_score=65,
                 selector_mode="api",
                 force=True,
@@ -376,7 +376,7 @@ class LiveStreamMonitor:
 
         # 7. Boundary Deduplication against prior parts
         deduped_clips = self.deduplicate_clips(refined_clips, chunk_start_sec=start_sec)
-        final_clips = deduped_clips[:self.target_clips]
+        final_clips = deduped_clips[:29] if self.target_clips <= 0 else deduped_clips[:self.target_clips]
 
         self.emit_event("stage_complete", {"stage_id": "signals", "progress_pct": 60})
         self.emit_event("stage_start", {"stage_id": "candidates", "name": "Boundary Deduplication"})

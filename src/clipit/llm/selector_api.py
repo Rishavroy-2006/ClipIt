@@ -62,7 +62,7 @@ def select_clips_with_gemini(
         print("Warning: GEMINI_API_KEY not found in environment or .env.")
         return None
 
-    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=40000))
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=75000))
     models = model_chain or DEFAULT_MODEL_CHAIN
 
     # Build prompt input with targeted candidate transcript segments
@@ -101,103 +101,109 @@ def select_clips_with_gemini(
 
     full_prompt = f"{system_instruction}\n\n{user_prompt}"
 
-    # Strict maximum 30s overall deadline for Gemini API before auto-falling back
+    # Bounded overall deadline for Gemini API before auto-falling back
     start_time = time.time()
-    max_total_timeout = 50.0
+    max_total_timeout = 120.0
 
-    # Try model chain candidates with short pause on transient 503 errors
+    # Try model chain candidates with retry on transient 503 high demand spikes
     for model_name in models[:4]:
         if time.time() - start_time > max_total_timeout:
-            print("Notice: Gemini API overall deadline reached (50s). Falling back to local heuristic selection.")
+            print("Notice: Gemini API overall deadline reached (90s). Falling back to local heuristic selection.")
             break
-        try:
-            print(f"Calling Gemini Director API ({model_name}, 25s timeout)...")
-            resp = client.models.generate_content(
-                model=model_name,
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.4,
-                ),
-            )
-            raw_text = resp.text.strip()
-            # Clean markdown fences if any
-            if raw_text.startswith("```"):
-                raw_text = re.sub(r"^```[a-zA-Z]*\n", "", raw_text)
-                raw_text = re.sub(r"\n```$", "", raw_text)
 
-            parsed = json.loads(raw_text)
-            if isinstance(parsed, dict) and "clips" in parsed:
-                parsed = parsed["clips"]
-            if not isinstance(parsed, list):
-                parsed = [parsed]
+        for attempt in range(2):
+            if time.time() - start_time > max_total_timeout:
+                break
+            try:
+                print(f"Calling Gemini Director API ({model_name}, attempt {attempt + 1})...")
+                resp = client.models.generate_content(
+                    model=model_name,
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.4,
+                    ),
+                )
+                raw_text = resp.text.strip()
+                # Clean markdown fences if any
+                if raw_text.startswith("```"):
+                    raw_text = re.sub(r"^```[a-zA-Z]*\n", "", raw_text)
+                    raw_text = re.sub(r"\n```$", "", raw_text)
 
-            clips: List[ClipItem] = []
-            for item in parsed:
-                try:
-                    # Normalize alternative LLM key names
-                    if "start" not in item and "start_time" in item:
-                        item["start"] = float(item["start_time"])
-                    if "end" not in item and "end_time" in item:
-                        item["end"] = float(item["end_time"])
-                    if "title" not in item and "name" in item:
-                        item["title"] = str(item["name"])
-                    if "hook_line" not in item and "hook" in item:
-                        item["hook_line"] = str(item["hook"])
-                    elif "hook_line" not in item and "hook_tag" in item:
-                        item["hook_line"] = str(item["hook_tag"])
+                parsed = json.loads(raw_text)
+                if isinstance(parsed, dict) and "clips" in parsed:
+                    parsed = parsed["clips"]
+                if not isinstance(parsed, list):
+                    parsed = [parsed]
 
-                    # Fill defaults if needed
-                    if "id" not in item:
-                        item["id"] = f"c{len(clips) + 1:02d}"
-                    if "title" not in item or not item["title"]:
-                        item["title"] = f"Viral Highlight #{len(clips) + 1}"
-                    if "hook_line" not in item or not item["hook_line"]:
-                        item["hook_line"] = item["title"]
-
-                    # Scale and normalize score (handle 0-1 or 1-10 scales from smaller models)
-                    raw_score = item.get("score", 85)
+                clips: List[ClipItem] = []
+                for item in parsed:
                     try:
-                        f_score = float(raw_score)
-                        if f_score <= 1.0 and f_score > 0.0:
-                            item["score"] = int(round(f_score * 100))
-                        elif f_score <= 10.0 and f_score > 0.0:
-                            item["score"] = int(round(f_score * 10))
-                        else:
-                            item["score"] = int(round(f_score))
-                    except (ValueError, TypeError):
-                        item["score"] = 85
+                        # Normalize alternative LLM key names
+                        if "start" not in item and "start_time" in item:
+                            item["start"] = float(item["start_time"])
+                        if "end" not in item and "end_time" in item:
+                            item["end"] = float(item["end_time"])
+                        if "title" not in item and "name" in item:
+                            item["title"] = str(item["name"])
+                        if "hook_line" not in item and "hook" in item:
+                            item["hook_line"] = str(item["hook"])
+                        elif "hook_line" not in item and "hook_tag" in item:
+                            item["hook_line"] = str(item["hook_tag"])
 
-                    if "layout" not in item:
-                        item["layout"] = "blur-fill"
-                    if "source_permission" not in item:
-                        item["source_permission"] = "clip-policy"
-                    if "why_viral" not in item or len(str(item["why_viral"]).split()) < 5:
-                        item["why_viral"] = "Strong emotional reaction with instant viewer hook and high short-form completion rate."
-                    item["selector_engine"] = model_name
-                    clip = ClipItem(**item)
-                    clips.append(clip)
-                except ValidationError as ve:
-                    print(f"Skipping invalid item: {ve}")
+                        # Fill defaults if needed
+                        if "id" not in item:
+                            item["id"] = f"c{len(clips) + 1:02d}"
+                        if "title" not in item or not item["title"]:
+                            item["title"] = f"Viral Highlight #{len(clips) + 1}"
+                        if "hook_line" not in item or not item["hook_line"]:
+                            item["hook_line"] = item["title"]
 
-            if clips:
-                # Sort clips by score descending
-                clips.sort(key=lambda x: getattr(x, "score", 0), reverse=True)
-                # Enforce user constraints: auto is min 1, strictly < 30
-                if target_clips <= 0:
-                    selected_clips = clips[:29]
-                    print(f"✔ Successfully selected {len(selected_clips)} viral highlight clips (Auto Mode) with {model_name}")
-                    return selected_clips
-                else:
-                    selected_clips = clips[:target_clips]
-                    print(f"✔ Successfully selected {len(selected_clips)} clips with {model_name}")
-                    return selected_clips
+                        # Scale and normalize score (handle 0-1 or 1-10 scales from smaller models)
+                        raw_score = item.get("score", 85)
+                        try:
+                            f_score = float(raw_score)
+                            if f_score <= 1.0 and f_score > 0.0:
+                                item["score"] = int(round(f_score * 100))
+                            elif f_score <= 10.0 and f_score > 0.0:
+                                item["score"] = int(round(f_score * 10))
+                            else:
+                                item["score"] = int(round(f_score))
+                        except (ValueError, TypeError):
+                            item["score"] = 85
 
-        except Exception as e:
-            err_str = str(e)
-            print(f"Notice: Gemini API model {model_name} failed: {err_str[:120]}. Moving to next option...")
-            if "503" in err_str or "UNAVAILABLE" in err_str:
-                time.sleep(1.5)
+                        if "layout" not in item:
+                            item["layout"] = "blur-fill"
+                        if "source_permission" not in item:
+                            item["source_permission"] = "clip-policy"
+                        if "why_viral" not in item or len(str(item["why_viral"]).split()) < 5:
+                            item["why_viral"] = "Strong emotional reaction with instant viewer hook and high short-form completion rate."
+                        item["selector_engine"] = model_name
+                        clip = ClipItem(**item)
+                        clips.append(clip)
+                    except ValidationError as ve:
+                        print(f"Skipping invalid item: {ve}")
+
+                if clips:
+                    # Sort clips by score descending
+                    clips.sort(key=lambda x: getattr(x, "score", 0), reverse=True)
+                    # Enforce user constraints: auto is min 1, strictly < 30
+                    if target_clips <= 0:
+                        selected_clips = clips[:29]
+                        print(f"✔ Successfully selected {len(selected_clips)} viral highlight clips (Auto Mode) with {model_name}")
+                        return selected_clips
+                    else:
+                        selected_clips = clips[:target_clips]
+                        print(f"✔ Successfully selected {len(selected_clips)} clips with {model_name}")
+                        return selected_clips
+
+            except Exception as e:
+                err_str = str(e)
+                print(f"Notice: Gemini API model {model_name} (attempt {attempt + 1}) error: {err_str[:120]}")
+                if ("503" in err_str or "UNAVAILABLE" in err_str) and attempt == 0:
+                    time.sleep(2.0)
+                    continue
+                break
 
     print("Gemini API models unavailable or timed out. Instantly falling back to local heuristic selection.")
     return None
