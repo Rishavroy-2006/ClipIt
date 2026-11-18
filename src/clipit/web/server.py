@@ -339,15 +339,15 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                         if status in ("processing_part", "waiting_next_chunk", "active", "watching", "in_progress", "running"):
                             vid = sess_data.get("video_id", sess_path.parent.name)
                             sid = f"live_{vid}"
-                            if sid not in active_sessions:
-                                q = queue.Queue()
+                            if sid not in active_sessions or not active_sessions[sid].get("events"):
+                                q = active_sessions[sid]["queue"] if (sid in active_sessions and "queue" in active_sessions[sid]) else queue.Queue()
                                 active_sessions[sid] = {
                                     "id": sid,
-                                    "url": sess_data.get("source_url", ""),
+                                    "url": sess_data.get("source_url", "") or sess_data.get("url", ""),
                                     "queue": q,
                                     "created_at": sess_data.get("start_time", sess_path.stat().st_mtime),
                                     "status": "running",
-                                    "events": [],
+                                    "events": self._synthesize_live_events(sess_data, vid),
                                     "video_id": vid,
                                     "done": False,
                                 }
@@ -355,7 +355,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                                 "active": True,
                                 "session_id": sid,
                                 "video_id": vid,
-                                "url": sess_data.get("source_url", ""),
+                                "url": sess_data.get("source_url", "") or sess_data.get("url", ""),
                                 "done": False,
                                 "created_at": sess_data.get("start_time", sess_path.stat().st_mtime),
                             })
@@ -377,6 +377,62 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 return
 
             self.send_json({"active": False})
+
+    @staticmethod
+    def _synthesize_live_events(sess_data: Dict[str, Any], vid: str) -> List[Dict[str, Any]]:
+        events = []
+        url = sess_data.get("url") or sess_data.get("source_url") or ""
+        title = sess_data.get("title") or f"Live Stream Sentinel ({vid})"
+        events.append({
+            "event": "pipeline_start",
+            "data": {
+                "video_id": vid,
+                "url": url,
+                "title": title,
+                "stages": ["ingest", "transcribe", "signals", "candidates", "select", "render", "export"]
+            }
+        })
+        parts = sess_data.get("parts", [])
+        total_clips = 0
+        for p in parts:
+            p_name = p.get("name", f"Part {p.get('part_index', '?')}")
+            p_win = p.get("stream_window", f"{p.get('start_str', '')} -> {p.get('end_str', '')}")
+            c_cnt = len(p.get("clips", []))
+            total_clips += c_cnt
+            events.append({
+                "event": "agent_log",
+                "data": {
+                    "stage_id": "export",
+                    "log": f"✔ [{p_name}] Staged & Published · Window: {p_win} · {c_cnt} viral clips ready in 9:16 format",
+                    "metrics": {
+                        "task": f"{p_name} Completed ({c_cnt} clips)",
+                        "model": "Apple VideoToolbox + ASS",
+                        "device": "Ready in Studio"
+                    }
+                }
+            })
+
+        curr_part_num = len(parts) + 1
+        events.append({
+            "event": "stage_start",
+            "data": {
+                "stage_id": "render",
+                "name": f"Live Stream Sentinel · Part {curr_part_num}"
+            }
+        })
+        events.append({
+            "event": "agent_log",
+            "data": {
+                "stage_id": "render",
+                "log": f"🔴 [LIVE SENTINEL] Currently processing Part {curr_part_num} · 24/7 continuous clipping active ({len(parts)} parts completed, {total_clips} clips ready in Studio)...",
+                "metrics": {
+                    "task": f"Active: Processing Part {curr_part_num}",
+                    "model": "Auto Continuous Clipper",
+                    "device": "Live DVR Stream"
+                }
+            }
+        })
+        return events
 
     def handle_internal_emit_event(self, data: Dict[str, Any]):
         session_id = data.get("session_id", "live_cli")
@@ -404,7 +460,9 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             if url and not sess.get("url"):
                 sess["url"] = url
             sess["events"].append(ev)
-            if ev_type == "pipeline_complete":
+            if ev_type == "pipeline_complete" and not session_id.startswith("live_"):
+                sess["done"] = True
+            elif ev_type == "sentinel_stopped":
                 sess["done"] = True
             sess["queue"].put(ev)
 
@@ -983,10 +1041,40 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
     def handle_sse_workflow(self, session_id: Optional[str]):
         """Stream real-time Server-Sent Events (SSE) to the visualizer."""
         if not session_id or session_id not in active_sessions:
+            # Check if this is a live session on disk
+            if session_id and session_id.startswith("live_"):
+                vid = session_id[5:]
+                sess_path = CACHE_DIR / vid / "live_session.json"
+                if sess_path.exists():
+                    try:
+                        sess_data = json.loads(sess_path.read_text(encoding="utf-8"))
+                        active_sessions[session_id] = {
+                            "id": session_id,
+                            "url": sess_data.get("source_url", "") or sess_data.get("url", ""),
+                            "queue": queue.Queue(),
+                            "created_at": sess_data.get("start_time", sess_path.stat().st_mtime),
+                            "status": "running",
+                            "events": self._synthesize_live_events(sess_data, vid),
+                            "video_id": vid,
+                            "done": False,
+                        }
+                    except Exception:
+                        pass
+        if not session_id or session_id not in active_sessions:
             self.send_error(HTTPStatus.NOT_FOUND, "Invalid or expired session_id")
             return
 
         session = active_sessions[session_id]
+        if session_id.startswith("live_") and not session.get("events"):
+            vid = session.get("video_id") or session_id[5:]
+            sess_path = CACHE_DIR / vid / "live_session.json"
+            if sess_path.exists():
+                try:
+                    sess_data = json.loads(sess_path.read_text(encoding="utf-8"))
+                    session["events"] = self._synthesize_live_events(sess_data, vid)
+                except Exception:
+                    pass
+
         q = session["queue"]
 
         self.send_response(HTTPStatus.OK)
@@ -1008,7 +1096,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(f"event: {ev_name}\ndata: {p_data}\n\n".encode("utf-8"))
             self.wfile.flush()
 
-            if is_done:
+            if is_done and not session_id.startswith("live_"):
                 return
 
             while True:
@@ -1031,7 +1119,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
 
                 if event_name in ("pipeline_complete", "pipeline_error"):
-                    break
+                    if not session_id.startswith("live_"):
+                        break
         except (BrokenPipeError, ConnectionResetError):
             pass
 

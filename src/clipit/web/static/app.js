@@ -1315,6 +1315,7 @@ function startRun(sid, url, resetUI = true) {
   go(2);
   S.currentSessionId = sid;
   if (url) S.currentUrl = url;
+  const isLive = Boolean(sid && sid.startsWith('live_'));
 
   if (resetUI) {
     resetPipelineState();
@@ -1326,14 +1327,30 @@ function startRun(sid, url, resetUI = true) {
     if (pctEl) pctEl.textContent = '0%';
     $('#open').disabled = true;
     $('#open').textContent = 'Open studio';
+  } else if (!$('#agents') || !$('#agents').children.length) {
+    buildAgents();
   }
 
   // Header and Status Setup
   const liveDot = $('#pipeLiveDot');
   const statusTxt = $('#pipeStatusText');
   if (liveDot) liveDot.className = 'pipe-live-dot active';
-  if (statusTxt) statusTxt.textContent = 'PIPELINE RUNNING';
-  if (S.currentUrl) {
+  if (statusTxt) statusTxt.textContent = isLive ? 'SENTINEL ACTIVE · WATCHING' : 'PIPELINE RUNNING';
+  if (isLive) {
+    $('#runtitle').textContent = '🔴 24/7 Live Stream Sentinel · Continuous Clipping Mode';
+    updateTaskHud('Continuous clipping active (30m chunks with 5m overlap)', null, null, null);
+
+    // Pre-check if clips are ready from past parts so user can jump straight into Studio
+    const vidName = sid.replace(/^live_/, '');
+    api('/api/project/' + encodeURIComponent(vidName)).then(proj => {
+      const clips = proj?.clips || [];
+      if (clips.length > 0) {
+        $('#open').disabled = false;
+        $('#open').textContent = `Open Studio (${clips.length} Clips Ready ➔)`;
+        $('#open').onclick = () => openProject(vidName);
+      }
+    }).catch(() => {});
+  } else if (S.currentUrl) {
     $('#runtitle').textContent = 'Processing: ' + S.currentUrl.replace(/^https?:\/\/(www\.)?/, '').slice(0, 50);
   }
 
@@ -1415,8 +1432,33 @@ function startRun(sid, url, resetUI = true) {
   });
 
   on('pipeline_complete', d => {
-    addStructuredLog(`✔ ${d.message || 'Pipeline workflow complete. All shorts rendered.'}`, 'system', 'agent');
     if (d.video_id) S.vid = d.video_id;
+
+    if (isLive) {
+      addStructuredLog(`✔ ${d.message || 'Stream part complete. Clips rendered.'} · Sentinel is monitoring live stream for next chunk...`, 'system', 'agent');
+      $('#bar').style.width = '100%';
+      const pctEl = $('#pipeProgressPct');
+      if (pctEl) pctEl.textContent = '100%';
+      const liveDot = $('#pipeLiveDot');
+      const statusTxt = $('#pipeStatusText');
+      if (liveDot) liveDot.className = 'pipe-live-dot active';
+      if (statusTxt) statusTxt.textContent = 'SENTINEL ACTIVE · WATCHING';
+
+      const vidName = S.vid || sid.replace(/^live_/, '');
+      api('/api/project/' + encodeURIComponent(vidName)).then(proj => {
+        const clips = proj?.clips || [];
+        if (clips.length > 0) {
+          $('#open').disabled = false;
+          $('#open').textContent = `Open Studio (${clips.length} Clips Ready ➔)`;
+          $('#open').onclick = () => openProject(vidName);
+        }
+      }).catch(() => {});
+      toast('Live Part finished! Ready in Studio. Sentinel watching next window...');
+      loadProjects();
+      return; // Do NOT close EventSource for live sentinel!
+    }
+
+    addStructuredLog(`✔ ${d.message || 'Pipeline workflow complete. All shorts rendered.'}`, 'system', 'agent');
     $('#bar').style.width = '100%';
     const pctEl = $('#pipeProgressPct');
     if (pctEl) pctEl.textContent = '100%';
