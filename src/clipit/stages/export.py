@@ -178,6 +178,15 @@ def run_export(
         tags_list = generate_hashtags(clip_obj, streamer=streamer, game=game)
         tags_str = " ".join(tags_list)
 
+        streamer_credit = streamer if streamer else "the original creator / streamer"
+        disclaimer_text = (
+            f"⚠️ COPYRIGHT DISCLAIMER & CREDITS:\n"
+            f"All content, footage, and audio credits go directly to {streamer_credit}.\n"
+            f"I do not own, claim, or have any rights to this content or broadcast.\n"
+            f"This video is clipped and shared solely for entertainment, commentary, and archival purposes under Fair Use.\n"
+            f"If you are the copyright owner and wish to have this removed, please reach out directly and it will be taken down immediately."
+        )
+
         # Append to copy-paste pack
         copy_pack_lines.extend([
             f"🎬 CLIP {idx:02d}: {out_filename} ({duration:.1f}s)",
@@ -186,10 +195,12 @@ def run_export(
             f"📌 TITLE (Copy-Paste into YouTube / TikTok):",
             f"{title}",
             "",
-            f"📝 DESCRIPTION & HASHTAGS:",
+            f"📝 DESCRIPTION FOR POSTING:",
             f"{title} 🔥",
             "",
             f"{tags_str}",
+            "",
+            f"{disclaimer_text}",
             "",
             f"💡 WHY THIS GOES VIRAL:",
             f"{why_viral}",

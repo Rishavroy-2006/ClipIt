@@ -1784,6 +1784,7 @@ async function openProject(id, push = true) {
     S.vid = proj.video_id || id;
     S.title = proj.title || id;
     S.has_facecam = res.has_facecam !== false;
+    S.uploader = proj.uploader || proj.channel || '';
     S.clips = (res.clips || []).map(norm);
     S.cur = -1;
     S.activePartFilter = 'all';
@@ -1994,6 +1995,9 @@ function load(fresh) {
 
 function inspect(c) {
   const cleanTitle = (c.title || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '').trim();
+  const streamerName = S.uploader || 'the original creator / streamer';
+  const tags = (Array.isArray(c.tags) ? c.tags : String(c.tags || '').split(/\s+/)).filter(Boolean).map(t => t[0] === '#' ? t : '#' + t);
+  const tagStr = (tags.length ? tags : ['#gaming', '#shorts', '#viral', '#streamer', '#GTA6']).join(' ');
   const br = c.br || { hook: Math.min(100, c.score + 3), acoustic: Math.max(0, c.score - 6), retention: Math.max(0, c.score - 2) };
   const rows = [
     ['Hook Velocity', br.hook ?? br.hook_velocity],
@@ -2058,8 +2062,21 @@ function inspect(c) {
     <div class="hook">${esc(c.hook)}</div>
     <h3>Why this goes viral</h3>
     <p class="why">${esc(c.why || 'High-energy emotional reaction with strong retention payoff.')}</p>
-    <button class="wide" id="cropBtn" style="margin-top:4px;background:var(--ink);border:1px solid var(--lemon);color:var(--lemon);font-weight:700;">✂ Adjust Video Crop & Framing</button>
-    <button class="wide" id="copy" style="margin-top:8px;">Copy social publishing pack</button>
+    
+    <div class="publish-desc-card">
+      <div class="desc-header">📝 <strong>Description & Disclaimer Preview</strong></div>
+      <div class="desc-title">${esc(cleanTitle)} 🔥</div>
+      <div class="desc-tags">${esc(tagStr)}</div>
+      <div class="desc-disclaimer">
+        ⚠️ <strong>Copyright Disclaimer & Credits:</strong><br/>
+        All content, audio, and footage belong directly to <em>${esc(streamerName)}</em>.<br/>
+        I do not own, claim, or have any rights to this content.<br/>
+        Clipped and shared for entertainment & commentary under Fair Use.
+      </div>
+    </div>
+
+    <button class="wide" id="cropBtn" style="margin-top:10px;background:var(--ink);border:1px solid var(--lemon);color:var(--lemon);font-weight:700;">✂ Adjust Video Crop & Framing</button>
+    <button class="wide" id="copy" style="margin-top:8px;">📋 Copy Description & Publishing Pack</button>
     <div class="acts">
       <button class="ok ${c.status === 'approved' ? 'active' : ''}" id="ap">Approve [A]</button>
       <button class="no ${c.status === 'rejected' ? 'active' : ''}" id="rj">Reject [R]</button>
@@ -2135,11 +2152,24 @@ function inspect(c) {
 
 async function copyPack() {
   const c = S.clips[S.cur];
-  const tags = (Array.isArray(c.tags) ? c.tags : String(c.tags).split(/\s+/)).filter(Boolean).map(t => t[0] === '#' ? t : '#' + t);
-  const txt = `${c.hook}\n\n${c.desc || c.why}\n\n${(tags.length ? tags : ['#gaming', '#shorts', '#viral', '#streamer', '#GTA6']).join(' ')}`;
+  if (!c) return;
+  const cleanTitle = (c.title || c.hook || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '').trim();
+  const tags = (Array.isArray(c.tags) ? c.tags : String(c.tags || '').split(/\s+/)).filter(Boolean).map(t => t[0] === '#' ? t : '#' + t);
+  const tagStr = (tags.length ? tags : ['#gaming', '#shorts', '#viral', '#streamer', '#GTA6']).join(' ');
+  const streamerName = S.uploader || 'the original creator / streamer';
+
+  const disclaimer = [
+    '⚠️ Copyright Disclaimer & Credits:',
+    `All content, audio, and footage belong directly to ${streamerName}.`,
+    'I do not own, claim, or have any rights to this content or broadcast.',
+    'This video is clipped and shared solely for entertainment, commentary, and archival purposes under Fair Use.',
+    'If you are the copyright holder and wish for this clip to be removed, please contact me directly and it will be taken down immediately.'
+  ].join('\n');
+
+  const txt = `${cleanTitle} 🔥\n\n${tagStr}\n\n${disclaimer}`;
   try {
     await navigator.clipboard.writeText(txt);
-    toast('Social pack copied to clipboard');
+    toast('Copied description & copyright disclaimer to clipboard!');
   } catch (e) {
     toast('Copy blocked by browser.');
   }
