@@ -164,90 +164,72 @@ def render_single_clip(
     render_variants: bool = True,
     force: bool = False,
 ) -> Path:
-    """Render vertical clip variants (Reaction Stacked, Blur-Fill, and Deframed 9:16)."""
+    """Render vertical clip variants: always generates all 3 layouts:
+    1. Reaction Stacked (<clip.id>.mp4)
+    2. Reference Letterbox (<clip.id>_blur.mp4)
+    3. Content Deframed 9:16 (<clip.id>_reframed.mp4)
+    """
     vision_info = analyze_clip_vision(clip, source_video, cache)
     has_facecam = vision_info.get("has_facecam", bool(face_box))
 
+    # Inherit global facecam coordinates from cache if local frame was ambiguous
+    if not has_facecam:
+        global_fc = cache.load_json("facecam.json") or {}
+        if global_fc.get("has_facecam"):
+            has_facecam = True
+            if "streamer_box" not in vision_info and "streamer_box" in global_fc:
+                vision_info["streamer_box"] = global_fc["streamer_box"]
+
     variants_list: List[Dict[str, Any]] = []
 
-    if has_facecam:
-        # Variant 1: Stacked Reaction (Streamer top, content bottom, captions across seam)
-        p1 = output_dir / f"{clip.id}.mp4"
+    # Variant 1: Stacked Reaction (Streamer top, content bottom, captions across seam)
+    p1 = output_dir / f"{clip.id}.mp4"
+    render_variant_file(
+        clip=clip, source_video=source_video, out_mp4=p1, layout_name="stack",
+        transcript=transcript, cache=cache, video_config=video_config,
+        codec=codec, fonts_dir=fonts_dir, face_box=face_box, style_name=style_name, vision_info=vision_info,
+        force=force,
+    )
+    variants_list.append({
+        "id": "stack",
+        "name": "Reaction Stacked",
+        "label": "Reaction Stacked",
+        "file": f"{clip.id}.mp4",
+        "description": "Streamer reaction on top, reframed gameplay on bottom with seam captions"
+    })
+
+    if render_variants:
+        # Variant 2: Reference Letterbox - Full 16:9 stream with dynamic background blur
+        p2 = output_dir / f"{clip.id}_blur.mp4"
         render_variant_file(
-            clip=clip, source_video=source_video, out_mp4=p1, layout_name="stack",
+            clip=clip, source_video=source_video, out_mp4=p2, layout_name="blur-fill",
             transcript=transcript, cache=cache, video_config=video_config,
             codec=codec, fonts_dir=fonts_dir, face_box=face_box, style_name=style_name, vision_info=vision_info,
             force=force,
         )
         variants_list.append({
-            "id": "stack",
-            "name": "Reaction Stacked",
-            "file": f"{clip.id}.mp4",
-            "description": "Streamer reaction on top, reframed gameplay on bottom with seam captions"
+            "id": "blur-fill",
+            "name": "Reference Letterbox",
+            "label": "Reference Letterbox",
+            "file": f"{clip.id}_blur.mp4",
+            "description": "Full 16:9 stream with corner webcam + bold 3-line headline at top + lower subtitles"
         })
 
-        if render_variants:
-            # Variant 2: Content Only - Full ratio with cinematic background blur
-            p2 = output_dir / f"{clip.id}_blur.mp4"
-            render_variant_file(
-                clip=clip, source_video=source_video, out_mp4=p2, layout_name="blur-fill",
-                transcript=transcript, cache=cache, video_config=video_config,
-                codec=codec, fonts_dir=fonts_dir, face_box=face_box, style_name=style_name, vision_info=vision_info,
-                force=force,
-            )
-            variants_list.append({
-                "id": "blur-fill",
-                "name": "Reference Letterbox",
-                "file": f"{clip.id}_blur.mp4",
-                "description": "Full 16:9 stream with streamer corner webcam + bold 3-line headline at top + subtitles"
-            })
-
-            # Variant 3: Content Only - Deframed 9:16 full-bleed crop focused on action
-            p3 = output_dir / f"{clip.id}_reframed.mp4"
-            render_variant_file(
-                clip=clip, source_video=source_video, out_mp4=p3, layout_name="reframed",
-                transcript=transcript, cache=cache, video_config=video_config,
-                codec=codec, fonts_dir=fonts_dir, face_box=face_box, style_name=style_name, vision_info=vision_info,
-                force=force,
-            )
-            variants_list.append({
-                "id": "reframed",
-                "name": "Content (Deframed 9:16)",
-                "file": f"{clip.id}_reframed.mp4",
-                "description": "Content only in full-bleed 9:16 vertical crop focused on the action"
-            })
-    else:
-        # Streamer has no facecam (pure gameplay / content stream)
-        # Variant 1: Deframed 9:16 vertical crop
-        p1 = output_dir / f"{clip.id}.mp4"
+        # Variant 3: Content Only - Deframed 9:16 full-bleed crop focused on action
+        p3 = output_dir / f"{clip.id}_reframed.mp4"
         render_variant_file(
-            clip=clip, source_video=source_video, out_mp4=p1, layout_name="reframed",
+            clip=clip, source_video=source_video, out_mp4=p3, layout_name="reframed",
             transcript=transcript, cache=cache, video_config=video_config,
-            codec=codec, fonts_dir=fonts_dir, face_box=None, style_name=style_name, vision_info=vision_info,
+            codec=codec, fonts_dir=fonts_dir, face_box=face_box, style_name=style_name, vision_info=vision_info,
             force=force,
         )
         variants_list.append({
             "id": "reframed",
             "name": "Content (Deframed 9:16)",
-            "file": f"{clip.id}.mp4",
-            "description": "Full-bleed 9:16 vertical crop focused on the action"
+            "label": "Content (Deframed 9:16)",
+            "file": f"{clip.id}_reframed.mp4",
+            "description": "Content only in full-bleed 9:16 vertical crop focused on the action"
         })
-
-        if render_variants:
-            # Variant 2: Blur-Fill (full ratio centered with blurred background)
-            p2 = output_dir / f"{clip.id}_blur.mp4"
-            render_variant_file(
-                clip=clip, source_video=source_video, out_mp4=p2, layout_name="blur-fill",
-                transcript=transcript, cache=cache, video_config=video_config,
-                codec=codec, fonts_dir=fonts_dir, face_box=None, style_name=style_name, vision_info=vision_info,
-                force=force,
-            )
-            variants_list.append({
-                "id": "blur-fill",
-                "name": "Content (Blur-Fill)",
-                "file": f"{clip.id}_blur.mp4",
-                "description": "Full ratio content centered with cinematic background blur"
-            })
 
     # Write sidecar JSON with full variant catalog
     clip_dict = clip.model_dump()

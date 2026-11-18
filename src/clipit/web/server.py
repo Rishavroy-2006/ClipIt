@@ -631,19 +631,21 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 else:
                     c_copy["selector_engine"] = "gemini-3.1-flash-lite"
 
-            # Resolve / populate variants
+            # Resolve / populate variants (ensure all 3 layouts are always included if files exist)
             variants = c_copy.get("variants") or []
-            if not variants:
-                variants = []
+            existing_ids = {v.get("id") for v in variants}
+            
+            if "stack" not in existing_ids:
                 stack_file = find_video_file([f"{cid}.mp4", f"{stripped_cid}.mp4"])
                 if stack_file:
-                    variants.append({
+                    variants.insert(0, {
                         "id": "stack",
                         "name": "Reaction Stacked",
                         "label": "Reaction Stacked",
                         "file": stack_file,
                         "description": "Streamer reaction on top, reframed gameplay on bottom with seam captions"
                     })
+            if "blur-fill" not in existing_ids:
                 blur_file = find_video_file([f"{cid}_blur.mp4", f"{stripped_cid}_blur.mp4"])
                 if blur_file:
                     variants.append({
@@ -653,6 +655,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                         "file": blur_file,
                         "description": "Full 16:9 stream with corner webcam + bold 3-line headline at top + lower subtitles"
                     })
+            if "reframed" not in existing_ids:
                 reframed_file = find_video_file([f"{cid}_reframed.mp4", f"{stripped_cid}_reframed.mp4"])
                 if reframed_file:
                     variants.append({
@@ -662,11 +665,11 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                         "file": reframed_file,
                         "description": "Full-bleed 9:16 vertical crop focused on the action"
                     })
-            else:
-                for v in variants:
-                    lbl = v.get("label") or v.get("name") or "Variant"
-                    v["name"] = lbl
-                    v["label"] = lbl
+
+            for v in variants:
+                lbl = v.get("label") or v.get("name") or "Variant"
+                v["name"] = lbl
+                v["label"] = lbl
 
             c_copy["variants"] = variants
             enhanced_clips.append(c_copy)
@@ -788,15 +791,42 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         cache_v = CACHE_DIR / video_id
         out_v = OUT_DIR / video_id
-        if not cache_v.exists():
-            self.send_error(HTTPStatus.NOT_FOUND, f"Cache not found for {video_id}")
+        if not cache_v.exists() and not out_v.exists():
+            self.send_error(HTTPStatus.NOT_FOUND, f"Project not found for {video_id}")
             return
 
-        cache = CacheManager(video_id, base_dir=CACHE_DIR)
+        # 1. Resolve Part number and Part-specific cache/output directories
+        part_num = None
+        m = re.match(r"^pt0*(\d+)", clip_id)
+        if m:
+            part_num = int(m.group(1))
+
+        part_cache_v = None
+        part_out_v = None
+        if part_num and part_num > 1:
+            candidates = [
+                CACHE_DIR / f"{video_id}_pt{part_num:02d}",
+                CACHE_DIR / f"{video_id}_pt{part_num}",
+            ]
+            part_cache_v = next((p for p in candidates if p.exists() and p.is_dir()), None)
+
+            out_candidates = [
+                out_v / f"part_{part_num:02d}",
+                out_v / f"part_{part_num}",
+            ]
+            part_out_v = next((p for p in out_candidates if p.exists() and p.is_dir()), None)
+
+        active_cache_v = part_cache_v or cache_v
+        active_cache_name = active_cache_v.name
+        cache = CacheManager(active_cache_name, base_dir=CACHE_DIR)
+
+        # 2. Update customizable parameters
         vision_file = f"vision_{clip_id}.json"
         vision_info = cache.load_json(vision_file) or {}
+        if not vision_info:
+            root_cache = CacheManager(video_id, base_dir=CACHE_DIR)
+            vision_info = root_cache.load_json(vision_file) or {}
 
-        # Update customizable parameters
         if "has_facecam" in data:
             vision_info["has_facecam"] = bool(data["has_facecam"])
         if "streamer_pct" in data:
@@ -818,31 +848,81 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             vision_info["content_zoom"] = float(data["content_zoom"])
 
         cache.save_json(vision_file, vision_info)
+        if active_cache_v != cache_v:
+            root_cache = CacheManager(video_id, base_dir=CACHE_DIR)
+            root_cache.save_json(vision_file, vision_info)
 
-        # Load clip & transcript
-        refined = cache.load_json("refined_clips.json") or []
-        clip_dict = next((c for c in refined if c.get("id") == clip_id), None)
+        # 3. Locate clip metadata (check sidecars first as ground truth, then refined_clips)
+        clip_dict = None
+        sidecar_candidates = [
+            out_v / f"{clip_id}.json",
+            (part_out_v / f"{clip_id}.json") if part_out_v else None,
+            active_cache_v / f"{clip_id}.json",
+        ]
+        for sc_p in sidecar_candidates:
+            if sc_p and sc_p.exists():
+                try:
+                    with open(sc_p, "r", encoding="utf-8") as f:
+                        clip_dict = json.load(f)
+                        break
+                except Exception:
+                    pass
+
         if not clip_dict:
-            self.send_error(HTTPStatus.NOT_FOUND, f"Clip {clip_id} not found in refined_clips")
+            refined = active_cache_v.exists() and cache.load_json("refined_clips.json") or []
+            clip_dict = next((c for c in refined if c.get("id") == clip_id), None)
+
+        if not clip_dict:
+            for sess_p in (cache_v / "live_session.json", out_v / "live_session.json"):
+                if sess_p.exists():
+                    try:
+                        with open(sess_p, "r", encoding="utf-8") as f:
+                            sess_d = json.load(f)
+                            for pt in sess_d.get("parts", []):
+                                for c in pt.get("clips", []):
+                                    if c.get("id") == clip_id:
+                                        clip_dict = c
+                                        break
+                                if clip_dict:
+                                    break
+                    except Exception:
+                        pass
+                if clip_dict:
+                    break
+
+        if not clip_dict:
+            self.send_error(HTTPStatus.NOT_FOUND, f"Clip {clip_id} metadata not found")
             return
 
-        clip = ClipItem(**clip_dict)
+        # 4. Locate source video and transcript for the correct part
+        source_video = active_cache_v / "source.mp4"
+        if not source_video.exists():
+            source_video = cache_v / "source.mp4"
+
         t_data = cache.load_json("transcript.json")
+        if not t_data and active_cache_v != cache_v:
+            root_cache = CacheManager(video_id, base_dir=CACHE_DIR)
+            t_data = root_cache.load_json("transcript.json")
+
         if not t_data:
             self.send_error(HTTPStatus.NOT_FOUND, "Transcript not found in cache")
             return
         transcript = FullTranscript(**t_data)
 
+        # 5. Render with VideoToolbox hardware encoder
+        render_target_dir = part_out_v if part_out_v else out_v
         cfg = load_config()
-        source_video = cache.path("source.mp4")
-
-        # Re-render with VideoToolbox hardware encoder (force=True to overwrite)
         layout_target = data.get("layout", "all")
+
+        valid_keys = {"id", "start", "end", "score", "title", "title_alts", "hook_line", "hooks", "why_viral", "category", "signals", "risk_flags", "trim_notes", "layout", "source_permission"}
+        filtered_clip = {k: v for k, v in clip_dict.items() if k in valid_keys}
+        clip = ClipItem(**filtered_clip)
+
         try:
             render_single_clip(
                 clip=clip,
                 source_video=source_video,
-                output_dir=out_v,
+                output_dir=render_target_dir,
                 transcript=transcript,
                 cache=cache,
                 video_config=cfg.video,
@@ -851,11 +931,26 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 force=True,
             )
 
+            # Keep top-level out_v and part_out_v synchronized
+            if part_out_v and part_out_v != out_v:
+                import shutil
+                for ext in (".mp4", "_blur.mp4", "_reframed.mp4", ".json"):
+                    src_f = part_out_v / f"{clip_id}{ext}"
+                    dst_f = out_v / f"{clip_id}{ext}"
+                    if src_f.exists():
+                        shutil.copy2(src_f, dst_f)
+
             sidecar = {}
             sidecar_p = out_v / f"{clip_id}.json"
             if sidecar_p.exists():
                 with open(sidecar_p, "r", encoding="utf-8") as f:
                     sidecar = json.load(f)
+
+            if "variants" in sidecar:
+                for v in sidecar["variants"]:
+                    lbl = v.get("label") or v.get("name") or "Variant"
+                    v["name"] = lbl
+                    v["label"] = lbl
 
             self.send_json({
                 "success": True,

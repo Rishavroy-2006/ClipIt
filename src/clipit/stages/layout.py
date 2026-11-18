@@ -151,8 +151,8 @@ def build_reference_stack_filter(
     - Subtitles positioned right across the dividing seam.
     """
     streamer_pct = vision_info.get("streamer_pct", 38)
-    if not streamer_pct or streamer_pct <= 0 or not vision_info.get("has_facecam", True):
-        return build_reframed_crop_filter(vision_info, source_w=source_w, source_h=source_h), None
+    if not streamer_pct or streamer_pct <= 0:
+        streamer_pct = 38
 
     # Ensure streamer height is even
     top_h = int(1920 * (streamer_pct / 100.0))
