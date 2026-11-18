@@ -453,27 +453,59 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             except Exception:
                 clips_data = []
 
+        if not clips_data:
+            live_sess_p = cache_v / "live_session.json"
+            if not live_sess_p.exists():
+                live_sess_p = out_v / "live_session.json"
+            if live_sess_p.exists():
+                try:
+                    with open(live_sess_p, "r", encoding="utf-8") as f:
+                        sess_d = json.load(f)
+                        clips_data = sess_d.get("clips", [])
+                except Exception:
+                    pass
+
         # Enhance with sidecar JSONs (variants, facecam status, vision info)
         enhanced_clips = []
         for c in clips_data:
             cid = c.get("id")
-            sidecar_p = out_v / f"{cid}.json"
+            stripped_cid = cid.split("_", 1)[1] if (cid and cid.startswith("pt") and "_" in cid) else cid
             c_copy = dict(c)
 
+            # Find sidecar json across out_v and part_* dirs
+            sidecar_candidates = [
+                out_v / f"{cid}.json",
+                out_v / f"{stripped_cid}.json",
+            ]
+            if out_v.exists():
+                for part_dir in out_v.glob("part_*"):
+                    if part_dir.is_dir():
+                        sidecar_candidates.append(part_dir / f"{cid}.json")
+                        sidecar_candidates.append(part_dir / f"{stripped_cid}.json")
+            sidecar_p = next((p for p in sidecar_candidates if p.exists() and p.is_file()), None)
+
             # Load vision info & sample frame if available
-            vis_p = cache_v / f"vision_{cid}.json"
-            if vis_p.exists():
+            vis_candidates = [
+                cache_v / f"vision_{cid}.json",
+                cache_v / f"vision_{stripped_cid}.json",
+            ]
+            vis_p = next((p for p in vis_candidates if p.exists() and p.is_file()), None)
+            if vis_p:
                 try:
                     with open(vis_p, "r", encoding="utf-8") as f:
                         c_copy["vision"] = json.load(f)
                 except Exception:
                     pass
 
-            sample_p = cache_v / f"vision_{cid}_mid.jpg"
-            if sample_p.exists():
-                c_copy["sample_frame"] = f"/api/video/{video_id}/vision_{cid}_mid.jpg"
+            sample_candidates = [
+                cache_v / f"vision_{cid}_mid.jpg",
+                cache_v / f"vision_{stripped_cid}_mid.jpg",
+            ]
+            sample_p = next((p for p in sample_candidates if p.exists() and p.is_file()), None)
+            if sample_p:
+                c_copy["sample_frame"] = f"/api/video/{video_id}/{sample_p.name}"
 
-            if sidecar_p.exists():
+            if sidecar_p:
                 try:
                     with open(sidecar_p, "r", encoding="utf-8") as f:
                         sc = json.load(f)
@@ -486,26 +518,39 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
             # If variants not in sidecar, check files on disk
             if "variants" not in c_copy or not c_copy["variants"]:
+                def find_video_file(name_variants):
+                    for name in name_variants:
+                        if (out_v / name).exists():
+                            return name
+                        if out_v.exists():
+                            for pdir in out_v.glob("part_*"):
+                                if (pdir / name).exists():
+                                    return name
+                    return None
+
                 variants = []
-                if (out_v / f"{cid}.mp4").exists():
+                stack_file = find_video_file([f"{cid}.mp4", f"{stripped_cid}.mp4"])
+                if stack_file:
                     variants.append({
                         "id": "stack",
                         "name": "Reaction Stacked",
-                        "file": f"{cid}.mp4",
+                        "file": stack_file,
                         "description": "Streamer reaction on top, reframed gameplay on bottom with seam captions"
                     })
-                if (out_v / f"{cid}_blur.mp4").exists():
+                blur_file = find_video_file([f"{cid}_blur.mp4", f"{stripped_cid}_blur.mp4"])
+                if blur_file:
                     variants.append({
                         "id": "blur-fill",
                         "name": "Reference Letterbox",
-                        "file": f"{cid}_blur.mp4",
+                        "file": blur_file,
                         "description": "Full 16:9 stream with corner webcam + bold 3-line headline at top + lower subtitles"
                     })
-                if (out_v / f"{cid}_reframed.mp4").exists():
+                reframed_file = find_video_file([f"{cid}_reframed.mp4", f"{stripped_cid}_reframed.mp4"])
+                if reframed_file:
                     variants.append({
                         "id": "reframed",
                         "name": "Content (Deframed 9:16)",
-                        "file": f"{cid}_reframed.mp4",
+                        "file": reframed_file,
                         "description": "Full-bleed 9:16 vertical crop focused on the action"
                     })
                 c_copy["variants"] = variants
@@ -979,11 +1024,38 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
     def handle_stream_video(self, video_id: str, filename: str):
         # Look in out/<video_id>/, then ready_to_post/<video_id>/, then cache/<video_id>/
+        out_v = OUT_DIR / video_id
         candidate_paths = [
-            OUT_DIR / video_id / filename,
+            out_v / filename,
             READY_DIR / video_id / filename,
             CACHE_DIR / video_id / filename,
         ]
+
+        if out_v.exists():
+            for part_dir in out_v.glob("part_*"):
+                if part_dir.is_dir():
+                    candidate_paths.append(part_dir / filename)
+
+        # Check aliases: ptXX_cYY <-> cYY (e.g. pt01_c01.mp4 or vision_pt01_c01_mid.jpg)
+        alias_names = []
+        stripped = re.sub(r'pt\d+_', '', filename)
+        if stripped != filename:
+            alias_names.append(stripped)
+        elif filename.startswith("c"):
+            # c01.mp4 -> pt*_c01.mp4
+            if out_v.exists():
+                for pt_file in out_v.glob(f"pt*_{filename}"):
+                    candidate_paths.append(pt_file)
+
+        for alias in alias_names:
+            candidate_paths.append(out_v / alias)
+            candidate_paths.append(CACHE_DIR / video_id / alias)
+            candidate_paths.append(READY_DIR / video_id / alias)
+            if out_v.exists():
+                for part_dir in out_v.glob("part_*"):
+                    if part_dir.is_dir():
+                        candidate_paths.append(part_dir / alias)
+
         target = next((p for p in candidate_paths if p.exists() and p.is_file()), None)
 
         if not target:

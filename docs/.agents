@@ -290,6 +290,10 @@ When processing ongoing live broadcasts (e.g. YouTube Live, Twitch), `stages/liv
    - Audio filterchain enforces `asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0`.
    - Output uses `-avoid_negative_ts make_zero`.
    - Video streaming responses send `Cache-Control: no-cache, no-store, must-revalidate` to prevent HTTP 206 Range browser desync.
+7. **Multi-Part & Clip Aliasing Resolution Guarantee**:
+   - Clips generated across continuous live sessions can be identified either as `pt01_c01` or unprefixed `c01`.
+   - `server.py` (`handle_get_project_detail` and `handle_stream_video`) seamlessly maps between `ptXX_cYY` and `cYY` representations, scanning top-level `out/<video_id>/`, subdirectories `out/<video_id>/part_XX/`, and `cache/<video_id>/` for sidecars, variants, vision metadata, and sample frames.
+   - Prevents empty variant lists ("Select a clip") or 404 streaming errors when navigating between different stream parts.
 
 ---
 
