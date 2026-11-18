@@ -2457,8 +2457,8 @@ function updateCropPreview() {
         const [ymin, xmin, ymax, xmax] = cropState.streamerBox;
         camBox.style.left = (xmin / 10) + '%';
         camBox.style.top = (ymin / 10) + '%';
-        camBox.style.width = Math.max(8, (xmax - xmin) / 10) + '%';
-        camBox.style.height = Math.max(8, (ymax - ymin) / 10) + '%';
+        camBox.style.width = Math.max(2, (xmax - xmin) / 10) + '%';
+        camBox.style.height = Math.max(2, (ymax - ymin) / 10) + '%';
       } else {
         camBox.style.display = 'none';
       }
@@ -2580,8 +2580,8 @@ function drawLive916Preview() {
       const center_sy = raw_by + raw_bh / 2;
 
       const ar_top = cw / topH;
-      const needed_h = Math.max(raw_bh * 1.25, (raw_bw / ar_top) * 1.1);
-      let s_src_h = Math.max(nh * 0.35, Math.min(nh, needed_h));
+      const needed_h = Math.max(raw_bh * 1.15, (raw_bw / ar_top) * 1.05);
+      let s_src_h = Math.max(50, Math.min(nh, needed_h));
       let s_src_w = s_src_h * ar_top;
       if (s_src_w > nw) {
         s_src_w = nw;
@@ -2867,6 +2867,54 @@ if (camBoxEl && stageEl) {
   camBoxEl.onpointercancel = endCamDrag;
 }
 
+// 1b. Draggable Corner Resize Handle for Streamer Facecam Box
+const camResizeEl = $('#cropCamResize');
+if (camResizeEl && stageEl) {
+  camResizeEl.onpointerdown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    cropState.isResizingCam = true;
+    cropState.resizeStartX = e.clientX;
+    cropState.resizeStartBox = [...cropState.streamerBox];
+    try { camResizeEl.setPointerCapture(e.pointerId); } catch (_) {}
+  };
+
+  camResizeEl.onpointermove = (e) => {
+    if (!cropState.isResizingCam) return;
+    justDragged = true;
+    const stageRect = stageEl.getBoundingClientRect();
+    const dx = (e.clientX - cropState.resizeStartX) / stageRect.width * 1000;
+
+    const [s_ymin, s_xmin, s_ymax, s_xmax] = cropState.resizeStartBox;
+    const initialW = s_xmax - s_xmin;
+    const newW = Math.max(40, Math.min(600, Math.round(initialW + dx)));
+    const newH = Math.min(1000, Math.round(newW * 1.78));
+
+    const cx = (s_xmin + s_xmax) / 2;
+    const cy = (s_ymin + s_ymax) / 2;
+
+    const nxMin = Math.max(0, Math.min(1000 - newW, Math.round(cx - newW / 2)));
+    const nyMin = Math.max(0, Math.min(1000 - newH, Math.round(cy - newH / 2)));
+
+    cropState.streamerBox = [nyMin, nxMin, nyMin + newH, nxMin + newW];
+    cropState.camSizePct = Math.round(newW / 10);
+    cropState.activePreset = 'custom';
+    if ($('#cropCamSizeSlider')) $('#cropCamSizeSlider').value = cropState.camSizePct;
+    if ($('#cropCamSizeVal')) $('#cropCamSizeVal').textContent = cropState.camSizePct + '%';
+    updateCropPreview();
+  };
+
+  const endCamResize = (e) => {
+    if (cropState.isResizingCam) {
+      cropState.isResizingCam = false;
+      try { camResizeEl.releasePointerCapture(e.pointerId); } catch (_) {}
+      setTimeout(() => { justDragged = false; }, 80);
+    }
+  };
+  camResizeEl.onpointerup = endCamResize;
+  camResizeEl.onpointercancel = endCamResize;
+}
+
 // 2. Draggable Yellow Framing Box (Gameplay / Content)
 if (cropBoxEl && stageEl) {
   cropBoxEl.onpointerdown = (e) => {
@@ -2992,14 +3040,15 @@ if ($('#cropCamSizeSlider')) $('#cropCamSizeSlider').oninput = function() {
   const cx = (xmin + xmax) / 2;
   const cy = (ymin + ymax) / 2;
 
-  const newW = val * 10;
-  const newH = Math.min(1000, Math.round(newW * 1.8));
+  const newW = Math.max(40, val * 10);
+  const newH = Math.min(1000, Math.round(newW * 1.78));
 
   const nxMin = Math.max(0, Math.min(1000 - newW, Math.round(cx - newW / 2)));
   const nyMin = Math.max(0, Math.min(1000 - newH, Math.round(cy - newH / 2)));
 
   cropState.streamerBox = [nyMin, nxMin, nyMin + newH, nxMin + newW];
   cropState.activePreset = 'custom';
+  if ($('#cropCamSizeVal')) $('#cropCamSizeVal').textContent = cropState.camSizePct + '%';
   updateCropPreview();
 };
 
@@ -3038,6 +3087,7 @@ if ($('#cropZoomSlider')) $('#cropZoomSlider').oninput = function() {
 
 if ($('#cropSplitSlider')) $('#cropSplitSlider').oninput = function() {
   cropState.splitPct = +this.value;
+  if ($('#cropSplitVal')) $('#cropSplitVal').textContent = cropState.splitPct + '%';
   updateCropPreview();
 };
 

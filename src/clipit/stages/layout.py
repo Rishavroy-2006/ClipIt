@@ -170,9 +170,9 @@ def build_reference_stack_filter(
     center_sy = raw_by + raw_bh // 2
 
     ar_top = 1080.0 / top_h
-    # Ensure top tier crop height comfortably encompasses the streamer box
+    # Ensure top tier crop height comfortably encompasses the streamer box (unclamped down to 80px for tight face zoom)
     needed_h_from_w = int(raw_bw / ar_top)
-    s_src_h = max(360, min(source_h, int(max(raw_bh * 1.25, needed_h_from_w * 1.1))))
+    s_src_h = max(80, min(source_h, int(max(raw_bh * 1.15, needed_h_from_w * 1.05))))
     s_src_w = int(s_src_h * ar_top)
     if s_src_w > source_w:
         s_src_w = source_w

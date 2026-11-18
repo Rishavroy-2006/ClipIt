@@ -532,10 +532,11 @@
                   </div>
                 </div>
 
-                <!-- Streamer Facecam Box (Draggable & Selectable) -->
-                <div class="crop-cam-box" id="cropCamBox" title="Streamer Facecam (Drag to reposition)">
-                  <div class="crop-cam-badge">📹 Streamer Facecam</div>
+                <!-- Streamer Facecam Box (Draggable & Resizable) -->
+                <div class="crop-cam-box" id="cropCamBox" title="Streamer Facecam (Drag to reposition, corner to resize)">
+                  <div class="crop-cam-badge">📹 Facecam</div>
                   <div class="crop-cam-crosshair"></div>
+                  <div class="crop-cam-resize" id="cropCamResize" title="Drag to resize facecam box">↘</div>
                 </div>
               </div>
             </div>
@@ -622,11 +623,12 @@
                 <label for="cropCamSizeSlider">Facecam Box Size / Zoom</label>
                 <span id="cropCamSizeVal">28%</span>
               </div>
-              <input type="range" id="cropCamSizeSlider" min="15" max="50" value="28" step="1" />
+              <input type="range" id="cropCamSizeSlider" min="5" max="50" value="28" step="1" />
               <div class="crop-slider-ticks">
-                <span>Tight Face (15%)</span>
+                <span>Ultra Close (5%)</span>
+                <span>Tight (15%)</span>
                 <span>Standard (28%)</span>
-                <span>Full Torso (50%)</span>
+                <span>Wide (50%)</span>
               </div>
             </div>
 
@@ -635,8 +637,9 @@
                 <label for="cropSplitSlider">Facecam Split Height</label>
                 <span id="cropSplitVal">38%</span>
               </div>
-              <input type="range" id="cropSplitSlider" min="25" max="50" value="38" step="1" />
+              <input type="range" id="cropSplitSlider" min="15" max="50" value="38" step="1" />
               <div class="crop-slider-ticks">
+                <span>Slim (15%)</span>
                 <span>25% Top</span>
                 <span>38% (Optimal)</span>
                 <span>50% Split</span>
