@@ -2368,7 +2368,9 @@ function openCropEditor(c) {
   cropState.camSizePct = Math.round((cropState.streamerBox[3] - cropState.streamerBox[1]) / 10) || 28;
 
   const cleanTitle = (c.title || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '').trim();
-  cropState.title = vis.title || cleanTitle;
+  // Always strip [Part X] from vis.title too — it may have been saved before the fix
+  const rawVisTitle = (vis.title || '').replace(/^\[?Part\s*\d+\]?:?\s*/i, '').trim();
+  cropState.title = rawVisTitle || cleanTitle;
   cropState.titleSize = vis.title_size || 95;
   cropState.captionSize = vis.caption_size || 80;
 

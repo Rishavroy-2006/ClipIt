@@ -953,10 +953,18 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         layout_target = data.get("layout", "all")
 
         valid_keys = {"id", "start", "end", "score", "title", "title_alts", "hook_line", "hooks", "why_viral", "category", "signals", "risk_flags", "trim_notes", "layout", "source_permission"}
-        if "title" in vision_info:
+        # Always use the already-cleaned title from vision_info if set, else strip [Part X]
+        if vision_info.get("title"):
             clip_dict["title"] = vision_info["title"]
         else:
             clip_dict["title"] = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", str(clip_dict.get("title", "")), flags=re.IGNORECASE).strip()
+        # Persist the cleaned title back to vision_info so render.py uses it reliably
+        if clip_dict["title"] and not vision_info.get("title"):
+            vision_info["title"] = clip_dict["title"]
+            cache.save_json(vision_file, vision_info)
+            if active_cache_v != cache_v:
+                root_cache = CacheManager(video_id, base_dir=CACHE_DIR)
+                root_cache.save_json(vision_file, vision_info)
         filtered_clip = {k: v for k, v in clip_dict.items() if k in valid_keys}
         clip = ClipItem(**filtered_clip)
 
@@ -982,13 +990,27 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                     if src_f.exists():
                         shutil.copy2(src_f, dst_f)
 
+            # Clean up any stale pre-existing rendered video files in cache directories so they never shadow the new output
+            cache_clean_targets = [part_cache_v, active_cache_v, cache_v]
+            for c_dir in cache_clean_targets:
+                if c_dir and c_dir.exists():
+                    for ext in (".mp4", "_blur.mp4", "_reframed.mp4"):
+                        stale_f = c_dir / f"{clip_id}{ext}"
+                        if stale_f.exists():
+                            try:
+                                stale_f.unlink()
+                            except Exception:
+                                pass
+
             sidecar = {}
             sidecar_p = out_v / f"{clip_id}.json"
             if sidecar_p.exists():
                 with open(sidecar_p, "r", encoding="utf-8") as f:
                     sidecar = json.load(f)
-                if "title" in vision_info:
-                    sidecar["title"] = vision_info["title"]
+                # Always persist the cleaned/custom title to sidecar
+                cleaned_title = vision_info.get("title") or clip_dict.get("title")
+                if cleaned_title:
+                    sidecar["title"] = cleaned_title
                     with open(sidecar_p, "w", encoding="utf-8") as f:
                         json.dump(sidecar, f, indent=2)
 
@@ -996,8 +1018,9 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 try:
                     with open(part_out_v / f"{clip_id}.json", "r", encoding="utf-8") as f:
                         psd = json.load(f)
-                    if "title" in vision_info:
-                        psd["title"] = vision_info["title"]
+                    cleaned_title = vision_info.get("title") or clip_dict.get("title")
+                    if cleaned_title:
+                        psd["title"] = cleaned_title
                         with open(part_out_v / f"{clip_id}.json", "w", encoding="utf-8") as f:
                             json.dump(psd, f, indent=2)
                 except Exception:
@@ -1405,54 +1428,44 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         candidate_paths = []
 
-        # If a specific part is referenced, search that part's directory FIRST
+        part_out = None
+        part_cache = None
         if part_num and part_num > 1:
-            candidates_c = [
-                CACHE_DIR / f"{video_id}_pt{part_num:02d}",
-                CACHE_DIR / f"{video_id}_pt{part_num}",
-            ]
-            part_cache = next((p for p in candidates_c if p.exists() and p.is_dir()), None)
-            if part_cache:
-                candidate_paths.append(part_cache / filename)
-                stripped = re.sub(r"pt\d+_", "", filename)
-                if stripped != filename:
-                    candidate_paths.append(part_cache / stripped)
-
             candidates_o = [
                 out_v / f"part_{part_num:02d}",
                 out_v / f"part_{part_num}",
             ]
             part_out = next((p for p in candidates_o if p.exists() and p.is_dir()), None)
-            if part_out:
-                candidate_paths.append(part_out / filename)
-                stripped = re.sub(r"pt\d+_", "", filename)
-                if stripped != filename:
-                    candidate_paths.append(part_out / stripped)
 
-        # General paths
+            candidates_c = [
+                CACHE_DIR / f"{video_id}_pt{part_num:02d}",
+                CACHE_DIR / f"{video_id}_pt{part_num}",
+            ]
+            part_cache = next((p for p in candidates_c if p.exists() and p.is_dir()), None)
+
+        # 1. Output directories FIRST (Canonical location for all rendered videos and published assets)
+        if part_out:
+            candidate_paths.append(part_out / filename)
+            stripped = re.sub(r"pt\d+_", "", filename)
+            if stripped != filename:
+                candidate_paths.append(part_out / stripped)
+
         candidate_paths.extend([
             out_v / filename,
             READY_DIR / video_id / filename,
-            CACHE_DIR / video_id / filename,
         ])
 
         if out_v.exists():
             for part_dir in sorted(out_v.glob("part_*")):
-                if part_dir.is_dir():
+                if part_dir.is_dir() and part_dir != part_out:
                     candidate_paths.append(part_dir / filename)
 
-        # Check all part caches for this filename
-        for p_cache in sorted(CACHE_DIR.glob(f"{video_id}_pt*")):
-            if p_cache.is_dir():
-                candidate_paths.append(p_cache / filename)
-
-        # Check aliases: ptXX_cYY <-> cYY (e.g. pt01_c01.mp4 or vision_pt01_c01_mid.jpg)
+        # Check aliases in output directories: ptXX_cYY <-> cYY
         alias_names = []
         stripped = re.sub(r'pt\d+_', '', filename)
         if stripped != filename:
             alias_names.append(stripped)
         elif filename.startswith("c"):
-            # c01.mp4 -> pt*_c01.mp4
             if out_v.exists():
                 for pt_file in out_v.glob(f"pt*_{filename}"):
                     candidate_paths.append(pt_file)
@@ -1463,10 +1476,23 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 for part_dir in sorted(out_v.glob("part_*")):
                     if part_dir.is_dir():
                         candidate_paths.append(part_dir / alias)
-            # Only fall back to root cache for alias if no part_num or part_num == 1
-            if not part_num or part_num == 1:
-                candidate_paths.append(CACHE_DIR / video_id / alias)
-            candidate_paths.append(READY_DIR / video_id / alias)
+
+        # 2. Cache directories LAST (ONLY for intermediate files like vision frames, audio.wav, source.mp4)
+        if part_cache:
+            candidate_paths.append(part_cache / filename)
+            if stripped != filename:
+                candidate_paths.append(part_cache / stripped)
+
+        candidate_paths.append(CACHE_DIR / video_id / filename)
+
+        for p_cache in sorted(CACHE_DIR.glob(f"{video_id}_pt*")):
+            if p_cache.is_dir() and p_cache != part_cache:
+                candidate_paths.append(p_cache / filename)
+
+        # Only fall back to root cache for alias if no part_num or part_num == 1
+        if not part_num or part_num == 1:
+            candidate_paths.append(CACHE_DIR / video_id / alias)
+        candidate_paths.append(READY_DIR / video_id / alias)
 
         target = next((p for p in candidate_paths if p.exists() and p.is_file()), None)
 

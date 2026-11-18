@@ -203,12 +203,13 @@ def generate_clip_ass(
     if layout_name == "blur-fill":
         l1 = f"{creator_name.upper()} REACTS" if creator_name else "LIVE REACTION"
         l3 = topic_name.upper() if topic_name else "GTA 6 TRAILER 2"
-        l2_raw, max_line_len = wrap_title_text(clean_title, 17)
+        l2_raw, max_line_len = wrap_title_text(clean_title, 14)
 
         max_len = max(len(l1), max_line_len, len(l3))
-        # Available safe width is 920px inside 1080px resolution
-        # In Anton font with ScaleX=100%, 1 char ≈ 0.54 * font_size
-        safe_fs = int(920.0 / (max(8, max_len) * 0.54))
+        # Available safe width is 920px inside 1080px resolution.
+        # Anton font at ScaleX=100%: use 0.60 safety factor (wider than 0.54)
+        # to account for curly-quote characters and emoji-stripped long words.
+        safe_fs = int(920.0 / (max(8, max_len) * 0.60))
 
         base_target_fs = title_size if title_size and title_size > 30 else 104
         top_fs = max(42, min(base_target_fs, safe_fs))
@@ -216,18 +217,17 @@ def generate_clip_ass(
         top_margin_v = 110
     elif layout_name == "reframed" and content_ratio in ("3:4", "1:1", "4:5"):
         # Podcast / Hormozi style: bold 2-line header in top black bar
-        words = clean_title.split()
-        if len(clean_title) > 18 and len(words) >= 2:
-            split_idx = len(words) // 2
-            l1 = " ".join(words[:split_idx])
-            l2_raw = " ".join(words[split_idx:])
-            max_line_len = max(len(l1), len(l2_raw))
+        wrapped_reframed, max_line_len = wrap_title_text(clean_title, 16)
+        if "\\N" in wrapped_reframed:
+            parts = wrapped_reframed.split("\\N", 1)
+            l1 = parts[0]
+            l2_raw = parts[1]
         else:
-            l1 = clean_title
+            l1 = wrapped_reframed
             l2_raw = ""
-            max_line_len = len(clean_title)
+        max_line_len = max(len(l1), len(l2_raw))
 
-        safe_fs = int(920.0 / (max(8, max_line_len) * 0.55))
+        safe_fs = int(920.0 / (max(8, max_line_len) * 0.58))
         base_target_fs = title_size if title_size and title_size > 30 else (72 if max_line_len < 20 else 60)
         top_fs = max(38, min(base_target_fs, safe_fs))
         top_sx = 100

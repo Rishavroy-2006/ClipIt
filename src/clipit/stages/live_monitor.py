@@ -425,6 +425,12 @@ class LiveStreamMonitor:
                 shutil.copy2(f, dst_part)
                 dst_main = self.out_dir / f.name
                 shutil.copy2(f, dst_main)
+                # Remove rendered videos from cache so only out/ holds MP4s and cache stays clean
+                if f.suffix in (".mp4", ".mkv", ".mov"):
+                    try:
+                        f.unlink()
+                    except Exception:
+                        pass
 
             sidecar_p = self.out_dir / f"{c.id}.json"
             if sidecar_p.exists():
