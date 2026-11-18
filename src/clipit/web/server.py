@@ -275,11 +275,12 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
     def handle_delete_rejected(self, data: Dict[str, Any]):
         video_id = data.get("video_id")
+        delete_unapproved = bool(data.get("delete_unapproved", False))
         if not video_id:
             self.send_error(HTTPStatus.BAD_REQUEST, "Missing video_id")
             return
         from clipit.retention import delete_rejected_clips
-        res = delete_rejected_clips(video_id, CACHE_DIR, OUT_DIR, READY_DIR)
+        res = delete_rejected_clips(video_id, CACHE_DIR, OUT_DIR, READY_DIR, delete_unapproved=delete_unapproved)
         self.send_json(res)
 
     def handle_retention_clean(self, data: Dict[str, Any]):

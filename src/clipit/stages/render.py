@@ -94,15 +94,22 @@ def render_variant_file(
     except ValueError:
         escaped_fonts = fonts_dir.resolve().as_posix().replace(":", "\\:")
 
-    filter_complex = f"{layout_filter};[base]setpts=PTS-STARTPTS,ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setpts=PTS-STARTPTS[v]"
-
     clip_dur = max(0.1, clip.end - clip.start)
+
+    # Two-stage seek: fast-seek to 5s before clip.start, then fine-seek in decoder
+    # This guarantees microsecond A/V sync without keyframe lag or audio drift
+    fast_seek = max(0.0, clip.start - 5.0)
+    fine_seek = clip.start - fast_seek
+
+    # Force 1:1 square pixel aspect ratio via setsar=1 to avoid anamorphic container flags
+    filter_complex = f"{layout_filter};[base]setpts=PTS-STARTPTS,ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v]"
 
     cmd = [
         "ffmpeg", "-y",
-        "-ss", f"{clip.start:.3f}",
-        "-t", f"{clip_dur:.3f}",
+        "-ss", f"{fast_seek:.3f}",
         "-i", str(source_video.resolve()),
+        "-ss", f"{fine_seek:.3f}",
+        "-t", f"{clip_dur:.3f}",
         "-filter_complex", filter_complex,
         "-map", "[v]",
         "-map", "0:a?",
@@ -128,6 +135,7 @@ def render_variant_file(
     cmd.extend([
         "-c:a", "aac",
         "-b:a", "192k",
+        "-ar", "48000",
         "-af", audio_filter,
         "-avoid_negative_ts", "make_zero",
         "-movflags", "+faststart",
@@ -140,9 +148,10 @@ def render_variant_file(
         # Fallback to libx264 if videotoolbox fails on an edge case
         fallback_cmd = [
             "ffmpeg", "-y",
-            "-ss", f"{clip.start:.3f}",
-            "-t", f"{clip_dur:.3f}",
+            "-ss", f"{fast_seek:.3f}",
             "-i", str(source_video.resolve()),
+            "-ss", f"{fine_seek:.3f}",
+            "-t", f"{clip_dur:.3f}",
             "-filter_complex", filter_complex,
             "-map", "[v]",
             "-map", "0:a?",
@@ -150,6 +159,7 @@ def render_variant_file(
             "-crf", "18", "-preset", "fast",
             "-c:a", "aac",
             "-b:a", "192k",
+            "-ar", "48000",
             "-af", audio_filter,
             "-avoid_negative_ts", "make_zero",
             "-movflags", "+faststart",

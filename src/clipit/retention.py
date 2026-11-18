@@ -6,6 +6,8 @@ Provides:
 """
 
 import os
+import re
+import shutil
 import json
 import time
 from datetime import datetime, timezone
@@ -160,10 +162,28 @@ def delete_single_clip(
     deleted_files = []
     freed_bytes = 0
 
-    # 1. Remove rendered video files and sidecars in out/<vid>/
+    # Determine part number if clip_id references a part (e.g. pt05_c01)
+    m_part = re.search(r"pt0*(\d+)", clip_id)
+    part_num = int(m_part.group(1)) if m_part else None
+    stripped_cid = re.sub(r"^pt\d+_", "", clip_id)
+
+    # 1. Target output directories: out/<vid>/ AND all out/<vid>/part_*/
+    target_out_dirs = [out_dir]
     if out_dir.exists():
-        for pattern in (f"{clip_id}.mp4", f"{clip_id}_*.mp4", f"{clip_id}.json"):
-            for f in out_dir.glob(pattern):
+        for pdir in out_dir.glob("part_*"):
+            if pdir.is_dir():
+                target_out_dirs.append(pdir)
+
+    for od in target_out_dirs:
+        patterns = [
+            f"{clip_id}.mp4", f"{clip_id}_*.mp4", f"{clip_id}.json",
+        ]
+        if stripped_cid != clip_id:
+            patterns.extend([
+                f"{stripped_cid}.mp4", f"{stripped_cid}_*.mp4", f"{stripped_cid}.json",
+            ])
+        for pattern in patterns:
+            for f in od.glob(pattern):
                 try:
                     freed_bytes += f.stat().st_size
                     f.unlink()
@@ -171,16 +191,53 @@ def delete_single_clip(
                 except Exception as e:
                     print(f"Error removing {f}: {e}")
 
-    # 2. Remove subtitle and vision analysis files in cache/<vid>/
-    if cache_dir.exists():
-        for pattern in (f"{clip_id}.ass", f"{clip_id}_*.ass", f"vision_{clip_id}*"):
-            for f in cache_dir.glob(pattern):
+    # 2. Target cache directories: cache/<vid>/ AND all cache/<vid>_pt*/
+    target_cache_dirs = [cache_dir]
+    if cache_base.exists():
+        for pdir in cache_base.glob(f"{video_id}_pt*"):
+            if pdir.is_dir():
+                target_cache_dirs.append(pdir)
+
+    for cd in target_cache_dirs:
+        patterns = [
+            f"{clip_id}.ass", f"{clip_id}_*.ass", f"vision_{clip_id}*", f"{clip_id}.mp4", f"{clip_id}_*.mp4",
+        ]
+        if stripped_cid != clip_id:
+            patterns.extend([
+                f"{stripped_cid}.ass", f"{stripped_cid}_*.ass", f"vision_{stripped_cid}*", f"{stripped_cid}.mp4", f"{stripped_cid}_*.mp4",
+            ])
+        for pattern in patterns:
+            for f in cd.glob(pattern):
                 try:
                     freed_bytes += f.stat().st_size
                     f.unlink()
                     deleted_files.append(str(f))
                 except Exception as e:
                     print(f"Error removing {f}: {e}")
+
+    # 3. Update live_session.json in both cache and out
+    for sess_file in (cache_dir / "live_session.json", out_dir / "live_session.json"):
+        if sess_file.exists():
+            try:
+                with open(sess_file, "r", encoding="utf-8") as f:
+                    sess_d = json.load(f)
+                changed = False
+                for pt in sess_d.get("parts", []):
+                    pt_clips = pt.get("clips", [])
+                    filtered_pt = [c for c in pt_clips if c.get("id") not in (clip_id, stripped_cid)]
+                    if len(filtered_pt) != len(pt_clips):
+                        pt["clips"] = filtered_pt
+                        changed = True
+                top_clips = sess_d.get("clips", [])
+                filtered_top = [c for c in top_clips if c.get("id") not in (clip_id, stripped_cid)]
+                if len(filtered_top) != len(top_clips):
+                    sess_d["clips"] = filtered_top
+                    changed = True
+                if changed:
+                    with open(sess_file, "w", encoding="utf-8") as f:
+                        json.dump(sess_d, f, indent=2, ensure_ascii=False)
+            except Exception:
+                pass
 
     # 3. Update approved.json map
     app_file = cache_dir / "approved.json"
@@ -272,24 +329,59 @@ def delete_rejected_clips(
     cache_base: Path = Path("cache"),
     out_base: Path = Path("out"),
     ready_base: Path = Path("ready_to_post"),
+    delete_unapproved: bool = False,
 ) -> Dict[str, Any]:
     """Find all rejected clips in a project and delete them permanently."""
     cache_dir = cache_base / video_id
+    out_dir = out_base / video_id
     app_file = cache_dir / "approved.json"
 
-    rejected_ids = []
+    approved_map = {}
     if app_file.exists():
         try:
             with open(app_file, "r", encoding="utf-8") as f:
                 approved_map = json.load(f)
-            rejected_ids = [cid for cid, status in approved_map.items() if status == "rejected"]
         except Exception:
-            rejected_ids = []
+            approved_map = {}
+
+    rejected_ids = set([cid for cid, status in approved_map.items() if status == "rejected"])
+
+    if delete_unapproved:
+        # Discover all clip IDs across manifests and directories
+        all_cids = set()
+        if out_dir.exists():
+            for p in out_dir.glob("*.json"):
+                if p.name not in ("info.json", "live_session.json", "approved.json", "project.json", "review.json"):
+                    all_cids.add(p.stem)
+            for pdir in out_dir.glob("part_*"):
+                if pdir.is_dir():
+                    for p in pdir.glob("*.json"):
+                        if p.name not in ("info.json", "live_session.json", "approved.json"):
+                            all_cids.add(p.stem)
+        for sess_file in (cache_dir / "live_session.json", out_dir / "live_session.json"):
+            if sess_file.exists():
+                try:
+                    with open(sess_file, "r", encoding="utf-8") as f:
+                        sess_d = json.load(f)
+                        for pt in sess_d.get("parts", []):
+                            for c in pt.get("clips", []):
+                                if c.get("id"):
+                                    all_cids.add(c["id"])
+                        for c in sess_d.get("clips", []):
+                            if c.get("id"):
+                                all_cids.add(c["id"])
+                except Exception:
+                    pass
+
+        for cid in all_cids:
+            stripped = re.sub(r"^pt\d+_", "", cid)
+            if approved_map.get(cid) != "approved" and approved_map.get(stripped) != "approved":
+                rejected_ids.add(cid)
 
     total_freed = 0
     deleted_clips = []
 
-    for cid in rejected_ids:
+    for cid in sorted(rejected_ids):
         res = delete_single_clip(video_id, cid, cache_base, out_base, ready_base)
         total_freed += res.get("freed_bytes", 0)
         deleted_clips.append(cid)
