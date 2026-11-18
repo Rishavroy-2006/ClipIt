@@ -594,11 +594,26 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             c_copy = {**base_data, **sidecar_data}
             c_copy["id"] = cid
 
-            # Vision info & sample frame
-            vis_candidates = [
-                cache_v / f"vision_{cid}.json",
-                cache_v / f"vision_{stripped_cid}.json",
-            ]
+            # Resolve part number and part-specific cache
+            m_pt = re.match(r"^pt0*(\d+)", cid)
+            part_num = int(m_pt.group(1)) if m_pt else None
+            pt_cache = None
+            if part_num and part_num > 1:
+                pt_candidates = [
+                    CACHE_DIR / f"{video_id}_pt{part_num:02d}",
+                    CACHE_DIR / f"{video_id}_pt{part_num}",
+                ]
+                pt_cache = next((p for p in pt_candidates if p.exists() and p.is_dir()), None)
+
+            # Vision info & sample frame (isolated strictly to the part)
+            vis_candidates = []
+            if pt_cache:
+                vis_candidates.append(pt_cache / f"vision_{cid}.json")
+                vis_candidates.append(pt_cache / f"vision_{stripped_cid}.json")
+            vis_candidates.append(cache_v / f"vision_{cid}.json")
+            if not part_num or part_num == 1:
+                vis_candidates.append(cache_v / f"vision_{stripped_cid}.json")
+
             vis_p = next((p for p in vis_candidates if p.exists() and p.is_file()), None)
             if vis_p and "vision" not in c_copy:
                 try:
@@ -607,13 +622,19 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
 
-            sample_candidates = [
-                cache_v / f"vision_{cid}_mid.jpg",
-                cache_v / f"vision_{stripped_cid}_mid.jpg",
-            ]
+            sample_candidates = []
+            if pt_cache:
+                sample_candidates.append(pt_cache / f"vision_{cid}_mid.jpg")
+                sample_candidates.append(pt_cache / f"vision_{stripped_cid}_mid.jpg")
+            sample_candidates.append(cache_v / f"vision_{cid}_mid.jpg")
+            if not part_num or part_num == 1:
+                sample_candidates.append(cache_v / f"vision_{stripped_cid}_mid.jpg")
+
             sample_p = next((p for p in sample_candidates if p.exists() and p.is_file()), None)
             if sample_p:
                 c_copy["sample_frame"] = f"/api/video/{video_id}/{sample_p.name}"
+            else:
+                c_copy["sample_frame"] = f"/api/video/{video_id}/vision_{cid}_mid.jpg"
 
             # Set part if not already present
             if not c_copy.get("part"):
@@ -1274,18 +1295,55 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
     # ==========================================
 
     def handle_stream_video(self, video_id: str, filename: str):
-        # Look in out/<video_id>/, then ready_to_post/<video_id>/, then cache/<video_id>/
         out_v = OUT_DIR / video_id
-        candidate_paths = [
+        cache_v = CACHE_DIR / video_id
+
+        # Determine part number if filename references a part (e.g. pt05_c01.mp4 or vision_pt05_c01_mid.jpg)
+        m_part = re.search(r"pt0*(\d+)", filename)
+        part_num = int(m_part.group(1)) if m_part else None
+
+        candidate_paths = []
+
+        # If a specific part is referenced, search that part's directory FIRST
+        if part_num and part_num > 1:
+            candidates_c = [
+                CACHE_DIR / f"{video_id}_pt{part_num:02d}",
+                CACHE_DIR / f"{video_id}_pt{part_num}",
+            ]
+            part_cache = next((p for p in candidates_c if p.exists() and p.is_dir()), None)
+            if part_cache:
+                candidate_paths.append(part_cache / filename)
+                stripped = re.sub(r"pt\d+_", "", filename)
+                if stripped != filename:
+                    candidate_paths.append(part_cache / stripped)
+
+            candidates_o = [
+                out_v / f"part_{part_num:02d}",
+                out_v / f"part_{part_num}",
+            ]
+            part_out = next((p for p in candidates_o if p.exists() and p.is_dir()), None)
+            if part_out:
+                candidate_paths.append(part_out / filename)
+                stripped = re.sub(r"pt\d+_", "", filename)
+                if stripped != filename:
+                    candidate_paths.append(part_out / stripped)
+
+        # General paths
+        candidate_paths.extend([
             out_v / filename,
             READY_DIR / video_id / filename,
             CACHE_DIR / video_id / filename,
-        ]
+        ])
 
         if out_v.exists():
-            for part_dir in out_v.glob("part_*"):
+            for part_dir in sorted(out_v.glob("part_*")):
                 if part_dir.is_dir():
                     candidate_paths.append(part_dir / filename)
+
+        # Check all part caches for this filename
+        for p_cache in sorted(CACHE_DIR.glob(f"{video_id}_pt*")):
+            if p_cache.is_dir():
+                candidate_paths.append(p_cache / filename)
 
         # Check aliases: ptXX_cYY <-> cYY (e.g. pt01_c01.mp4 or vision_pt01_c01_mid.jpg)
         alias_names = []
@@ -1300,12 +1358,14 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         for alias in alias_names:
             candidate_paths.append(out_v / alias)
-            candidate_paths.append(CACHE_DIR / video_id / alias)
-            candidate_paths.append(READY_DIR / video_id / alias)
             if out_v.exists():
-                for part_dir in out_v.glob("part_*"):
+                for part_dir in sorted(out_v.glob("part_*")):
                     if part_dir.is_dir():
                         candidate_paths.append(part_dir / alias)
+            # Only fall back to root cache for alias if no part_num or part_num == 1
+            if not part_num or part_num == 1:
+                candidate_paths.append(CACHE_DIR / video_id / alias)
+            candidate_paths.append(READY_DIR / video_id / alias)
 
         target = next((p for p in candidate_paths if p.exists() and p.is_file()), None)
 
