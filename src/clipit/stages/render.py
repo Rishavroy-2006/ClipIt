@@ -96,23 +96,25 @@ def render_variant_file(
 
     clip_dur = max(0.1, clip.end - clip.start)
 
-    # Two-stage seek: fast-seek to 5s before clip.start in input, then accurate trim in filtergraph.
-    # Trimming inside filtergraph BEFORE burning subtitles guarantees BOTH:
-    # 1. Microsecond frame-accurate A/V sync without keyframe lag or audio drift
+    # Input seeking with -copyts preserves container presentation timestamps (PTS)
+    # Fast seek seeks to nearest keyframe before clip.start (~5s buffer for decoder warmup).
+    # -copyts ensures video and audio retain identical absolute container timestamps.
+    # Trimming with absolute clip.start inside filtergraph guarantees:
+    # 1. 100% microsecond lockstep A/V synchronization (zero drift, zero keyframe skew)
     # 2. Perfect word-by-word subtitle synchronization (burned at exact PTS=0 relative to clip cut)
     fast_seek = max(0.0, clip.start - 5.0)
-    fine_seek = clip.start - fast_seek
 
     # Force 1:1 square pixel aspect ratio via setsar=1 to avoid anamorphic container flags
     filter_complex = (
         f"{layout_filter};"
-        f"[base]trim=start={fine_seek:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
+        f"[base]trim=start={clip.start:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
         f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v]"
     )
 
     cmd = [
         "ffmpeg", "-y",
         "-ss", f"{fast_seek:.3f}",
+        "-copyts",
         "-i", str(source_video.resolve()),
         "-filter_complex", filter_complex,
         "-map", "[v]",
@@ -130,7 +132,7 @@ def render_variant_file(
         cmd.extend(["-crf", str(video_config.crf), "-preset", "fast"])
 
     audio_filter = (
-        f"atrim=start={fine_seek:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,"
+        f"atrim=start={clip.start:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,"
         f"aresample=async=1:first_pts=0,"
         f"highpass=f=80,equalizer=f=3000:t=q:w=1.5:g=2.5,"
         f"acompressor=threshold=-18dB:ratio=3:attack=10:release=120:makeup=2dB,"
@@ -154,6 +156,7 @@ def render_variant_file(
         fallback_cmd = [
             "ffmpeg", "-y",
             "-ss", f"{fast_seek:.3f}",
+            "-copyts",
             "-i", str(source_video.resolve()),
             "-filter_complex", filter_complex,
             "-map", "[v]",

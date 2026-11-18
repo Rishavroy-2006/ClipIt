@@ -200,11 +200,11 @@ def delete_single_clip(
 
     for cd in target_cache_dirs:
         patterns = [
-            f"{clip_id}.ass", f"{clip_id}_*.ass", f"vision_{clip_id}*", f"{clip_id}.mp4", f"{clip_id}_*.mp4",
+            f"{clip_id}.ass", f"{clip_id}_*.ass", f"vision_{clip_id}*", f"{clip_id}.mp4", f"{clip_id}_*.mp4", f"{clip_id}.json",
         ]
         if stripped_cid != clip_id:
             patterns.extend([
-                f"{stripped_cid}.ass", f"{stripped_cid}_*.ass", f"vision_{stripped_cid}*", f"{stripped_cid}.mp4", f"{stripped_cid}_*.mp4",
+                f"{stripped_cid}.ass", f"{stripped_cid}_*.ass", f"vision_{stripped_cid}*", f"{stripped_cid}.mp4", f"{stripped_cid}_*.mp4", f"{stripped_cid}.json",
             ])
         for pattern in patterns:
             for f in cd.glob(pattern):
