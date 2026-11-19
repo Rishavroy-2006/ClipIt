@@ -2,9 +2,82 @@
 
 import re
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import yaml
 from clipit.models import FullTranscript, ClipItem, WordTimestamp
+
+
+def _dim_ass_color(ass_color: str, opacity: float = 0.75) -> str:
+    """Scale RGB toward black so inactive words are dimmed in ASS &HAABBGGRR format."""
+    clean = str(ass_color or "").strip().replace("&H", "").replace("&", "")
+    if len(clean) == 8:
+        aa = clean[0:2]
+        bb = int(clean[2:4], 16)
+        gg = int(clean[4:6], 16)
+        rr = int(clean[6:8], 16)
+    elif len(clean) == 6:
+        aa = "00"
+        rr = int(clean[0:2], 16)
+        gg = int(clean[2:4], 16)
+        bb = int(clean[4:6], 16)
+    else:
+        return "&H00C0C0C0"
+
+    factor = 0.5 + 0.5 * max(0.05, min(1.0, opacity))
+    rr_dim = min(255, max(0, round(rr * factor)))
+    gg_dim = min(255, max(0, round(gg * factor)))
+    bb_dim = min(255, max(0, round(bb * factor)))
+    return f"&H{aa}{bb_dim:02X}{gg_dim:02X}{rr_dim:02X}"
+
+
+_FONT_METRIC_CACHE: Dict[Tuple[str, int], Any] = {}
+
+
+def get_font_metric(font_name: str, font_size: int):
+    """Retrieve or cache Pillow ImageFont metric for precise advance measurement."""
+    key = (font_name, font_size)
+    if key in _FONT_METRIC_CACHE:
+        return _FONT_METRIC_CACHE[key]
+
+    font_file = None
+    search_dirs = [Path("assets/fonts"), Path(__file__).resolve().parent.parent.parent.parent / "assets/fonts"]
+    for d in search_dirs:
+        if not d.exists():
+            continue
+        clean_name = font_name.lower().replace(" ", "").replace("-", "")
+        for f in d.glob("*.ttf"):
+            stem_clean = f.stem.lower().replace(" ", "").replace("-", "")
+            if clean_name in stem_clean or stem_clean.startswith(clean_name[:5]):
+                font_file = f
+                break
+        if font_file:
+            break
+        anton = d / "Anton-Regular.ttf"
+        if anton.exists():
+            font_file = anton
+
+    if font_file and font_file.exists():
+        try:
+            from PIL import ImageFont
+            metric = ImageFont.truetype(str(font_file), font_size)
+            _FONT_METRIC_CACHE[key] = metric
+            return metric
+        except Exception:
+            pass
+    return None
+
+
+def measure_line_width(font_name: str, font_size: int, words: List[str]) -> float:
+    """Measure exact text pixel width using Pillow TrueType font metrics to prevent subtitle clipping."""
+    metric = get_font_metric(font_name, font_size)
+    text = " ".join(words)
+    if metric is not None:
+        try:
+            return float(metric.getlength(text))
+        except Exception:
+            pass
+    return float(len(text) * font_size * 0.55)
+
 
 
 DEFAULT_ASS_HEADER = """[Script Info]
@@ -20,7 +93,7 @@ PlayResY: 1920
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,{font},{size},{primary_color},&H000000FF,{outline_color},{shadow_color},-1,0,0,0,100,100,0,0,1,{outline},{shadow},2,60,60,{margin_v},1
 Style: HookBanner,{font},54,&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,100,100,0,0,3,10,0,8,80,80,90,1
-Style: TopHeader,{font},{top_fs},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,{top_sx},100,2,0,1,8,3,8,40,40,{top_margin_v},1
+Style: TopHeader,{font},{top_fs},&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,{top_sx},100,1,0,1,4,2,8,40,40,{top_margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -130,8 +203,8 @@ def generate_clip_ass(
     show_hook_banner: bool = True,
     seam_y: Optional[int] = None,
     layout_name: Optional[str] = None,
-    creator_name: Optional[str] = "ISHOWSPEED",
-    topic_name: Optional[str] = "GTA 6 TRAILER 2",
+    creator_name: Optional[str] = None,
+    topic_name: Optional[str] = None,
     text_position: Optional[str] = None,
     content_ratio: Optional[str] = "3:4",
     title_size: Optional[int] = None,
@@ -180,66 +253,84 @@ def generate_clip_ass(
     if not clean_title:
         clean_title = strip_unsupported_ass_chars(clip.hook_line or "VIRAL MOMENT").upper()
 
-    def wrap_title_text(text: str, max_chars_per_line: int = 17) -> Tuple[str, int]:
-        words = text.split()
-        if len(text) <= max_chars_per_line or len(words) < 2:
-            return text, len(text)
-        lines = []
-        curr_words = []
-        curr_len = 0
-        for w in words:
-            add_len = len(w) + (1 if curr_words else 0)
-            if curr_len + add_len > max_chars_per_line and curr_words:
-                lines.append(" ".join(curr_words))
-                curr_words = [w]
-                curr_len = len(w)
-            else:
-                curr_words.append(w)
-                curr_len += add_len
-        if curr_words:
-            lines.append(" ".join(curr_words))
-        return "\\N".join(lines), max(len(l) for l in lines)
+    font_family = style.get("font", "Anton")
+    title_words = clean_title.split()
+
+    creator_tag = None
+    if creator_name and creator_name.strip():
+        c_clean = creator_name.strip().upper()
+        c_alnum = re.sub(r"[^A-Z0-9]", "", c_clean)
+        title_alnum = re.sub(r"[^A-Z0-9]", "", clean_title)
+        # Avoid redundant creator tag if creator name/handle is already part of the title
+        is_in_title = c_alnum in title_alnum or ("SPEED" in title_alnum if "SPEED" in c_alnum else False)
+        if not is_in_title:
+            creator_tag = f"• {c_clean} •"
+
+    topic_tag = None
+    if topic_name and topic_name.strip():
+        clean_top = topic_name.strip().upper()
+        if clean_top not in clean_title:
+            topic_tag = f"# {clean_top}"
+
+    # Smart split title into 1 or 2 lines using TrueType font measurement
+    if len(title_words) <= 1:
+        line1, line2 = clean_title, ""
+    else:
+        total_w = measure_line_width(font_family, 84, title_words)
+        if total_w <= 720.0 and len(title_words) <= 3:
+            line1, line2 = clean_title, ""
+        else:
+            best_split = len(title_words) // 2
+            best_diff = float("inf")
+            for i in range(1, len(title_words)):
+                w1 = measure_line_width(font_family, 84, title_words[:i])
+                w2 = measure_line_width(font_family, 84, title_words[i:])
+                if w1 <= 920.0 and w2 <= 920.0:
+                    diff = abs(w1 - w2)
+                    if diff < best_diff:
+                        best_diff = diff
+                        best_split = i
+            line1 = " ".join(title_words[:best_split])
+            line2 = " ".join(title_words[best_split:])
 
     if layout_name == "blur-fill":
-        l1 = f"{creator_name.upper()} REACTS" if creator_name else "LIVE REACTION"
-        l3 = topic_name.upper() if topic_name else "GTA 6 TRAILER 2"
-        l2_raw, max_line_len = wrap_title_text(clean_title, 14)
-
-        max_len = max(len(l1), max_line_len, len(l3))
-        # Available safe width is 920px inside 1080px resolution.
-        # Anton font at ScaleX=100%: use 0.60 safety factor (wider than 0.54)
-        # to account for curly-quote characters and emoji-stripped long words.
-        safe_fs = int(920.0 / (max(8, max_len) * 0.60))
-
-        base_target_fs = title_size if title_size and title_size > 30 else 104
+        longest_str = max([line1, line2, creator_tag or "", topic_tag or ""], key=lambda s: len(s) if s else 0)
+        safe_fs = int(920.0 / (max(8, len(longest_str)) * 0.58))
+        base_target_fs = title_size if title_size and title_size > 30 else 84
         top_fs = max(42, min(base_target_fs, safe_fs))
         top_sx = 100
-        top_margin_v = 110
-    elif layout_name == "reframed" and content_ratio in ("3:4", "1:1", "4:5"):
-        # Podcast / Hormozi style: bold 2-line header in top black bar
-        wrapped_reframed, max_line_len = wrap_title_text(clean_title, 16)
-        if "\\N" in wrapped_reframed:
-            parts = wrapped_reframed.split("\\N", 1)
-            l1 = parts[0]
-            l2_raw = parts[1]
-        else:
-            l1 = wrapped_reframed
-            l2_raw = ""
-        max_line_len = max(len(l1), len(l2_raw))
 
-        safe_fs = int(920.0 / (max(8, max_line_len) * 0.58))
-        base_target_fs = title_size if title_size and title_size > 30 else (72 if max_line_len < 20 else 60)
+        # Calculate optical vertical centering in the 656px top letterbox bar (midpoint y = 328)
+        # Approximate line heights: badge ~ 55px, title line ~ top_fs * 1.15, topic ~ 48px
+        total_block_h = 0
+        if creator_tag:
+            total_block_h += 55
+        if line1:
+            total_block_h += int(top_fs * 1.15)
+        if line2:
+            total_block_h += int(top_fs * 1.15)
+        if topic_tag:
+            total_block_h += 48
+
+        top_margin_v = max(40, int(328 - total_block_h / 2) + 12)
+    elif layout_name == "reframed" and content_ratio in ("3:4", "1:1", "4:5"):
+        longest_str = max([line1, line2], key=lambda s: len(s) if s else 0)
+        safe_fs = int(920.0 / (max(8, len(longest_str)) * 0.58))
+        base_target_fs = title_size if title_size and title_size > 30 else (72 if len(longest_str) < 20 else 60)
         top_fs = max(38, min(base_target_fs, safe_fs))
         top_sx = 100
         top_margin_v = 55
 
-    # Subtitle / caption font size
+    # Subtitle / caption font size & style parameters
     caption_fs = caption_size if caption_size and caption_size >= 40 else style.get("size", 80)
+    base_opacity = float(style.get("base_opacity", 0.75))
+    dimmed_primary = _dim_ass_color(style.get("primary_color", "&H00FFFFFF"), base_opacity)
+    reveal_mode = bool(style.get("reveal", False))
 
     header = DEFAULT_ASS_HEADER.format(
-        font=style.get("font", "Anton"),
+        font=font_family,
         size=caption_fs,
-        primary_color=style.get("primary_color", "&H00FFFFFF"),
+        primary_color=dimmed_primary,
         outline_color=style.get("outline_color", "&H00000000"),
         shadow_color=style.get("shadow_color", "&H80000000"),
         outline=style.get("outline", 5),
@@ -254,18 +345,30 @@ def generate_clip_ass(
 
     # 1. Headline / Hook Overlay
     if layout_name == "blur-fill":
-        # Massive 3-line persistent headline overlay matching iShowSpeed Funniest Moments reference
-        l2 = f"{{\\c&H1DF8E8&}}{l2_raw}{{\\c&HFFFFFF&}}"
         duration_str = format_ass_time(clip.end - clip.start)
-        headline_text = f"{l1}\\N{l2}\\N{l3}"
+        hl_col = style.get("highlight_color", "&H000AD6FF")
+        pri_col = style.get("primary_color", "&H00FFFFFF")
+
+        parts = []
+        if creator_tag:
+            parts.append(f"{{\\fs46\\c&H00D0D0D0\\3c&H00000000\\bord3}}{creator_tag}")
+        if line1 and line2:
+            parts.append(f"{{\\fs{top_fs}\\c{pri_col}}}{line1}\\N{{\\c{hl_col}}}{line2}{{\\r}}")
+        elif line1:
+            parts.append(f"{{\\fs{top_fs}\\c{hl_col}}}{line1}{{\\r}}")
+        if topic_tag:
+            parts.append(f"{{\\fs44\\c&H00A0A0A0\\3c&H00000000\\bord2.5}}{topic_tag}")
+
+        headline_text = "\\N".join(parts)
         events.append(f"Dialogue: 2,0:00:00.00,{duration_str},TopHeader,,0,0,0,,{headline_text}")
     elif layout_name == "reframed" and content_ratio in ("3:4", "1:1", "4:5") and text_position != "above":
-        # Hormozi / Podcast reference style header with cyan glowing highlight in top black bar
         duration_str = format_ass_time(clip.end - clip.start)
-        if l2_raw:
-            headline_text = f"{l1}\\N{{\\c&H1DF8E8&}}{l2_raw}{{\\c&HFFFFFF&}}"
+        hl_col = style.get("highlight_color", "&H000AD6FF")
+        pri_col = style.get("primary_color", "&H00FFFFFF")
+        if line2:
+            headline_text = f"{{\\fs{top_fs}\\c{pri_col}}}{line1}\\N{{\\c{hl_col}}}{line2}{{\\r}}"
         else:
-            headline_text = l1
+            headline_text = f"{{\\fs{top_fs}\\c{hl_col}}}{line1}{{\\r}}"
         events.append(f"Dialogue: 2,0:00:00.00,{duration_str},TopHeader,,0,0,0,,{headline_text}")
     elif show_hook_banner and clip.hook_line:
         hook_text = clip.hook_line.strip()
@@ -287,25 +390,118 @@ def generate_clip_ass(
     words_per_line = style.get("words_per_line", 3)
     highlight_color = style.get("highlight_color", "&H000AD6FF")
 
-    # Group words into chunks of `words_per_line`
-    for i in range(0, len(clip_words), words_per_line):
-        line_chunk = clip_words[i : i + words_per_line]
+    # Smart phrase chunking:
+    # Do NOT blindly chunk words across long pauses or sentence boundaries!
+    # Measure line width with TrueType Pillow font metrics to prevent subtitle clipping.
+    SAFE_WIDTH = 900.0
+    line_chunks: List[List[WordTimestamp]] = []
+    curr_chunk: List[WordTimestamp] = []
+
+    for idx, w in enumerate(clip_words):
+        clean_w = strip_unsupported_ass_chars(w.w).strip()
+        if not clean_w:
+            continue
+        word_text = clean_w.upper() if style.get("uppercase", True) else clean_w
+
+        # Test if adding this word would overflow SAFE_WIDTH
+        test_words = [strip_unsupported_ass_chars(item.w).strip() for item in curr_chunk] + [word_text]
+        test_width = measure_line_width(font_family, caption_fs, test_words)
+        too_wide = len(curr_chunk) >= 1 and test_width > SAFE_WIDTH
+
+        is_last_word = (idx == len(clip_words) - 1)
+        if not is_last_word:
+            next_w = clip_words[idx + 1]
+            gap = max(0.0, next_w.start - w.end)
+            ends_sentence = bool(re.search(r"[.!?]$", w.w.strip()))
+            has_pause = gap > 0.40
+            at_max_words = len(curr_chunk) >= words_per_line
+
+            if too_wide:
+                line_chunks.append(curr_chunk)
+                curr_chunk = [w]
+            elif ends_sentence or has_pause or at_max_words:
+                curr_chunk.append(w)
+                line_chunks.append(curr_chunk)
+                curr_chunk = []
+            else:
+                curr_chunk.append(w)
+        else:
+            if too_wide:
+                line_chunks.append(curr_chunk)
+                curr_chunk = [w]
+            else:
+                curr_chunk.append(w)
+            line_chunks.append(curr_chunk)
+            curr_chunk = []
+
+    # Identify any single lone word wider than SAFE_WIDTH and calculate scale percentage
+    single_word_squeeze: Dict[float, int] = {}
+    for chunk in line_chunks:
+        if len(chunk) == 1:
+            cw = strip_unsupported_ass_chars(chunk[0].w).strip()
+            cw_text = cw.upper() if style.get("uppercase", True) else cw
+            w_px = measure_line_width(font_family, caption_fs, [cw_text])
+            if w_px > SAFE_WIDTH:
+                pct = max(50, int(100 * SAFE_WIDTH / w_px))
+                single_word_squeeze[chunk[0].start] = pct
+
+    # Generate continuous dialogue events for each chunk with zero gaps and zero overlap
+    for chunk_idx, line_chunk in enumerate(line_chunks):
         if not line_chunk:
             continue
 
+        # Enforce strictly monotonic word start timestamps within this chunk
+        rel_starts = []
+        last_s = -1.0
+        for w in line_chunk:
+            s = max(0.0, w.start - clip.start)
+            if s <= last_s:
+                s = last_s + 0.08
+            rel_starts.append(s)
+            last_s = s
+
+        # Lookahead to start of next chunk (relative to clip.start) to prevent collisions
+        next_chunk_start_rel = None
+        if chunk_idx + 1 < len(line_chunks) and line_chunks[chunk_idx + 1]:
+            next_chunk_start_rel = max(0.0, line_chunks[chunk_idx + 1][0].start - clip.start)
+
         for active_idx, active_word in enumerate(line_chunk):
-            w_start_rel = max(0.0, active_word.start - clip.start)
-            w_end_rel = max(w_start_rel + 0.1, active_word.end - clip.start)
+            w_start_rel = rel_starts[active_idx]
+
+            # Continuous, non-flickering display:
+            if active_idx < len(line_chunk) - 1:
+                # Seamless partition: end of current word == start of next word
+                w_end_rel = rel_starts[active_idx + 1]
+            else:
+                # Last word in this line chunk: hold text with a short sustain (+0.22s)
+                sustain_end = max(w_start_rel + 0.15, active_word.end - clip.start + 0.22)
+                if next_chunk_start_rel is not None:
+                    # Prevent collision with the start of the next line chunk
+                    w_end_rel = min(sustain_end, max(w_start_rel + 0.10, next_chunk_start_rel - 0.02))
+                else:
+                    w_end_rel = sustain_end
+
+            if w_end_rel <= w_start_rel:
+                w_end_rel = w_start_rel + 0.08
 
             line_parts = []
             for j, w in enumerate(line_chunk):
                 word_str = strip_unsupported_ass_chars(w.w)
                 clean_text = word_str.upper() if style.get("uppercase", True) else word_str
+                squeeze_tag = (
+                    f"\\fscx{single_word_squeeze[w.start]}\\fscy{single_word_squeeze[w.start]}"
+                    if w.start in single_word_squeeze
+                    else ""
+                )
+
                 if j == active_idx:
-                    # Bold MrBeast / TikTok dynamic spring bounce with active-word pop
+                    # Bold MrBeast / TikTok dynamic spring bounce with active-word pop and bright highlight color
                     line_parts.append(
-                        f"{{\\c{highlight_color}\\t(0,70,\\fscx126\\fscy126)\\t(70,160,\\fscx100\\fscy100)}}{clean_text}{{\\r}}"
+                        f"{{\\c{highlight_color}{squeeze_tag}\\t(0,70,\\fscx126\\fscy126)\\t(70,160,\\fscx100\\fscy100)}}{clean_text}{{\\r}}"
                     )
+                elif reveal_mode and j > active_idx:
+                    # Hormozi progressive reveal: upcoming words are transparent placeholder slots
+                    line_parts.append(f"{{\\alpha&HFF&}}{clean_text}{{\\r}}")
                 else:
                     line_parts.append(clean_text)
 

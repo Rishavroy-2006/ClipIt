@@ -2910,45 +2910,56 @@ function drawLive916Preview() {
     const lbY = Math.round((ch - lbH) / 2); // 164px
     ctx.drawImage(img, 0, 0, nw, nh, 0, lbY, cw, lbH);
 
-    // 3-Line Bold Headline in Top Black Letterbox Bar (Exact Reference Short Style)
-    const rawTitle = cropState.title || cropState.clip?.title || 'GOING OVER GTA 6';
+    // Bold Headline in Top Black Letterbox Bar (Reference Short Style)
+    const rawTitle = cropState.title || cropState.clip?.title || 'VIRAL HIGHLIGHT';
     const cleanTitle = rawTitle.replace(/^\[?Part\s*\d+\]?:?\s*/i, '').replace(/[#@].*/, '').trim().toUpperCase();
 
-    const l1 = 'LIVE REACTION';
-    const l2_lines = wrapTitleLines(cleanTitle, 16);
-    const l3 = 'GTA 6';
+    // Check if creator name is in title
+    const streamerName = (cropState.streamerName || '').trim().toUpperCase();
+    const showStreamerTag = streamerName && !cleanTitle.includes(streamerName) && !(cleanTitle.includes('SPEED') && streamerName.includes('SPEED'));
+    const tagText = showStreamerTag ? `• ${streamerName} •` : null;
 
-    const maxLineLen = Math.max(l1.length, ...l2_lines.map(l => l.length), l3.length, 8);
+    const titleLines = wrapTitleLines(cleanTitle, 16);
+    const maxLineLen = Math.max(tagText ? tagText.length : 0, ...titleLines.map(l => l.length), 8);
+
     // Dynamic calculation: safe fit inside cw (270px) with 16px margins
     const fitFs = Math.floor((cw - 32) / (maxLineLen * 0.54));
-    const targetFs = Math.round((cropState.titleSize || 95) * 0.14); // 95 -> 13px
+    const targetFs = Math.round((cropState.titleSize || 84) * 0.14); // 84 -> 12px
     const headlineFs = Math.max(9, Math.min(targetFs, fitFs));
 
     const lineH = Math.round(headlineFs * 1.3);
-    const totalH = (2 + l2_lines.length) * lineH;
-    let currY = Math.max(16, lbY - totalH - 8);
+    const totalLines = (tagText ? 1 : 0) + titleLines.length;
+    const totalH = totalLines * lineH;
+    let currY = Math.max(12, Math.round((lbY - totalH) / 2));
 
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.font = `800 ${headlineFs}px var(--d, Anton, system-ui)`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 4;
-    ctx.fillText(l1, cw / 2, currY + headlineFs);
-    currY += lineH;
 
-    ctx.fillStyle = '#00F2FE';
-    ctx.shadowColor = '#00F2FE';
-    ctx.shadowBlur = 8;
-    for (const line of l2_lines) {
+    if (tagText) {
+      const tagFs = Math.max(8, Math.round(headlineFs * 0.65));
+      ctx.font = `600 ${tagFs}px var(--d, Anton, system-ui)`;
+      ctx.fillStyle = '#D0D0D0';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 3;
+      ctx.fillText(tagText, cw / 2, currY + tagFs);
+      currY += Math.round(tagFs * 1.4);
+    }
+
+    ctx.font = `800 ${headlineFs}px var(--d, Anton, system-ui)`;
+    ctx.shadowBlur = 4;
+
+    for (let i = 0; i < titleLines.length; i++) {
+      const line = titleLines[i];
+      if (titleLines.length > 1 && i === 0) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      } else {
+        ctx.fillStyle = '#FFD60A';
+        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      }
       ctx.fillText(line, cw / 2, currY + headlineFs);
       currY += lineH;
     }
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 4;
-    ctx.fillText(l3, cw / 2, currY + headlineFs);
     ctx.restore();
 
     // Kinetic Subtitles in Bottom Black Letterbox Bar
@@ -3400,7 +3411,7 @@ if ($('#cropApplyBtn')) $('#cropApplyBtn').onclick = async () => {
 
   btn.disabled = true;
   if (spinner) spinner.style.display = 'inline-block';
-  if (btnText) btnText.textContent = 'Re-rendering with VideoToolbox…';
+  if (btnText) btnText.textContent = 'Re-rendering (fetching stream if needed)…';
 
   try {
     const res = await post('/api/rerender-clip', {

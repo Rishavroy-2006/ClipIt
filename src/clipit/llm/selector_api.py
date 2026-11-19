@@ -143,7 +143,7 @@ def select_clips_with_gemini(
         "- id: string (e.g. 'c01')\n"
         "- start: float (seconds)\n"
         "- end: float (seconds)\n"
-        "- score: integer (0-100)\n"
+        f"- score: integer (0-100, only evaluate and return viral moments scoring {min_score} or higher)\n"
         "- title: punchy short-form title with emojis or quotes\n"
         "- title_alts: array of 2 alternative viral titles\n"
         "- hook_line: text shown in first 2-3 seconds\n"
@@ -246,6 +246,10 @@ def select_clips_with_gemini(
                             print(f"Skipping invalid item: {ve}")
 
                     if clips:
+                        # Enforce min_score filter
+                        if min_score > 0:
+                            clips = [c for c in clips if getattr(c, "score", 0) >= min_score]
+
                         # Sort clips by score descending
                         clips.sort(key=lambda x: getattr(x, "score", 0), reverse=True)
                         # Enforce user constraints: auto is min 1, strictly < 30

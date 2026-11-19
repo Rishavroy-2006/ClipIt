@@ -1,0 +1,18 @@
+name: cine
+font: Montserrat ExtraBold
+font_path: assets/fonts/Montserrat-ExtraBold.ttf
+size: 64
+primary_color: "&H00E0E0E0"
+highlight_color: "&H001F5AFF" # Warm cinematic orange highlight
+outline_color: "&H00000000"
+shadow_color: "&HA0000000"
+outline: 0
+shadow: 3
+words_per_line: 4
+reveal: false
+base_opacity: 0.65
+position:
+  x: center
+  y: 0.70
+animation: none
+uppercase: false

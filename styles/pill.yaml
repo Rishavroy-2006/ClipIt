@@ -1,0 +1,18 @@
+name: pill
+font: Montserrat ExtraBold
+font_path: assets/fonts/Montserrat-ExtraBold.ttf
+size: 72
+primary_color: "&H00FFFFFF"
+highlight_color: "&H00ED3A7C" # Modern purple highlight
+outline_color: "&H00000000"
+shadow_color: "&H80000000"
+outline: 4
+shadow: 2
+words_per_line: 2
+reveal: false
+base_opacity: 0.80
+position:
+  x: center
+  y: 0.65
+animation: pop
+uppercase: true

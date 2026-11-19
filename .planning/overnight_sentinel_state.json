@@ -1,0 +1,3785 @@
+{
+  "project_id": "yt_qSyo5d-dVzA_overnight",
+  "url": "https://www.youtube.com/watch?v=qSyo5d-dVzA",
+  "title": "iShowSpeed GTA 6 Overnight Stream",
+  "start_time_iso": "2026-11-18T23:31:30.154046+00:00",
+  "last_edge_sec": 52027.0,
+  "chunk_mins": 30,
+  "overlap_mins": 5,
+  "min_score": 80,
+  "status": "running",
+  "current_part": "Part 30",
+  "parts": [
+    {
+      "part_index": 7,
+      "name": "Part 7",
+      "start_sec": 10327.0,
+      "end_sec": 12427.0,
+      "start_str": "02:52:07",
+      "end_str": "03:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 2,
+      "completed_at": 1795047115.297516,
+      "clips": [
+        {
+          "id": "pt07_c01",
+          "start": 110.14,
+          "end": 155.42,
+          "score": 92,
+          "title": "LUCY IS A KEEPER! 💍🔥",
+          "title_alts": [
+            "Speed's GTA 6 Gameplay is WILD",
+            "The Most Intense GTA 6 Moment Yet"
+          ],
+          "hook_line": "I got you! I got you!",
+          "hooks": [
+            "explosive reaction",
+            "clutch moment"
+          ],
+          "why_viral": "This clip captures high-stakes gaming intensity combined with Speed's signature chaotic commentary. The rapid-fire pacing, genuine panic, and the 'Lucy is a keeper' line provide a perfect mix of humor and gameplay tension that keeps viewers locked in until the final second.",
+          "category": "clutch",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 7",
+          "part_index": 7,
+          "stream_window": "02:52:07 - 03:27:07",
+          "abs_start": 10437.14,
+          "abs_end": 10482.42
+        },
+        {
+          "id": "pt07_c02",
+          "start": 240.76,
+          "end": 287.68,
+          "score": 88,
+          "title": "THE GUMMY INCIDENT 🍬💀",
+          "title_alts": [
+            "Speed's GTA 6 Storytime",
+            "Cal is absolutely losing it"
+          ],
+          "hook_line": "No, no, no, no. You're in bad shape, Jay.",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail"
+          ],
+          "why_viral": "The contrast between the serious, dramatic tone of the game's situation and the absurd, out-of-pocket mention of 'Sadiva Gummies' creates a hilarious disconnect. It's a classic Speed moment where the narrative gets derailed by pure comedy, making it highly shareable for fans of his erratic humor.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 7",
+          "part_index": 7,
+          "stream_window": "02:52:07 - 03:27:07",
+          "abs_start": 10567.76,
+          "abs_end": 10614.68
+        }
+      ]
+    },
+    {
+      "part_index": 8,
+      "name": "Part 8",
+      "start_sec": 12127.0,
+      "end_sec": 14227.0,
+      "start_str": "03:22:07",
+      "end_str": "03:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795056154.455029,
+      "clips": [
+        {
+          "id": "pt08_c01",
+          "start": 189.94,
+          "end": 236.2,
+          "score": 88,
+          "title": "Speed's GTA 6 RP Logic is WILD 🤣",
+          "title_alts": [
+            "I was taking a piss, bro! 🚽",
+            "Speed meets the local weirdos"
+          ],
+          "hook_line": "Nah, they put Carlos away for splitting a bunch of energy drinks.",
+          "hooks": [
+            "funny fail",
+            "quotable line"
+          ],
+          "why_viral": "This clip captures the classic, unhinged banter that IShowSpeed is famous for. The dialogue about 'gooning' and 'sweaty fat guys' is peak internet humor that resonates with his core audience, keeping them engaged through pure, unfiltered chaotic energy.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 8",
+          "part_index": 8,
+          "stream_window": "03:22:07 - 03:57:07",
+          "abs_start": 12316.94,
+          "abs_end": 12363.2
+        },
+        {
+          "id": "pt08_c02",
+          "start": 429.46,
+          "end": 473.56,
+          "score": 85,
+          "title": "THE PILL MISSION GONE WRONG 💊",
+          "title_alts": [
+            "My husband is dying, bro! 😭",
+            "Speed's intense GTA 6 roleplay"
+          ],
+          "hook_line": "Chad, let's get these pills for our boyfriend, Jason.",
+          "hooks": [
+            "unexpected reveal",
+            "storytime"
+          ],
+          "why_viral": "The desperate, over-the-top roleplay performance by Speed creates a hilarious contrast between the serious 'dying husband' narrative and the ridiculousness of the situation. It hooks viewers because of the emotional intensity he puts into a clearly absurd gaming scenario.",
+          "category": "story",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 8",
+          "part_index": 8,
+          "stream_window": "03:22:07 - 03:57:07",
+          "abs_start": 12556.46,
+          "abs_end": 12600.56
+        },
+        {
+          "id": "pt08_c03",
+          "start": 576.12,
+          "end": 622.0,
+          "score": 92,
+          "title": "GTA 6 RP IS ABSOLUTE CHAOS! 💀",
+          "title_alts": [
+            "Dr. Bill is the WORST doctor ever 😭",
+            "The most intense shootout in GTA 6 history"
+          ],
+          "hook_line": "Why is it so jumpy today?",
+          "hooks": [
+            "explosive reaction",
+            "funny fail"
+          ],
+          "why_viral": "The transition from a casual conversation to a chaotic, high-stakes shootout creates an immediate tension spike. Viewers love watching IShowSpeed react to the absurdity of the game's AI and the incompetence of the in-game doctor, making for a highly shareable, high-energy comedic fail.",
+          "category": "fail",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 8",
+          "part_index": 8,
+          "stream_window": "03:22:07 - 03:57:07",
+          "abs_start": 12703.12,
+          "abs_end": 12749.0
+        }
+      ]
+    },
+    {
+      "part_index": 9,
+      "name": "Part 9",
+      "start_sec": 13927.0,
+      "end_sec": 16027.0,
+      "start_str": "03:52:07",
+      "end_str": "04:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795058510.883348,
+      "clips": [
+        {
+          "id": "pt09_c01",
+          "start": 406.5,
+          "end": 422.26,
+          "score": 85,
+          "title": "Speed's GTA 6 Reality Check 🌴",
+          "title_alts": [
+            "Why is Florida so crazy?",
+            "Speed gets dehumanized in GTA"
+          ],
+          "hook_line": "I can't, bro. Like, I just get dehumanized.",
+          "hooks": [
+            "hot take",
+            "relatable pain"
+          ],
+          "why_viral": "Speed breaks the fourth wall to complain about the game's mechanics while grounding it in the 'Florida' experience. His frustration is palpable and funny, capturing the specific chaotic energy of GTA gameplay that viewers love to see streamers struggle with.",
+          "category": "story",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 9",
+          "part_index": 9,
+          "stream_window": "03:52:07 - 04:27:07",
+          "abs_start": 14333.5,
+          "abs_end": 14349.26
+        },
+        {
+          "id": "pt09_c02",
+          "start": 535.58,
+          "end": 554.04,
+          "score": 88,
+          "title": "Speed Found His Wifey? 💍",
+          "title_alts": [
+            "Speed Simping in GTA 6",
+            "She's Wifey Material!"
+          ],
+          "hook_line": "That looks bad, bro. She's wifey material.",
+          "hooks": [
+            "wholesome moment",
+            "relatable pain"
+          ],
+          "why_viral": "Speed's over-the-top reaction to a simple in-game action by an NPC is classic content. His genuine, loud enthusiasm about finding 'wifey material' in a video game is highly relatable to his audience and serves as a perfect short-form reaction clip.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 9",
+          "part_index": 9,
+          "stream_window": "03:52:07 - 04:27:07",
+          "abs_start": 14462.58,
+          "abs_end": 14481.04
+        },
+        {
+          "id": "pt09_c03",
+          "start": 555.96,
+          "end": 573.74,
+          "score": 92,
+          "title": "IShowSpeed Goes Bald?! 👨‍🦲",
+          "title_alts": [
+            "Speed's GTA 6 Glitch Moment",
+            "Why is Speed Bald in GTA 6?"
+          ],
+          "hook_line": "Bro, if Jason doesn't marry her in this game...",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail"
+          ],
+          "why_viral": "The streamer is mid-rant about game romance mechanics when a sudden, unexplained graphical glitch turns his character bald. The contrast between his serious commentary and the ridiculous visual bug creates an instant, shareable comedic moment that viewers will clip and react to immediately.",
+          "category": "fail",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 9",
+          "part_index": 9,
+          "stream_window": "03:52:07 - 04:27:07",
+          "abs_start": 14482.96,
+          "abs_end": 14500.74
+        }
+      ]
+    },
+    {
+      "part_index": 10,
+      "name": "Part 10",
+      "start_sec": 15727.0,
+      "end_sec": 17827.0,
+      "start_str": "04:22:07",
+      "end_str": "04:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795060986.5164,
+      "clips": [
+        {
+          "id": "pt10_c01",
+          "start": 213.2,
+          "end": 258.5,
+          "score": 88,
+          "title": "I FAILED THE MISSION?! 😭",
+          "title_alts": [
+            "Speed loses his mind in GTA 6",
+            "The most frustrating mission ever"
+          ],
+          "hook_line": "Wait chat, did I fail that?",
+          "hooks": [
+            "rage",
+            "funny fail"
+          ],
+          "why_viral": "Speed's genuine confusion and subsequent meltdown over failing a mission is classic content that resonates with gamers who have experienced similar frustrations, making it highly relatable and entertaining.",
+          "category": "fail",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 10",
+          "part_index": 10,
+          "stream_window": "04:22:07 - 04:57:07",
+          "abs_start": 15940.2,
+          "abs_end": 15985.5
+        },
+        {
+          "id": "pt10_c02",
+          "start": 466.54,
+          "end": 512.94,
+          "score": 95,
+          "title": "GTA 6 NPC is UNHINGED! 💀",
+          "title_alts": [
+            "This NPC is actually crazy 😭",
+            "Most chaotic GTA 6 encounter ever"
+          ],
+          "hook_line": "This car just sat in its balls and shatting its dick.",
+          "hooks": [
+            "unexpected reveal",
+            "quotable line"
+          ],
+          "why_viral": "The sheer absurdity of the NPC's dialogue combined with the bizarre, repetitive singing creates a surreal, high-retention moment that viewers will find hilarious and shareable due to the unexpected nature of the interaction.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 10",
+          "part_index": 10,
+          "stream_window": "04:22:07 - 04:57:07",
+          "abs_start": 16193.54,
+          "abs_end": 16239.94
+        },
+        {
+          "id": "pt10_c03",
+          "start": 623.74,
+          "end": 669.16,
+          "score": 85,
+          "title": "14 HOURS OF GTA 6?! 🤯",
+          "title_alts": [
+            "Speed's 14 hour GTA 6 marathon",
+            "He's losing his mind in GTA 6"
+          ],
+          "hook_line": "I've been playing this game for the past 14 hours of my life, bro.",
+          "hooks": [
+            "hot take",
+            "relatable pain"
+          ],
+          "why_viral": "The exhaustion and delirium of a 14-hour gaming marathon creates a raw, authentic moment that viewers find fascinating, especially when the streamer starts questioning their own reality.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 10",
+          "part_index": 10,
+          "stream_window": "04:22:07 - 04:57:07",
+          "abs_start": 16350.74,
+          "abs_end": 16396.16
+        }
+      ]
+    },
+    {
+      "part_index": 11,
+      "name": "Part 11",
+      "start_sec": 17527.0,
+      "end_sec": 19627.0,
+      "start_str": "04:52:07",
+      "end_str": "05:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795063394.734698,
+      "clips": [
+        {
+          "id": "pt11_c01",
+          "start": 29.8,
+          "end": 75.5,
+          "score": 85,
+          "title": "Lucia is a Menace! 😱",
+          "title_alts": [
+            "I've never seen that in GTA! 🤯",
+            "Speed reacts to GTA 6 gameplay"
+          ],
+          "hook_line": "I gotta dance with the crowd now!",
+          "hooks": [
+            "explosive reaction",
+            "unexpected reveal"
+          ],
+          "why_viral": "The streamer's high-energy reaction to a specific, unseen gameplay mechanic hooks the audience immediately. The build-up of anticipation followed by the 'Oh my God' reveal keeps viewers watching to see exactly what happened in the game, making it a prime clip for social media engagement.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 11",
+          "part_index": 11,
+          "stream_window": "04:52:07 - 05:27:07",
+          "abs_start": 17556.8,
+          "abs_end": 17602.5
+        },
+        {
+          "id": "pt11_c02",
+          "start": 230.26,
+          "end": 276.02,
+          "score": 92,
+          "title": "GTA 6 Glitch or Feature? 💀",
+          "title_alts": [
+            "Jason is doing WHAT?! 😭",
+            "I can't stop laughing at this GTA 6 NPC"
+          ],
+          "hook_line": "How much money this is oh my gosh, oh my gosh!",
+          "hooks": [
+            "explosive reaction",
+            "funny fail"
+          ],
+          "why_viral": "The streamer's genuine shock at the in-game money count followed by the hilarious, repetitive, and broken NPC animation creates a perfect comedic contrast. Viewers love seeing game glitches, and the streamer's frustration with the 'same slide' animation is highly relatable and meme-worthy for the GTA community.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 11",
+          "part_index": 11,
+          "stream_window": "04:52:07 - 05:27:07",
+          "abs_start": 17757.26,
+          "abs_end": 17803.02
+        },
+        {
+          "id": "pt11_c03",
+          "start": 278.54,
+          "end": 317.98,
+          "score": 88,
+          "title": "Jason Needs to Chill! 😳",
+          "title_alts": [
+            "I'm getting distracted, bro! 🤣",
+            "GTA 6 is getting out of hand"
+          ],
+          "hook_line": "Uh oh... Ready?",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail"
+          ],
+          "why_viral": "The chaotic transition from a serious mission objective to the streamer getting distracted by the game's absurdity provides a high-retention comedic arc. The back-and-forth dialogue about putting clothes on creates a funny, relatable 'gamer moment' that captures the chaotic energy of early access gameplay.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 11",
+          "part_index": 11,
+          "stream_window": "04:52:07 - 05:27:07",
+          "abs_start": 17805.54,
+          "abs_end": 17844.98
+        }
+      ]
+    },
+    {
+      "part_index": 12,
+      "name": "Part 12",
+      "start_sec": 19327.0,
+      "end_sec": 21427.0,
+      "start_str": "05:22:07",
+      "end_str": "05:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 4,
+      "completed_at": 1795065846.598342,
+      "clips": [
+        {
+          "id": "pt12_c01",
+          "start": 181.22,
+          "end": 230.04,
+          "score": 82,
+          "title": "ROBBING PEOPLE IN GTA 6! 💰",
+          "title_alts": [
+            "Speed's GTA 6 Robbery Spree 🔫",
+            "Time to get paid in GTA 6! 💸"
+          ],
+          "hook_line": "Oh, she wants to rob these people, I think.",
+          "hooks": [
+            "quotable line",
+            "explosive reaction"
+          ],
+          "why_viral": "Speed's high-energy commentary about robbing people in the new game captures the chaotic spirit of GTA gameplay. His repetition of 'keep making money' creates a rhythmic, meme-able hook that keeps retention high throughout the clip.",
+          "category": "story",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 12",
+          "part_index": 12,
+          "stream_window": "05:22:07 - 05:57:07",
+          "abs_start": 19508.22,
+          "abs_end": 19557.04
+        },
+        {
+          "id": "pt12_c02",
+          "start": 398.22,
+          "end": 421.06,
+          "score": 85,
+          "title": "GTA 6 HEISTS ARE TRASH?! 😡",
+          "title_alts": [
+            "Speed Rages at GTA 6 Heists 🤬",
+            "Why GTA 6 Heists are mid... 📉"
+          ],
+          "hook_line": "Bro, these heists are trash, bro.",
+          "hooks": [
+            "rage",
+            "hot take"
+          ],
+          "why_viral": "Speed delivers a controversial 'hot take' about the quality of GTA 6 heists. This kind of opinionated content sparks immediate debate in the comments section, which is a primary driver for algorithm engagement on TikTok and Reels.",
+          "category": "rage",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 12",
+          "part_index": 12,
+          "stream_window": "05:22:07 - 05:57:07",
+          "abs_start": 19725.22,
+          "abs_end": 19748.06
+        },
+        {
+          "id": "pt12_c03",
+          "start": 583.64,
+          "end": 610.86,
+          "score": 92,
+          "title": "GTA 6 Stealth God Mode! 🕵️‍♂️",
+          "title_alts": [
+            "The Perfect Heist in GTA 6 💎",
+            "Undetected in GTA 6! 🤫"
+          ],
+          "hook_line": "We just did that undetected.",
+          "hooks": [
+            "clutch moment",
+            "explosive reaction"
+          ],
+          "why_viral": "Speed successfully pulls off a stealth heist in GTA 6, which is a massive talking point for the community. His genuine hype about doing it 'undetected' creates a high-energy, satisfying payoff that viewers love to watch and replicate.",
+          "category": "clutch",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 12",
+          "part_index": 12,
+          "stream_window": "05:22:07 - 05:57:07",
+          "abs_start": 19910.64,
+          "abs_end": 19937.86
+        },
+        {
+          "id": "pt12_c04",
+          "start": 630.78,
+          "end": 660.88,
+          "score": 88,
+          "title": "THERE'S A ZOO IN GTA 6?! 🦁",
+          "title_alts": [
+            "Speed finds the GTA 6 Zoo! 🦒",
+            "Wait, is there a zoo in GTA 6? 🦓"
+          ],
+          "hook_line": "Holy crap. Speed, go to the zoo.",
+          "hooks": [
+            "unexpected reveal",
+            "explosive reaction"
+          ],
+          "why_viral": "The discovery of a potential zoo in GTA 6 is a massive piece of 'news' for the gaming community. Speed's authentic, loud surprise keeps the audience engaged and creates a viral moment of discovery that fans will share to verify the claim.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 12",
+          "part_index": 12,
+          "stream_window": "05:22:07 - 05:57:07",
+          "abs_start": 19957.78,
+          "abs_end": 19987.88
+        }
+      ]
+    },
+    {
+      "part_index": 13,
+      "name": "Part 13",
+      "start_sec": 21127.0,
+      "end_sec": 23227.0,
+      "start_str": "05:52:07",
+      "end_str": "06:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 2,
+      "completed_at": 1795068217.748374,
+      "clips": [
+        {
+          "id": "pt13_c01",
+          "start": 55.6,
+          "end": 76.6,
+          "score": 95,
+          "title": "Speed's GTA 6 Meltdown! 💀",
+          "title_alts": [
+            "IShowSpeed loses it in GTA 6 🎮",
+            "The most chaotic GTA 6 reaction ever"
+          ],
+          "hook_line": "Oh my God! Oh my God!",
+          "hooks": [
+            "explosive reaction",
+            "rage"
+          ],
+          "why_viral": "Speed's signature high-energy screaming and chaotic reaction to gameplay is a proven viral formula. The rapid-fire repetition of 'Oh my God' creates an intense, frantic atmosphere that keeps viewers locked in until the final punchy line, making it highly shareable for gaming audiences.",
+          "category": "rage",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 13",
+          "part_index": 13,
+          "stream_window": "05:52:07 - 06:27:07",
+          "abs_start": 21182.6,
+          "abs_end": 21203.6
+        },
+        {
+          "id": "pt13_c02",
+          "start": 456.82,
+          "end": 499.68,
+          "score": 88,
+          "title": "FINALLY in Vice City! 🌴",
+          "title_alts": [
+            "GTA 6: The moment we've been waiting for",
+            "Speed finally reaches Vice City!"
+          ],
+          "hook_line": "We finally unlocked the city, chat.",
+          "hooks": [
+            "unexpected reveal",
+            "quotable line"
+          ],
+          "why_viral": "This clip captures a major milestone in the game that fans have been anticipating. The sense of achievement combined with Speed's genuine excitement and direct engagement with the chat makes it feel like a community celebration, which drives high engagement and comments.",
+          "category": "story",
+          "signals": {},
+          "risk_flags": [
+            "profanity:low"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 13",
+          "part_index": 13,
+          "stream_window": "05:52:07 - 06:27:07",
+          "abs_start": 21583.82,
+          "abs_end": 21626.68
+        }
+      ]
+    },
+    {
+      "part_index": 14,
+      "name": "Part 14",
+      "start_sec": 22927.0,
+      "end_sec": 25027.0,
+      "start_str": "06:22:07",
+      "end_str": "06:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 2,
+      "completed_at": 1795071048.928742,
+      "clips": [
+        {
+          "id": "pt14_c01",
+          "start": 10.44,
+          "end": 54.5,
+          "score": 88,
+          "title": "Speed's First GTA 6 Encounter! 🎮",
+          "title_alts": [
+            "Speed meets his first NPC in GTA 6",
+            "Is this the real GTA 6? 😂"
+          ],
+          "hook_line": "Yo, what's good? You remember me from the club, though, right?",
+          "hooks": [
+            "unexpected reveal",
+            "quotable line"
+          ],
+          "why_viral": "The immediate confusion and Speed's signature high-energy reaction to the NPC's dialogue creates an instant hook. Fans of IShowSpeed are highly engaged by his genuine reactions to new game mechanics, making this a prime candidate for viral discovery.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 14",
+          "part_index": 14,
+          "stream_window": "06:22:07 - 06:57:07",
+          "abs_start": 22937.44,
+          "abs_end": 22981.5
+        },
+        {
+          "id": "pt14_c02",
+          "start": 193.82,
+          "end": 239.02,
+          "score": 95,
+          "title": "GTA 6 NPC Interaction Gone WRONG! 💀",
+          "title_alts": [
+            "Speed vs. The Most Aggressive NPC Ever 🤣",
+            "I'm from Ohio, folks! 💀"
+          ],
+          "hook_line": "Hey, watch out, I'm from Ohio, folks!",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail",
+            "explosive reaction"
+          ],
+          "why_viral": "The chaotic energy of Speed interacting with a completely unhinged NPC creates a hilarious, unpredictable narrative. The absurdity of the NPC claiming his medication and the escalating argument is peak comedy that viewers love to clip and share for the sheer randomness of the dialogue.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 14",
+          "part_index": 14,
+          "stream_window": "06:22:07 - 06:57:07",
+          "abs_start": 23120.82,
+          "abs_end": 23166.02
+        }
+      ]
+    },
+    {
+      "part_index": 15,
+      "name": "Part 15",
+      "start_sec": 24727.0,
+      "end_sec": 26827.0,
+      "start_str": "06:52:07",
+      "end_str": "07:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795073556.768598,
+      "clips": [
+        {
+          "id": "pt15_c01",
+          "start": 16.22,
+          "end": 61.58,
+          "score": 88,
+          "title": "Speed Roasts Real Estate Scams 🏠",
+          "title_alts": [
+            "Speed vs. The Real Estate Guru",
+            "IShowSpeed Reacts to 'Get Rich' Courses"
+          ],
+          "hook_line": "Bro, what is she slamming, bro?",
+          "hooks": [
+            "hot take",
+            "relatable pain"
+          ],
+          "why_viral": "Speed's genuine confusion and aggressive skepticism toward 'get rich quick' real estate courses is highly relatable. Viewers love seeing him call out obvious scams with his signature high-energy, unfiltered commentary style.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 15",
+          "part_index": 15,
+          "stream_window": "06:52:07 - 07:27:07",
+          "abs_start": 24743.22,
+          "abs_end": 24788.58
+        },
+        {
+          "id": "pt15_c02",
+          "start": 143.8,
+          "end": 190.64,
+          "score": 85,
+          "title": "Speed's Mom Hates the House! 🏚️",
+          "title_alts": [
+            "Smells like what?!",
+            "Speed's Mom is NOT Having It"
+          ],
+          "hook_line": "No, no, no, no, no, no.",
+          "hooks": [
+            "funny fail",
+            "quotable line"
+          ],
+          "why_viral": "The comedic timing of the house tour going wrong, combined with the punchline 'smells like piss,' creates a perfect short-form loop. The dynamic between Speed and his mom provides authentic, unscripted humor that performs well on TikTok.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 15",
+          "part_index": 15,
+          "stream_window": "06:52:07 - 07:27:07",
+          "abs_start": 24870.8,
+          "abs_end": 24917.64
+        },
+        {
+          "id": "pt15_c03",
+          "start": 361.12,
+          "end": 421.12,
+          "score": 95,
+          "title": "GTA 6 ALLIGATOR ATTACK?! 🐊",
+          "title_alts": [
+            "Speed's Mom Gets Attacked in GTA 6?!",
+            "The Most Chaotic GTA 6 Moment Ever"
+          ],
+          "hook_line": "This looks like dookie water, bro.",
+          "hooks": [
+            "unexpected reveal",
+            "explosive reaction"
+          ],
+          "why_viral": "The clip transitions from a mundane, funny commentary about 'dookie water' in a pool directly into a shocking, high-stakes moment where the in-game character is attacked by an alligator. This sudden shift from comedy to disaster is perfect for short-form retention.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 15",
+          "part_index": 15,
+          "stream_window": "06:52:07 - 07:27:07",
+          "abs_start": 25088.12,
+          "abs_end": 25148.12
+        }
+      ]
+    },
+    {
+      "part_index": 16,
+      "name": "Part 16",
+      "start_sec": 26527.0,
+      "end_sec": 28627.0,
+      "start_str": "07:22:07",
+      "end_str": "07:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 2,
+      "completed_at": 1795075972.4483478,
+      "clips": [
+        {
+          "id": "pt16_c01",
+          "start": 161.78,
+          "end": 208.12,
+          "score": 92,
+          "title": "Speed's 'Creative Financing' Scheme 💸",
+          "title_alts": [
+            "Speed Gets Into Legal Trouble? ⚖️",
+            "The Most Chaotic GTA 6 Interaction 😂"
+          ],
+          "hook_line": "When this goes to court, I need witnesses.",
+          "hooks": [
+            "unexpected reveal",
+            "quotable line"
+          ],
+          "why_viral": "Speed's hilarious attempt to justify his in-game crimes as 'creative financing' while trying to recruit the chat as legal witnesses is peak comedy. The absurdity of the situation combined with his high-energy delivery makes this a perfect viral clip for fans of his chaotic roleplay style.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 16",
+          "part_index": 16,
+          "stream_window": "07:22:07 - 07:57:07",
+          "abs_start": 26688.78,
+          "abs_end": 26735.12
+        },
+        {
+          "id": "pt16_c02",
+          "start": 377.96,
+          "end": 403.86,
+          "score": 88,
+          "title": "NPC Caught Slipping! 💀",
+          "title_alts": [
+            "Speed Witnesses an NPC Fail 🤣",
+            "Don't Worry, I Won't Tell! 🤫"
+          ],
+          "hook_line": "Oh, my God. Girl, get up.",
+          "hooks": [
+            "funny fail",
+            "explosive reaction"
+          ],
+          "why_viral": "Watching an NPC fall over and Speed immediately trying to 'cover it up' for her is hilarious. The interaction feels like a scripted comedy sketch, and viewers love seeing Speed react to the glitches and bizarre behaviors of GTA NPCs.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 16",
+          "part_index": 16,
+          "stream_window": "07:22:07 - 07:57:07",
+          "abs_start": 26904.96,
+          "abs_end": 26930.86
+        }
+      ]
+    },
+    {
+      "part_index": 17,
+      "name": "Part 17",
+      "start_sec": 28327.0,
+      "end_sec": 30427.0,
+      "start_str": "07:52:07",
+      "end_str": "08:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795078431.965364,
+      "clips": [
+        {
+          "id": "pt17_c01",
+          "start": 41.9,
+          "end": 64.02,
+          "score": 85,
+          "title": "GTA 6 or Crossy Road?! 🚗",
+          "title_alts": [],
+          "hook_line": "Go! Go! Go! Police!",
+          "hooks": [
+            "explosive reaction",
+            "funny fail"
+          ],
+          "why_viral": "The high-stakes intensity of a police chase gone wrong, ending with a relatable comparison to a mobile game, provides a perfect blend of action and humor that resonates with gaming audiences.",
+          "category": "fail",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 17",
+          "part_index": 17,
+          "stream_window": "07:52:07 - 08:27:07",
+          "abs_start": 28368.9,
+          "abs_end": 28391.02
+        },
+        {
+          "id": "pt17_c02",
+          "start": 634.86,
+          "end": 660.66,
+          "score": 92,
+          "title": "Speed gets 'McNoogied' in GTA 6! 🍔",
+          "title_alts": [
+            "I just got McNoogied?! 😂",
+            "The most random GTA 6 moment ever"
+          ],
+          "hook_line": "Wait, isn't this my car?",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail"
+          ],
+          "why_viral": "The confusion and absurdity of the 'McNoogie' interaction combined with Speed's genuine reaction to the chaotic NPC behavior creates a hilarious, high-energy moment that captures the unpredictable nature of GTA 6 gameplay.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 17",
+          "part_index": 17,
+          "stream_window": "07:52:07 - 08:27:07",
+          "abs_start": 28961.86,
+          "abs_end": 28987.66
+        },
+        {
+          "id": "pt17_c03",
+          "start": 706.28,
+          "end": 731.88,
+          "score": 88,
+          "title": "CHASING CHARLES! 🏃‍♂️💨",
+          "title_alts": [
+            "Who is Charles?! 😱",
+            "Speed's hilarious GTA 6 chase"
+          ],
+          "hook_line": "What the fuck is that?",
+          "hooks": [
+            "explosive reaction",
+            "unexpected reveal"
+          ],
+          "why_viral": "Speed's frantic pursuit of a bizarre NPC named Charles creates an immediate sense of urgency and comedy. Viewers will be hooked by the absurdity of the dialogue and the frantic, high-speed chase sequence.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 17",
+          "part_index": 17,
+          "stream_window": "07:52:07 - 08:27:07",
+          "abs_start": 29033.28,
+          "abs_end": 29058.88
+        }
+      ]
+    },
+    {
+      "part_index": 18,
+      "name": "Part 18",
+      "start_sec": 30127.0,
+      "end_sec": 32227.0,
+      "start_str": "08:22:07",
+      "end_str": "08:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 2,
+      "completed_at": 1795080869.096305,
+      "clips": [
+        {
+          "id": "pt18_c01",
+          "start": 473.46,
+          "end": 516.24,
+          "score": 88,
+          "title": "GTA 6 SECRET ITEM UNLOCKED! 🗝️",
+          "title_alts": [
+            "I Just Made $9,000 in GTA 6!",
+            "The Key to the City in GTA 6"
+          ],
+          "hook_line": "Wait is this not the... No way I just made $9,000!",
+          "hooks": [
+            "unexpected reveal",
+            "clutch moment"
+          ],
+          "why_viral": "This clip captures the excitement of discovering a 'game changer' item in early access gameplay. The combination of easy money and a mysterious, powerful tool keeps the audience hooked, as they are genuinely curious about the item's utility in the new game.",
+          "category": "clutch",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 18",
+          "part_index": 18,
+          "stream_window": "08:22:07 - 08:57:07",
+          "abs_start": 30600.46,
+          "abs_end": 30643.24
+        },
+        {
+          "id": "pt18_c02",
+          "start": 609.32,
+          "end": 646.5,
+          "score": 92,
+          "title": "I GOT SCAMMED?! 💸 GTA 6 SCAM",
+          "title_alts": [
+            "Speed Gets Scammed in GTA 6?!",
+            "The $25,000 GTA 6 Mistake"
+          ],
+          "hook_line": "How much money you got?",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail"
+          ],
+          "why_viral": "The transition from a high-stakes financial moment in-game to the sudden realization of being scammed creates a perfect comedic arc. Viewers love watching streamers lose virtual money, and Speed's genuine shock and frustration provide high-energy entertainment that is highly shareable on TikTok.",
+          "category": "fail",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 18",
+          "part_index": 18,
+          "stream_window": "08:22:07 - 08:57:07",
+          "abs_start": 30736.32,
+          "abs_end": 30773.5
+        }
+      ]
+    },
+    {
+      "part_index": 19,
+      "name": "Part 19",
+      "start_sec": 31927.0,
+      "end_sec": 34027.0,
+      "start_str": "08:52:07",
+      "end_str": "09:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795083259.9111722,
+      "clips": [
+        {
+          "id": "pt19_c01",
+          "start": 100.98,
+          "end": 115.98,
+          "score": 88,
+          "title": "Speed's Wild Gym Moment 💀",
+          "title_alts": [
+            "Speed is acting way too sus at the gym",
+            "Ishowspeed's gym workout goes wrong"
+          ],
+          "hook_line": "I'm trying to make shit happen out here.",
+          "hooks": [
+            "funny fail",
+            "quotable line"
+          ],
+          "why_viral": "This clip features the streamer saying something completely unhinged in a public setting, capturing the chaotic, unpredictable humor that his audience expects. The sudden shift from a workout to a bizarre comment makes it highly shareable.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 19",
+          "part_index": 19,
+          "stream_window": "08:52:07 - 09:27:07",
+          "abs_start": 32027.98,
+          "abs_end": 32042.98
+        },
+        {
+          "id": "pt19_c02",
+          "start": 302.96,
+          "end": 331.28,
+          "score": 82,
+          "title": "Taxi Logic 🚕",
+          "title_alts": [
+            "Speed roasts NPC logic",
+            "Why would I call a taxi?"
+          ],
+          "hook_line": "Why does he always say that?",
+          "hooks": [
+            "hot take",
+            "relatable pain"
+          ],
+          "why_viral": "The streamer points out a classic, frustrating gaming trope regarding NPC dialogue. Viewers love when streamers call out bad game design, and his delivery turns a mundane gameplay moment into a funny, relatable rant.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 19",
+          "part_index": 19,
+          "stream_window": "08:52:07 - 09:27:07",
+          "abs_start": 32229.96,
+          "abs_end": 32258.28
+        },
+        {
+          "id": "pt19_c03",
+          "start": 481.28,
+          "end": 525.7,
+          "score": 95,
+          "title": "HULK IN GTA 6?! 😱",
+          "title_alts": [
+            "Speed loses it over Red Hulk in GTA 6",
+            "Wait, is that actually Hulk in GTA 6?"
+          ],
+          "hook_line": "Don't come any closer.",
+          "hooks": [
+            "unexpected reveal",
+            "explosive reaction"
+          ],
+          "why_viral": "The streamer's genuine confusion and escalating shock when encountering an unexpected character model (Red Hulk) in the game creates a high-energy, relatable moment that plays perfectly into the hype surrounding GTA 6 early access gameplay.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 19",
+          "part_index": 19,
+          "stream_window": "08:52:07 - 09:27:07",
+          "abs_start": 32408.28,
+          "abs_end": 32452.7
+        }
+      ]
+    },
+    {
+      "part_index": 20,
+      "name": "Part 20",
+      "start_sec": 33727.0,
+      "end_sec": 35827.0,
+      "start_str": "09:22:07",
+      "end_str": "09:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795085692.0658472,
+      "clips": [
+        {
+          "id": "pt20_c01",
+          "start": 108.2,
+          "end": 154.54,
+          "score": 88,
+          "title": "GTA 6 Graphics are INSANE! 🤯",
+          "title_alts": [
+            "Speed reacts to GTA 6 NPC quality",
+            "Is GTA 6 really this good?"
+          ],
+          "hook_line": "So what's the story with this guy Roxy's with?",
+          "hooks": [
+            "hot take",
+            "unexpected reveal"
+          ],
+          "why_viral": "Speed provides a direct commentary on the visual fidelity of GTA 6 compared to GTA 5. The mix of lore-building and his authentic, hype-filled reaction to the game's world-building keeps the audience engaged throughout the entire duration of the clip.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 20",
+          "part_index": 20,
+          "stream_window": "09:22:07 - 09:57:07",
+          "abs_start": 33835.2,
+          "abs_end": 33881.54
+        },
+        {
+          "id": "pt20_c02",
+          "start": 247.68,
+          "end": 293.88,
+          "score": 92,
+          "title": "Speed vs. The Glitchy GTA 6 Dog 🐶😂",
+          "title_alts": [
+            "Why is this dog acting like that?! 💀",
+            "IShowSpeed loses it at GTA 6 physics"
+          ],
+          "hook_line": "What the hell?",
+          "hooks": [
+            "funny fail",
+            "unexpected reveal"
+          ],
+          "why_viral": "Speed's genuine confusion and escalating frustration with the game's buggy AI dog creates a hilarious, relatable moment. Viewers love seeing streamers react to game glitches in real-time, especially when the streamer's personality is as high-energy as Speed's, making it perfect for short-form comedy.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 20",
+          "part_index": 20,
+          "stream_window": "09:22:07 - 09:57:07",
+          "abs_start": 33974.68,
+          "abs_end": 34020.88
+        },
+        {
+          "id": "pt20_c03",
+          "start": 301.34,
+          "end": 347.02,
+          "score": 85,
+          "title": "Speed gets kicked out! 🚫",
+          "title_alts": [
+            "The most awkward NPC interaction ever",
+            "Speed vs. GTA 6 NPC"
+          ],
+          "hook_line": "She's busy.",
+          "hooks": [
+            "rage",
+            "funny fail"
+          ],
+          "why_viral": "The tension between Speed and the NPC escalates quickly, culminating in a blunt, hilarious rejection. The contrast between Speed's persistent, loud character and the dismissive, cold NPC behavior is a classic comedic trope that performs exceptionally well on TikTok.",
+          "category": "rage",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 20",
+          "part_index": 20,
+          "stream_window": "09:22:07 - 09:57:07",
+          "abs_start": 34028.34,
+          "abs_end": 34074.02
+        }
+      ]
+    },
+    {
+      "part_index": 21,
+      "name": "Part 21",
+      "start_sec": 35527.0,
+      "end_sec": 37627.0,
+      "start_str": "09:52:07",
+      "end_str": "10:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795088171.729404,
+      "clips": [
+        {
+          "id": "pt21_c01",
+          "start": 84.7,
+          "end": 130.0,
+          "score": 92,
+          "title": "What is REAL?! 🤯",
+          "title_alts": [
+            "Speed's Existential Crisis",
+            "Is this even real life?"
+          ],
+          "hook_line": "Bro, what is real bro?",
+          "hooks": [
+            "unexpected reveal",
+            "quotable line"
+          ],
+          "why_viral": "The repetitive, high-energy delivery of 'What is real?' creates a surreal, meme-worthy moment that viewers will find hilarious and highly shareable. It captures a genuine 'glitch in the matrix' vibe that performs exceptionally well on TikTok and Shorts platforms due to its chaotic and absurd nature.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 21",
+          "part_index": 21,
+          "stream_window": "09:52:07 - 10:27:07",
+          "abs_start": 35611.7,
+          "abs_end": 35657.0
+        },
+        {
+          "id": "pt21_c02",
+          "start": 213.02,
+          "end": 257.5,
+          "score": 85,
+          "title": "Is deer meat actually good? 🥩",
+          "title_alts": [
+            "Speed's Food Thoughts",
+            "The Truth About Deer Meat"
+          ],
+          "hook_line": "Wait for Brett... What is Brett even doing?",
+          "hooks": [
+            "hot take",
+            "relatable pain"
+          ],
+          "why_viral": "Speed's rambling, slightly confused monologue about the leanness of deer meat is classic, relatable streamer content. It invites audience interaction in the comments, as viewers love to correct or agree with streamers on food takes, driving high engagement metrics.",
+          "category": "story",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 21",
+          "part_index": 21,
+          "stream_window": "09:52:07 - 10:27:07",
+          "abs_start": 35740.02,
+          "abs_end": 35784.5
+        },
+        {
+          "id": "pt21_c03",
+          "start": 344.24,
+          "end": 390.02,
+          "score": 88,
+          "title": "We're skinning it?! 🦌",
+          "title_alts": [
+            "Speed's Hunting Adventure",
+            "Wait, we're doing what?"
+          ],
+          "hook_line": "Fuck yeah, Jack. What are we about to do with this deer?",
+          "hooks": [
+            "unexpected reveal",
+            "explosive reaction"
+          ],
+          "why_viral": "The transition from casual conversation to the shock of having to skin a deer provides a perfect comedic beat. Viewers love seeing streamers react to unexpected, gritty tasks in games, and Speed's disbelief adds an authentic layer of entertainment to the gameplay.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 21",
+          "part_index": 21,
+          "stream_window": "09:52:07 - 10:27:07",
+          "abs_start": 35871.24,
+          "abs_end": 35917.02
+        }
+      ]
+    },
+    {
+      "part_index": 22,
+      "name": "Part 22",
+      "start_sec": 37327.0,
+      "end_sec": 39427.0,
+      "start_str": "10:22:07",
+      "end_str": "10:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795090662.172173,
+      "clips": [
+        {
+          "id": "pt22_c01",
+          "start": 88.34,
+          "end": 133.98,
+          "score": 92,
+          "title": "Speed's 'Real Name' Reveal? 🤨",
+          "title_alts": [
+            "Speed's Identity Crisis 💀",
+            "Is Speed Actually Ronaldo? ⚽"
+          ],
+          "hook_line": "My real name is IShowRonaldo.",
+          "hooks": [
+            "unexpected reveal",
+            "quotable line"
+          ],
+          "why_viral": "Speed is notorious for his absurd persona, and claiming his real name is 'IShowRonaldo' while playing a high-profile game like GTA 6 creates a hilarious, meme-worthy moment that fans will clip and share across social media to mock his logic.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 22",
+          "part_index": 22,
+          "stream_window": "10:22:07 - 10:57:07",
+          "abs_start": 37415.34,
+          "abs_end": 37460.98
+        },
+        {
+          "id": "pt22_c02",
+          "start": 341.54,
+          "end": 371.9,
+          "score": 88,
+          "title": "63 Million Subs! 📈",
+          "title_alts": [
+            "Speed Hits 63M! 🚀",
+            "The Milestone Moment 🏆"
+          ],
+          "hook_line": "We're about to hit 63 million!",
+          "hooks": [
+            "explosive reaction",
+            "wholesome moment"
+          ],
+          "why_viral": "Milestone celebrations are a staple of streamer culture. Watching a massive creator like Speed react to hitting a huge subscriber count in real-time provides high-energy, feel-good content that encourages viewer engagement and community celebration.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 22",
+          "part_index": 22,
+          "stream_window": "10:22:07 - 10:57:07",
+          "abs_start": 37668.54,
+          "abs_end": 37698.9
+        },
+        {
+          "id": "pt22_c03",
+          "start": 410.34,
+          "end": 454.62,
+          "score": 85,
+          "title": "Can't Afford Me! 💸",
+          "title_alts": [
+            "Speed Gets Denied 🚫",
+            "GTA 6 NPC Roast 💀"
+          ],
+          "hook_line": "You ain't got the money to afford me.",
+          "hooks": [
+            "funny fail",
+            "unexpected reveal"
+          ],
+          "why_viral": "The interaction between Speed and the in-game NPC creates a funny 'fail' dynamic. Viewers love watching streamers get humbled by game mechanics or witty NPC dialogue, especially when it leads to Speed getting confused about how to progress.",
+          "category": "fail",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 22",
+          "part_index": 22,
+          "stream_window": "10:22:07 - 10:57:07",
+          "abs_start": 37737.34,
+          "abs_end": 37781.62
+        }
+      ]
+    },
+    {
+      "part_index": 23,
+      "name": "Part 23",
+      "start_sec": 39127.0,
+      "end_sec": 41227.0,
+      "start_str": "10:52:07",
+      "end_str": "11:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 2,
+      "completed_at": 1795093144.690485,
+      "clips": [
+        {
+          "id": "pt23_c01",
+          "start": 216.54,
+          "end": 231.54,
+          "score": 85,
+          "title": "That's Not a Vape, That's a Manifesting! 💨",
+          "title_alts": [
+            "Speed vs The Manifesting Stick",
+            "The Funniest GTA 6 NPC Interaction"
+          ],
+          "hook_line": "Hold on, when did you start vaping?",
+          "hooks": [
+            "funny fail",
+            "quotable line"
+          ],
+          "why_viral": "The comedic timing of the NPC claiming a 'manifesting stick' is just aromatherapy is peak GTA humor. Speed's genuine confusion and reaction to the absurdity of the dialogue makes this a perfect short-form clip that captures the chaotic energy of early access gameplay.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 23",
+          "part_index": 23,
+          "stream_window": "10:52:07 - 11:27:07",
+          "abs_start": 39343.54,
+          "abs_end": 39358.54
+        },
+        {
+          "id": "pt23_c02",
+          "start": 277.9,
+          "end": 326.58,
+          "score": 92,
+          "title": "IShowSpeed Joins a Cult in GTA 6?! 💀",
+          "title_alts": [
+            "Speed Gets Recruited into a Pyramid Scheme",
+            "Is this a Cult? GTA 6 Roleplay Gone Wrong"
+          ],
+          "hook_line": "Hold on, what kind of... is this a cult?",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail"
+          ],
+          "why_viral": "The absurdity of Speed accidentally stumbling into an in-game pyramid scheme while playing GTA 6 creates a hilarious, relatable moment of confusion. Viewers love seeing streamers get caught off-guard by bizarre NPC dialogue that sounds exactly like a real-life scam, making for high-engagement, shareable content.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 23",
+          "part_index": 23,
+          "stream_window": "10:52:07 - 11:27:07",
+          "abs_start": 39404.9,
+          "abs_end": 39453.58
+        }
+      ]
+    },
+    {
+      "part_index": 24,
+      "name": "Part 24",
+      "start_sec": 40927.0,
+      "end_sec": 43027.0,
+      "start_str": "11:22:07",
+      "end_str": "11:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 3,
+      "completed_at": 1795093576.539944,
+      "clips": [
+        {
+          "id": "pt24_c01",
+          "start": 0.0,
+          "end": 15.0,
+          "score": 85,
+          "title": "Speed's GTA 6 Reaction 🎮",
+          "title_alts": [
+            "Look at this shit, bruh!",
+            "Speed's early access energy"
+          ],
+          "hook_line": "Hey, hey, hey, hey, look at this shit, bruh!",
+          "hooks": [
+            "explosive reaction",
+            "quotable line"
+          ],
+          "why_viral": "The immediate, high-energy opening hook combined with Speed's signature chaotic reaction to in-game visuals creates an instant grab for viewers scrolling through their feed.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 24",
+          "part_index": 24,
+          "stream_window": "11:22:07 - 11:57:07",
+          "abs_start": 40927.0,
+          "abs_end": 40942.0
+        },
+        {
+          "id": "pt24_c02",
+          "start": 47.74,
+          "end": 63.72,
+          "score": 92,
+          "title": "The Gentrifier Song 🎵",
+          "title_alts": [
+            "Speed's Gentrifier Diss Track",
+            "I Can't Stand You Bro"
+          ],
+          "hook_line": "Uh oh, Jason! My gentrifier man, I wrote you a song man.",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail",
+            "quotable line"
+          ],
+          "why_viral": "Speed's spontaneous, unhinged musical performance directed at a random NPC in the game creates a hilarious, awkward, and highly shareable moment that captures his unique brand of chaotic humor.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 24",
+          "part_index": 24,
+          "stream_window": "11:22:07 - 11:57:07",
+          "abs_start": 40974.74,
+          "abs_end": 40990.72
+        },
+        {
+          "id": "pt24_c03",
+          "start": 205.52,
+          "end": 229.9,
+          "score": 88,
+          "title": "GTA NPC Confesses Love? 😳",
+          "title_alts": [
+            "Why is this NPC acting like this?",
+            "Speed gets hit on in GTA"
+          ],
+          "hook_line": "That shit was wild, bro. He was like, yo, I love you, bro.",
+          "hooks": [
+            "unexpected reveal",
+            "funny fail"
+          ],
+          "why_viral": "The absurdity of an NPC dialogue triggering a 'love confession' in GTA leads to Speed's genuine confusion and comedic disbelief, making for a classic gaming clip that highlights the unpredictable nature of AI interactions.",
+          "category": "funny",
+          "signals": {},
+          "risk_flags": [],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 24",
+          "part_index": 24,
+          "stream_window": "11:22:07 - 11:57:07",
+          "abs_start": 41132.52,
+          "abs_end": 41156.9
+        }
+      ]
+    },
+    {
+      "part_index": 25,
+      "name": "Part 25",
+      "start_sec": 42727.0,
+      "end_sec": 44827.0,
+      "start_str": "11:52:07",
+      "end_str": "12:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 1,
+      "completed_at": 1795093661.821472,
+      "clips": [
+        {
+          "id": "pt25_c01",
+          "start": 12.0,
+          "end": 42.0,
+          "score": 95,
+          "title": "IShowSpeed Plays GTA 6?! 😱",
+          "title_alts": [
+            "Wait, is this actually GTA 6? 🎮",
+            "Speed reacts to early access GTA 6 gameplay!"
+          ],
+          "hook_line": "Wait, wait, wait... is this actually it? No way!",
+          "hooks": [
+            "explosive reaction",
+            "unexpected reveal"
+          ],
+          "why_viral": "The immediate high-energy reaction to a major pop culture event like GTA 6 creates instant curiosity. Viewers will stay to see if the gameplay is legitimate or a troll, leveraging the massive hype surrounding the franchise's release.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 25",
+          "part_index": 25,
+          "stream_window": "11:52:07 - 12:27:07",
+          "abs_start": 42739.0,
+          "abs_end": 42769.0
+        }
+      ]
+    },
+    {
+      "part_index": 26,
+      "name": "Part 26",
+      "start_sec": 44527.0,
+      "end_sec": 46627.0,
+      "start_str": "12:22:07",
+      "end_str": "12:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 1,
+      "completed_at": 1795093946.714369,
+      "clips": [
+        {
+          "id": "pt26_c01",
+          "start": 10.0,
+          "end": 45.0,
+          "score": 95,
+          "title": "SPEED PLAYS GTA 6?! 😱",
+          "title_alts": [
+            "IShowSpeed GTA 6 Reaction!",
+            "The Moment Speed Saw GTA 6"
+          ],
+          "hook_line": "Wait, is this actually GTA 6?!",
+          "hooks": [
+            "explosive reaction",
+            "unexpected reveal"
+          ],
+          "why_viral": "The combination of high-energy anticipation and the streamer's signature over-the-top reaction to a highly anticipated game creates immediate viewer curiosity and high retention. Viewers will stay to see if the gameplay is real or a troll, making it perfect for social media engagement.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 26",
+          "part_index": 26,
+          "stream_window": "12:22:07 - 12:57:07",
+          "abs_start": 44537.0,
+          "abs_end": 44572.0
+        }
+      ]
+    },
+    {
+      "part_index": 27,
+      "name": "Part 27",
+      "start_sec": 46327.0,
+      "end_sec": 48427.0,
+      "start_str": "12:52:07",
+      "end_str": "13:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 1,
+      "completed_at": 1795094096.886501,
+      "clips": [
+        {
+          "id": "pt27_c01",
+          "start": 10.0,
+          "end": 45.0,
+          "score": 95,
+          "title": "SPEED PLAYS GTA 6?! 😱",
+          "title_alts": [
+            "IShowSpeed GTA 6 Gameplay Reaction! 🎮",
+            "Wait, is this actually GTA 6? 🤯"
+          ],
+          "hook_line": "NO WAY, IS THIS ACTUALLY GTA 6?!",
+          "hooks": [
+            "explosive reaction",
+            "unexpected reveal"
+          ],
+          "why_viral": "The combination of high-energy streamer persona and the massive cultural hype surrounding GTA 6 creates an immediate curiosity gap. Viewers will stay to see if the gameplay is real or a prank, ensuring high retention through the shock factor of the streamer's over-the-top reaction.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 27",
+          "part_index": 27,
+          "stream_window": "12:52:07 - 13:27:07",
+          "abs_start": 46337.0,
+          "abs_end": 46372.0
+        }
+      ]
+    },
+    {
+      "part_index": 28,
+      "name": "Part 28",
+      "start_sec": 48127.0,
+      "end_sec": 50227.0,
+      "start_str": "13:22:07",
+      "end_str": "13:57:07",
+      "duration_sec": 2100.0,
+      "clips_count": 1,
+      "completed_at": 1795094277.484714,
+      "clips": [
+        {
+          "id": "pt28_c01",
+          "start": 12.0,
+          "end": 42.0,
+          "score": 95,
+          "title": "IShowSpeed Plays GTA 6?! 🎮🔥",
+          "title_alts": [
+            "Wait, is this actually GTA 6? 🤯",
+            "Speed reacts to 'GTA 6' early access!"
+          ],
+          "hook_line": "Wait, is this actually GTA 6? No way!",
+          "hooks": [
+            "explosive reaction",
+            "unexpected reveal"
+          ],
+          "why_viral": "The clip leverages the massive hype surrounding GTA 6. Viewers will immediately stop scrolling to see if the streamer actually has early access, creating high curiosity retention and engagement through the 'is it real or fake' debate in the comments.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 28",
+          "part_index": 28,
+          "stream_window": "13:22:07 - 13:57:07",
+          "abs_start": 48139.0,
+          "abs_end": 48169.0
+        }
+      ]
+    },
+    {
+      "part_index": 29,
+      "name": "Part 29",
+      "start_sec": 49927.0,
+      "end_sec": 52027.0,
+      "start_str": "13:52:07",
+      "end_str": "14:27:07",
+      "duration_sec": 2100.0,
+      "clips_count": 1,
+      "completed_at": 1795094450.828191,
+      "clips": [
+        {
+          "id": "pt29_c01",
+          "start": 10.0,
+          "end": 45.0,
+          "score": 95,
+          "title": "IShowSpeed Plays GTA 6?! 😱",
+          "title_alts": [
+            "GTA 6 EARLY ACCESS LEAKED?!",
+            "Speed's Reaction to GTA 6 is INSANE"
+          ],
+          "hook_line": "Wait, is this actually GTA 6 right now?",
+          "hooks": [
+            "explosive reaction",
+            "unexpected reveal"
+          ],
+          "why_viral": "The title and immediate visual hook of 'GTA 6 Gameplay' taps into massive viewer curiosity and FOMO. Speed's high-energy, over-the-top reaction creates an immediate emotional anchor that keeps viewers watching to see if the gameplay is legitimate or a troll.",
+          "category": "reaction",
+          "signals": {},
+          "risk_flags": [
+            "profanity:high"
+          ],
+          "trim_notes": "",
+          "layout": "stack",
+          "source_permission": "clip-policy",
+          "selector_engine": "gemini-3.1-flash-lite",
+          "part": "Part 29",
+          "part_index": 29,
+          "stream_window": "13:52:07 - 14:27:07",
+          "abs_start": 49937.0,
+          "abs_end": 49972.0
+        }
+      ]
+    }
+  ],
+  "all_clips": [
+    {
+      "id": "pt07_c01",
+      "start": 110.14,
+      "end": 155.42,
+      "score": 92,
+      "title": "LUCY IS A KEEPER! 💍🔥",
+      "title_alts": [
+        "Speed's GTA 6 Gameplay is WILD",
+        "The Most Intense GTA 6 Moment Yet"
+      ],
+      "hook_line": "I got you! I got you!",
+      "hooks": [
+        "explosive reaction",
+        "clutch moment"
+      ],
+      "why_viral": "This clip captures high-stakes gaming intensity combined with Speed's signature chaotic commentary. The rapid-fire pacing, genuine panic, and the 'Lucy is a keeper' line provide a perfect mix of humor and gameplay tension that keeps viewers locked in until the final second.",
+      "category": "clutch",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 7",
+      "part_index": 7,
+      "stream_window": "02:52:07 - 03:27:07",
+      "abs_start": 10437.14,
+      "abs_end": 10482.42
+    },
+    {
+      "id": "pt07_c02",
+      "start": 240.76,
+      "end": 287.68,
+      "score": 88,
+      "title": "THE GUMMY INCIDENT 🍬💀",
+      "title_alts": [
+        "Speed's GTA 6 Storytime",
+        "Cal is absolutely losing it"
+      ],
+      "hook_line": "No, no, no, no. You're in bad shape, Jay.",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail"
+      ],
+      "why_viral": "The contrast between the serious, dramatic tone of the game's situation and the absurd, out-of-pocket mention of 'Sadiva Gummies' creates a hilarious disconnect. It's a classic Speed moment where the narrative gets derailed by pure comedy, making it highly shareable for fans of his erratic humor.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 7",
+      "part_index": 7,
+      "stream_window": "02:52:07 - 03:27:07",
+      "abs_start": 10567.76,
+      "abs_end": 10614.68
+    },
+    {
+      "id": "pt08_c01",
+      "start": 189.94,
+      "end": 236.2,
+      "score": 88,
+      "title": "Speed's GTA 6 RP Logic is WILD 🤣",
+      "title_alts": [
+        "I was taking a piss, bro! 🚽",
+        "Speed meets the local weirdos"
+      ],
+      "hook_line": "Nah, they put Carlos away for splitting a bunch of energy drinks.",
+      "hooks": [
+        "funny fail",
+        "quotable line"
+      ],
+      "why_viral": "This clip captures the classic, unhinged banter that IShowSpeed is famous for. The dialogue about 'gooning' and 'sweaty fat guys' is peak internet humor that resonates with his core audience, keeping them engaged through pure, unfiltered chaotic energy.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 8",
+      "part_index": 8,
+      "stream_window": "03:22:07 - 03:57:07",
+      "abs_start": 12316.94,
+      "abs_end": 12363.2
+    },
+    {
+      "id": "pt08_c02",
+      "start": 429.46,
+      "end": 473.56,
+      "score": 85,
+      "title": "THE PILL MISSION GONE WRONG 💊",
+      "title_alts": [
+        "My husband is dying, bro! 😭",
+        "Speed's intense GTA 6 roleplay"
+      ],
+      "hook_line": "Chad, let's get these pills for our boyfriend, Jason.",
+      "hooks": [
+        "unexpected reveal",
+        "storytime"
+      ],
+      "why_viral": "The desperate, over-the-top roleplay performance by Speed creates a hilarious contrast between the serious 'dying husband' narrative and the ridiculousness of the situation. It hooks viewers because of the emotional intensity he puts into a clearly absurd gaming scenario.",
+      "category": "story",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 8",
+      "part_index": 8,
+      "stream_window": "03:22:07 - 03:57:07",
+      "abs_start": 12556.46,
+      "abs_end": 12600.56
+    },
+    {
+      "id": "pt08_c03",
+      "start": 576.12,
+      "end": 622.0,
+      "score": 92,
+      "title": "GTA 6 RP IS ABSOLUTE CHAOS! 💀",
+      "title_alts": [
+        "Dr. Bill is the WORST doctor ever 😭",
+        "The most intense shootout in GTA 6 history"
+      ],
+      "hook_line": "Why is it so jumpy today?",
+      "hooks": [
+        "explosive reaction",
+        "funny fail"
+      ],
+      "why_viral": "The transition from a casual conversation to a chaotic, high-stakes shootout creates an immediate tension spike. Viewers love watching IShowSpeed react to the absurdity of the game's AI and the incompetence of the in-game doctor, making for a highly shareable, high-energy comedic fail.",
+      "category": "fail",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 8",
+      "part_index": 8,
+      "stream_window": "03:22:07 - 03:57:07",
+      "abs_start": 12703.12,
+      "abs_end": 12749.0
+    },
+    {
+      "id": "pt09_c01",
+      "start": 406.5,
+      "end": 422.26,
+      "score": 85,
+      "title": "Speed's GTA 6 Reality Check 🌴",
+      "title_alts": [
+        "Why is Florida so crazy?",
+        "Speed gets dehumanized in GTA"
+      ],
+      "hook_line": "I can't, bro. Like, I just get dehumanized.",
+      "hooks": [
+        "hot take",
+        "relatable pain"
+      ],
+      "why_viral": "Speed breaks the fourth wall to complain about the game's mechanics while grounding it in the 'Florida' experience. His frustration is palpable and funny, capturing the specific chaotic energy of GTA gameplay that viewers love to see streamers struggle with.",
+      "category": "story",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 9",
+      "part_index": 9,
+      "stream_window": "03:52:07 - 04:27:07",
+      "abs_start": 14333.5,
+      "abs_end": 14349.26
+    },
+    {
+      "id": "pt09_c02",
+      "start": 535.58,
+      "end": 554.04,
+      "score": 88,
+      "title": "Speed Found His Wifey? 💍",
+      "title_alts": [
+        "Speed Simping in GTA 6",
+        "She's Wifey Material!"
+      ],
+      "hook_line": "That looks bad, bro. She's wifey material.",
+      "hooks": [
+        "wholesome moment",
+        "relatable pain"
+      ],
+      "why_viral": "Speed's over-the-top reaction to a simple in-game action by an NPC is classic content. His genuine, loud enthusiasm about finding 'wifey material' in a video game is highly relatable to his audience and serves as a perfect short-form reaction clip.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 9",
+      "part_index": 9,
+      "stream_window": "03:52:07 - 04:27:07",
+      "abs_start": 14462.58,
+      "abs_end": 14481.04
+    },
+    {
+      "id": "pt09_c03",
+      "start": 555.96,
+      "end": 573.74,
+      "score": 92,
+      "title": "IShowSpeed Goes Bald?! 👨‍🦲",
+      "title_alts": [
+        "Speed's GTA 6 Glitch Moment",
+        "Why is Speed Bald in GTA 6?"
+      ],
+      "hook_line": "Bro, if Jason doesn't marry her in this game...",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail"
+      ],
+      "why_viral": "The streamer is mid-rant about game romance mechanics when a sudden, unexplained graphical glitch turns his character bald. The contrast between his serious commentary and the ridiculous visual bug creates an instant, shareable comedic moment that viewers will clip and react to immediately.",
+      "category": "fail",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 9",
+      "part_index": 9,
+      "stream_window": "03:52:07 - 04:27:07",
+      "abs_start": 14482.96,
+      "abs_end": 14500.74
+    },
+    {
+      "id": "pt10_c01",
+      "start": 213.2,
+      "end": 258.5,
+      "score": 88,
+      "title": "I FAILED THE MISSION?! 😭",
+      "title_alts": [
+        "Speed loses his mind in GTA 6",
+        "The most frustrating mission ever"
+      ],
+      "hook_line": "Wait chat, did I fail that?",
+      "hooks": [
+        "rage",
+        "funny fail"
+      ],
+      "why_viral": "Speed's genuine confusion and subsequent meltdown over failing a mission is classic content that resonates with gamers who have experienced similar frustrations, making it highly relatable and entertaining.",
+      "category": "fail",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 10",
+      "part_index": 10,
+      "stream_window": "04:22:07 - 04:57:07",
+      "abs_start": 15940.2,
+      "abs_end": 15985.5
+    },
+    {
+      "id": "pt10_c02",
+      "start": 466.54,
+      "end": 512.94,
+      "score": 95,
+      "title": "GTA 6 NPC is UNHINGED! 💀",
+      "title_alts": [
+        "This NPC is actually crazy 😭",
+        "Most chaotic GTA 6 encounter ever"
+      ],
+      "hook_line": "This car just sat in its balls and shatting its dick.",
+      "hooks": [
+        "unexpected reveal",
+        "quotable line"
+      ],
+      "why_viral": "The sheer absurdity of the NPC's dialogue combined with the bizarre, repetitive singing creates a surreal, high-retention moment that viewers will find hilarious and shareable due to the unexpected nature of the interaction.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 10",
+      "part_index": 10,
+      "stream_window": "04:22:07 - 04:57:07",
+      "abs_start": 16193.54,
+      "abs_end": 16239.94
+    },
+    {
+      "id": "pt10_c03",
+      "start": 623.74,
+      "end": 669.16,
+      "score": 85,
+      "title": "14 HOURS OF GTA 6?! 🤯",
+      "title_alts": [
+        "Speed's 14 hour GTA 6 marathon",
+        "He's losing his mind in GTA 6"
+      ],
+      "hook_line": "I've been playing this game for the past 14 hours of my life, bro.",
+      "hooks": [
+        "hot take",
+        "relatable pain"
+      ],
+      "why_viral": "The exhaustion and delirium of a 14-hour gaming marathon creates a raw, authentic moment that viewers find fascinating, especially when the streamer starts questioning their own reality.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 10",
+      "part_index": 10,
+      "stream_window": "04:22:07 - 04:57:07",
+      "abs_start": 16350.74,
+      "abs_end": 16396.16
+    },
+    {
+      "id": "pt11_c01",
+      "start": 29.8,
+      "end": 75.5,
+      "score": 85,
+      "title": "Lucia is a Menace! 😱",
+      "title_alts": [
+        "I've never seen that in GTA! 🤯",
+        "Speed reacts to GTA 6 gameplay"
+      ],
+      "hook_line": "I gotta dance with the crowd now!",
+      "hooks": [
+        "explosive reaction",
+        "unexpected reveal"
+      ],
+      "why_viral": "The streamer's high-energy reaction to a specific, unseen gameplay mechanic hooks the audience immediately. The build-up of anticipation followed by the 'Oh my God' reveal keeps viewers watching to see exactly what happened in the game, making it a prime clip for social media engagement.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 11",
+      "part_index": 11,
+      "stream_window": "04:52:07 - 05:27:07",
+      "abs_start": 17556.8,
+      "abs_end": 17602.5
+    },
+    {
+      "id": "pt11_c02",
+      "start": 230.26,
+      "end": 276.02,
+      "score": 92,
+      "title": "GTA 6 Glitch or Feature? 💀",
+      "title_alts": [
+        "Jason is doing WHAT?! 😭",
+        "I can't stop laughing at this GTA 6 NPC"
+      ],
+      "hook_line": "How much money this is oh my gosh, oh my gosh!",
+      "hooks": [
+        "explosive reaction",
+        "funny fail"
+      ],
+      "why_viral": "The streamer's genuine shock at the in-game money count followed by the hilarious, repetitive, and broken NPC animation creates a perfect comedic contrast. Viewers love seeing game glitches, and the streamer's frustration with the 'same slide' animation is highly relatable and meme-worthy for the GTA community.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 11",
+      "part_index": 11,
+      "stream_window": "04:52:07 - 05:27:07",
+      "abs_start": 17757.26,
+      "abs_end": 17803.02
+    },
+    {
+      "id": "pt11_c03",
+      "start": 278.54,
+      "end": 317.98,
+      "score": 88,
+      "title": "Jason Needs to Chill! 😳",
+      "title_alts": [
+        "I'm getting distracted, bro! 🤣",
+        "GTA 6 is getting out of hand"
+      ],
+      "hook_line": "Uh oh... Ready?",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail"
+      ],
+      "why_viral": "The chaotic transition from a serious mission objective to the streamer getting distracted by the game's absurdity provides a high-retention comedic arc. The back-and-forth dialogue about putting clothes on creates a funny, relatable 'gamer moment' that captures the chaotic energy of early access gameplay.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 11",
+      "part_index": 11,
+      "stream_window": "04:52:07 - 05:27:07",
+      "abs_start": 17805.54,
+      "abs_end": 17844.98
+    },
+    {
+      "id": "pt12_c01",
+      "start": 181.22,
+      "end": 230.04,
+      "score": 82,
+      "title": "ROBBING PEOPLE IN GTA 6! 💰",
+      "title_alts": [
+        "Speed's GTA 6 Robbery Spree 🔫",
+        "Time to get paid in GTA 6! 💸"
+      ],
+      "hook_line": "Oh, she wants to rob these people, I think.",
+      "hooks": [
+        "quotable line",
+        "explosive reaction"
+      ],
+      "why_viral": "Speed's high-energy commentary about robbing people in the new game captures the chaotic spirit of GTA gameplay. His repetition of 'keep making money' creates a rhythmic, meme-able hook that keeps retention high throughout the clip.",
+      "category": "story",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 12",
+      "part_index": 12,
+      "stream_window": "05:22:07 - 05:57:07",
+      "abs_start": 19508.22,
+      "abs_end": 19557.04
+    },
+    {
+      "id": "pt12_c02",
+      "start": 398.22,
+      "end": 421.06,
+      "score": 85,
+      "title": "GTA 6 HEISTS ARE TRASH?! 😡",
+      "title_alts": [
+        "Speed Rages at GTA 6 Heists 🤬",
+        "Why GTA 6 Heists are mid... 📉"
+      ],
+      "hook_line": "Bro, these heists are trash, bro.",
+      "hooks": [
+        "rage",
+        "hot take"
+      ],
+      "why_viral": "Speed delivers a controversial 'hot take' about the quality of GTA 6 heists. This kind of opinionated content sparks immediate debate in the comments section, which is a primary driver for algorithm engagement on TikTok and Reels.",
+      "category": "rage",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 12",
+      "part_index": 12,
+      "stream_window": "05:22:07 - 05:57:07",
+      "abs_start": 19725.22,
+      "abs_end": 19748.06
+    },
+    {
+      "id": "pt12_c03",
+      "start": 583.64,
+      "end": 610.86,
+      "score": 92,
+      "title": "GTA 6 Stealth God Mode! 🕵️‍♂️",
+      "title_alts": [
+        "The Perfect Heist in GTA 6 💎",
+        "Undetected in GTA 6! 🤫"
+      ],
+      "hook_line": "We just did that undetected.",
+      "hooks": [
+        "clutch moment",
+        "explosive reaction"
+      ],
+      "why_viral": "Speed successfully pulls off a stealth heist in GTA 6, which is a massive talking point for the community. His genuine hype about doing it 'undetected' creates a high-energy, satisfying payoff that viewers love to watch and replicate.",
+      "category": "clutch",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 12",
+      "part_index": 12,
+      "stream_window": "05:22:07 - 05:57:07",
+      "abs_start": 19910.64,
+      "abs_end": 19937.86
+    },
+    {
+      "id": "pt12_c04",
+      "start": 630.78,
+      "end": 660.88,
+      "score": 88,
+      "title": "THERE'S A ZOO IN GTA 6?! 🦁",
+      "title_alts": [
+        "Speed finds the GTA 6 Zoo! 🦒",
+        "Wait, is there a zoo in GTA 6? 🦓"
+      ],
+      "hook_line": "Holy crap. Speed, go to the zoo.",
+      "hooks": [
+        "unexpected reveal",
+        "explosive reaction"
+      ],
+      "why_viral": "The discovery of a potential zoo in GTA 6 is a massive piece of 'news' for the gaming community. Speed's authentic, loud surprise keeps the audience engaged and creates a viral moment of discovery that fans will share to verify the claim.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 12",
+      "part_index": 12,
+      "stream_window": "05:22:07 - 05:57:07",
+      "abs_start": 19957.78,
+      "abs_end": 19987.88
+    },
+    {
+      "id": "pt13_c01",
+      "start": 55.6,
+      "end": 76.6,
+      "score": 95,
+      "title": "Speed's GTA 6 Meltdown! 💀",
+      "title_alts": [
+        "IShowSpeed loses it in GTA 6 🎮",
+        "The most chaotic GTA 6 reaction ever"
+      ],
+      "hook_line": "Oh my God! Oh my God!",
+      "hooks": [
+        "explosive reaction",
+        "rage"
+      ],
+      "why_viral": "Speed's signature high-energy screaming and chaotic reaction to gameplay is a proven viral formula. The rapid-fire repetition of 'Oh my God' creates an intense, frantic atmosphere that keeps viewers locked in until the final punchy line, making it highly shareable for gaming audiences.",
+      "category": "rage",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 13",
+      "part_index": 13,
+      "stream_window": "05:52:07 - 06:27:07",
+      "abs_start": 21182.6,
+      "abs_end": 21203.6
+    },
+    {
+      "id": "pt13_c02",
+      "start": 456.82,
+      "end": 499.68,
+      "score": 88,
+      "title": "FINALLY in Vice City! 🌴",
+      "title_alts": [
+        "GTA 6: The moment we've been waiting for",
+        "Speed finally reaches Vice City!"
+      ],
+      "hook_line": "We finally unlocked the city, chat.",
+      "hooks": [
+        "unexpected reveal",
+        "quotable line"
+      ],
+      "why_viral": "This clip captures a major milestone in the game that fans have been anticipating. The sense of achievement combined with Speed's genuine excitement and direct engagement with the chat makes it feel like a community celebration, which drives high engagement and comments.",
+      "category": "story",
+      "signals": {},
+      "risk_flags": [
+        "profanity:low"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 13",
+      "part_index": 13,
+      "stream_window": "05:52:07 - 06:27:07",
+      "abs_start": 21583.82,
+      "abs_end": 21626.68
+    },
+    {
+      "id": "pt14_c01",
+      "start": 10.44,
+      "end": 54.5,
+      "score": 88,
+      "title": "Speed's First GTA 6 Encounter! 🎮",
+      "title_alts": [
+        "Speed meets his first NPC in GTA 6",
+        "Is this the real GTA 6? 😂"
+      ],
+      "hook_line": "Yo, what's good? You remember me from the club, though, right?",
+      "hooks": [
+        "unexpected reveal",
+        "quotable line"
+      ],
+      "why_viral": "The immediate confusion and Speed's signature high-energy reaction to the NPC's dialogue creates an instant hook. Fans of IShowSpeed are highly engaged by his genuine reactions to new game mechanics, making this a prime candidate for viral discovery.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 14",
+      "part_index": 14,
+      "stream_window": "06:22:07 - 06:57:07",
+      "abs_start": 22937.44,
+      "abs_end": 22981.5
+    },
+    {
+      "id": "pt14_c02",
+      "start": 193.82,
+      "end": 239.02,
+      "score": 95,
+      "title": "GTA 6 NPC Interaction Gone WRONG! 💀",
+      "title_alts": [
+        "Speed vs. The Most Aggressive NPC Ever 🤣",
+        "I'm from Ohio, folks! 💀"
+      ],
+      "hook_line": "Hey, watch out, I'm from Ohio, folks!",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail",
+        "explosive reaction"
+      ],
+      "why_viral": "The chaotic energy of Speed interacting with a completely unhinged NPC creates a hilarious, unpredictable narrative. The absurdity of the NPC claiming his medication and the escalating argument is peak comedy that viewers love to clip and share for the sheer randomness of the dialogue.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 14",
+      "part_index": 14,
+      "stream_window": "06:22:07 - 06:57:07",
+      "abs_start": 23120.82,
+      "abs_end": 23166.02
+    },
+    {
+      "id": "pt15_c01",
+      "start": 16.22,
+      "end": 61.58,
+      "score": 88,
+      "title": "Speed Roasts Real Estate Scams 🏠",
+      "title_alts": [
+        "Speed vs. The Real Estate Guru",
+        "IShowSpeed Reacts to 'Get Rich' Courses"
+      ],
+      "hook_line": "Bro, what is she slamming, bro?",
+      "hooks": [
+        "hot take",
+        "relatable pain"
+      ],
+      "why_viral": "Speed's genuine confusion and aggressive skepticism toward 'get rich quick' real estate courses is highly relatable. Viewers love seeing him call out obvious scams with his signature high-energy, unfiltered commentary style.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 15",
+      "part_index": 15,
+      "stream_window": "06:52:07 - 07:27:07",
+      "abs_start": 24743.22,
+      "abs_end": 24788.58
+    },
+    {
+      "id": "pt15_c02",
+      "start": 143.8,
+      "end": 190.64,
+      "score": 85,
+      "title": "Speed's Mom Hates the House! 🏚️",
+      "title_alts": [
+        "Smells like what?!",
+        "Speed's Mom is NOT Having It"
+      ],
+      "hook_line": "No, no, no, no, no, no.",
+      "hooks": [
+        "funny fail",
+        "quotable line"
+      ],
+      "why_viral": "The comedic timing of the house tour going wrong, combined with the punchline 'smells like piss,' creates a perfect short-form loop. The dynamic between Speed and his mom provides authentic, unscripted humor that performs well on TikTok.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 15",
+      "part_index": 15,
+      "stream_window": "06:52:07 - 07:27:07",
+      "abs_start": 24870.8,
+      "abs_end": 24917.64
+    },
+    {
+      "id": "pt15_c03",
+      "start": 361.12,
+      "end": 421.12,
+      "score": 95,
+      "title": "GTA 6 ALLIGATOR ATTACK?! 🐊",
+      "title_alts": [
+        "Speed's Mom Gets Attacked in GTA 6?!",
+        "The Most Chaotic GTA 6 Moment Ever"
+      ],
+      "hook_line": "This looks like dookie water, bro.",
+      "hooks": [
+        "unexpected reveal",
+        "explosive reaction"
+      ],
+      "why_viral": "The clip transitions from a mundane, funny commentary about 'dookie water' in a pool directly into a shocking, high-stakes moment where the in-game character is attacked by an alligator. This sudden shift from comedy to disaster is perfect for short-form retention.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 15",
+      "part_index": 15,
+      "stream_window": "06:52:07 - 07:27:07",
+      "abs_start": 25088.12,
+      "abs_end": 25148.12
+    },
+    {
+      "id": "pt16_c01",
+      "start": 161.78,
+      "end": 208.12,
+      "score": 92,
+      "title": "Speed's 'Creative Financing' Scheme 💸",
+      "title_alts": [
+        "Speed Gets Into Legal Trouble? ⚖️",
+        "The Most Chaotic GTA 6 Interaction 😂"
+      ],
+      "hook_line": "When this goes to court, I need witnesses.",
+      "hooks": [
+        "unexpected reveal",
+        "quotable line"
+      ],
+      "why_viral": "Speed's hilarious attempt to justify his in-game crimes as 'creative financing' while trying to recruit the chat as legal witnesses is peak comedy. The absurdity of the situation combined with his high-energy delivery makes this a perfect viral clip for fans of his chaotic roleplay style.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 16",
+      "part_index": 16,
+      "stream_window": "07:22:07 - 07:57:07",
+      "abs_start": 26688.78,
+      "abs_end": 26735.12
+    },
+    {
+      "id": "pt16_c02",
+      "start": 377.96,
+      "end": 403.86,
+      "score": 88,
+      "title": "NPC Caught Slipping! 💀",
+      "title_alts": [
+        "Speed Witnesses an NPC Fail 🤣",
+        "Don't Worry, I Won't Tell! 🤫"
+      ],
+      "hook_line": "Oh, my God. Girl, get up.",
+      "hooks": [
+        "funny fail",
+        "explosive reaction"
+      ],
+      "why_viral": "Watching an NPC fall over and Speed immediately trying to 'cover it up' for her is hilarious. The interaction feels like a scripted comedy sketch, and viewers love seeing Speed react to the glitches and bizarre behaviors of GTA NPCs.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 16",
+      "part_index": 16,
+      "stream_window": "07:22:07 - 07:57:07",
+      "abs_start": 26904.96,
+      "abs_end": 26930.86
+    },
+    {
+      "id": "pt17_c01",
+      "start": 41.9,
+      "end": 64.02,
+      "score": 85,
+      "title": "GTA 6 or Crossy Road?! 🚗",
+      "title_alts": [],
+      "hook_line": "Go! Go! Go! Police!",
+      "hooks": [
+        "explosive reaction",
+        "funny fail"
+      ],
+      "why_viral": "The high-stakes intensity of a police chase gone wrong, ending with a relatable comparison to a mobile game, provides a perfect blend of action and humor that resonates with gaming audiences.",
+      "category": "fail",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 17",
+      "part_index": 17,
+      "stream_window": "07:52:07 - 08:27:07",
+      "abs_start": 28368.9,
+      "abs_end": 28391.02
+    },
+    {
+      "id": "pt17_c02",
+      "start": 634.86,
+      "end": 660.66,
+      "score": 92,
+      "title": "Speed gets 'McNoogied' in GTA 6! 🍔",
+      "title_alts": [
+        "I just got McNoogied?! 😂",
+        "The most random GTA 6 moment ever"
+      ],
+      "hook_line": "Wait, isn't this my car?",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail"
+      ],
+      "why_viral": "The confusion and absurdity of the 'McNoogie' interaction combined with Speed's genuine reaction to the chaotic NPC behavior creates a hilarious, high-energy moment that captures the unpredictable nature of GTA 6 gameplay.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 17",
+      "part_index": 17,
+      "stream_window": "07:52:07 - 08:27:07",
+      "abs_start": 28961.86,
+      "abs_end": 28987.66
+    },
+    {
+      "id": "pt17_c03",
+      "start": 706.28,
+      "end": 731.88,
+      "score": 88,
+      "title": "CHASING CHARLES! 🏃‍♂️💨",
+      "title_alts": [
+        "Who is Charles?! 😱",
+        "Speed's hilarious GTA 6 chase"
+      ],
+      "hook_line": "What the fuck is that?",
+      "hooks": [
+        "explosive reaction",
+        "unexpected reveal"
+      ],
+      "why_viral": "Speed's frantic pursuit of a bizarre NPC named Charles creates an immediate sense of urgency and comedy. Viewers will be hooked by the absurdity of the dialogue and the frantic, high-speed chase sequence.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 17",
+      "part_index": 17,
+      "stream_window": "07:52:07 - 08:27:07",
+      "abs_start": 29033.28,
+      "abs_end": 29058.88
+    },
+    {
+      "id": "pt18_c01",
+      "start": 473.46,
+      "end": 516.24,
+      "score": 88,
+      "title": "GTA 6 SECRET ITEM UNLOCKED! 🗝️",
+      "title_alts": [
+        "I Just Made $9,000 in GTA 6!",
+        "The Key to the City in GTA 6"
+      ],
+      "hook_line": "Wait is this not the... No way I just made $9,000!",
+      "hooks": [
+        "unexpected reveal",
+        "clutch moment"
+      ],
+      "why_viral": "This clip captures the excitement of discovering a 'game changer' item in early access gameplay. The combination of easy money and a mysterious, powerful tool keeps the audience hooked, as they are genuinely curious about the item's utility in the new game.",
+      "category": "clutch",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 18",
+      "part_index": 18,
+      "stream_window": "08:22:07 - 08:57:07",
+      "abs_start": 30600.46,
+      "abs_end": 30643.24
+    },
+    {
+      "id": "pt18_c02",
+      "start": 609.32,
+      "end": 646.5,
+      "score": 92,
+      "title": "I GOT SCAMMED?! 💸 GTA 6 SCAM",
+      "title_alts": [
+        "Speed Gets Scammed in GTA 6?!",
+        "The $25,000 GTA 6 Mistake"
+      ],
+      "hook_line": "How much money you got?",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail"
+      ],
+      "why_viral": "The transition from a high-stakes financial moment in-game to the sudden realization of being scammed creates a perfect comedic arc. Viewers love watching streamers lose virtual money, and Speed's genuine shock and frustration provide high-energy entertainment that is highly shareable on TikTok.",
+      "category": "fail",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 18",
+      "part_index": 18,
+      "stream_window": "08:22:07 - 08:57:07",
+      "abs_start": 30736.32,
+      "abs_end": 30773.5
+    },
+    {
+      "id": "pt19_c01",
+      "start": 100.98,
+      "end": 115.98,
+      "score": 88,
+      "title": "Speed's Wild Gym Moment 💀",
+      "title_alts": [
+        "Speed is acting way too sus at the gym",
+        "Ishowspeed's gym workout goes wrong"
+      ],
+      "hook_line": "I'm trying to make shit happen out here.",
+      "hooks": [
+        "funny fail",
+        "quotable line"
+      ],
+      "why_viral": "This clip features the streamer saying something completely unhinged in a public setting, capturing the chaotic, unpredictable humor that his audience expects. The sudden shift from a workout to a bizarre comment makes it highly shareable.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 19",
+      "part_index": 19,
+      "stream_window": "08:52:07 - 09:27:07",
+      "abs_start": 32027.98,
+      "abs_end": 32042.98
+    },
+    {
+      "id": "pt19_c02",
+      "start": 302.96,
+      "end": 331.28,
+      "score": 82,
+      "title": "Taxi Logic 🚕",
+      "title_alts": [
+        "Speed roasts NPC logic",
+        "Why would I call a taxi?"
+      ],
+      "hook_line": "Why does he always say that?",
+      "hooks": [
+        "hot take",
+        "relatable pain"
+      ],
+      "why_viral": "The streamer points out a classic, frustrating gaming trope regarding NPC dialogue. Viewers love when streamers call out bad game design, and his delivery turns a mundane gameplay moment into a funny, relatable rant.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 19",
+      "part_index": 19,
+      "stream_window": "08:52:07 - 09:27:07",
+      "abs_start": 32229.96,
+      "abs_end": 32258.28
+    },
+    {
+      "id": "pt19_c03",
+      "start": 481.28,
+      "end": 525.7,
+      "score": 95,
+      "title": "HULK IN GTA 6?! 😱",
+      "title_alts": [
+        "Speed loses it over Red Hulk in GTA 6",
+        "Wait, is that actually Hulk in GTA 6?"
+      ],
+      "hook_line": "Don't come any closer.",
+      "hooks": [
+        "unexpected reveal",
+        "explosive reaction"
+      ],
+      "why_viral": "The streamer's genuine confusion and escalating shock when encountering an unexpected character model (Red Hulk) in the game creates a high-energy, relatable moment that plays perfectly into the hype surrounding GTA 6 early access gameplay.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 19",
+      "part_index": 19,
+      "stream_window": "08:52:07 - 09:27:07",
+      "abs_start": 32408.28,
+      "abs_end": 32452.7
+    },
+    {
+      "id": "pt20_c01",
+      "start": 108.2,
+      "end": 154.54,
+      "score": 88,
+      "title": "GTA 6 Graphics are INSANE! 🤯",
+      "title_alts": [
+        "Speed reacts to GTA 6 NPC quality",
+        "Is GTA 6 really this good?"
+      ],
+      "hook_line": "So what's the story with this guy Roxy's with?",
+      "hooks": [
+        "hot take",
+        "unexpected reveal"
+      ],
+      "why_viral": "Speed provides a direct commentary on the visual fidelity of GTA 6 compared to GTA 5. The mix of lore-building and his authentic, hype-filled reaction to the game's world-building keeps the audience engaged throughout the entire duration of the clip.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 20",
+      "part_index": 20,
+      "stream_window": "09:22:07 - 09:57:07",
+      "abs_start": 33835.2,
+      "abs_end": 33881.54
+    },
+    {
+      "id": "pt20_c02",
+      "start": 247.68,
+      "end": 293.88,
+      "score": 92,
+      "title": "Speed vs. The Glitchy GTA 6 Dog 🐶😂",
+      "title_alts": [
+        "Why is this dog acting like that?! 💀",
+        "IShowSpeed loses it at GTA 6 physics"
+      ],
+      "hook_line": "What the hell?",
+      "hooks": [
+        "funny fail",
+        "unexpected reveal"
+      ],
+      "why_viral": "Speed's genuine confusion and escalating frustration with the game's buggy AI dog creates a hilarious, relatable moment. Viewers love seeing streamers react to game glitches in real-time, especially when the streamer's personality is as high-energy as Speed's, making it perfect for short-form comedy.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 20",
+      "part_index": 20,
+      "stream_window": "09:22:07 - 09:57:07",
+      "abs_start": 33974.68,
+      "abs_end": 34020.88
+    },
+    {
+      "id": "pt20_c03",
+      "start": 301.34,
+      "end": 347.02,
+      "score": 85,
+      "title": "Speed gets kicked out! 🚫",
+      "title_alts": [
+        "The most awkward NPC interaction ever",
+        "Speed vs. GTA 6 NPC"
+      ],
+      "hook_line": "She's busy.",
+      "hooks": [
+        "rage",
+        "funny fail"
+      ],
+      "why_viral": "The tension between Speed and the NPC escalates quickly, culminating in a blunt, hilarious rejection. The contrast between Speed's persistent, loud character and the dismissive, cold NPC behavior is a classic comedic trope that performs exceptionally well on TikTok.",
+      "category": "rage",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 20",
+      "part_index": 20,
+      "stream_window": "09:22:07 - 09:57:07",
+      "abs_start": 34028.34,
+      "abs_end": 34074.02
+    },
+    {
+      "id": "pt21_c01",
+      "start": 84.7,
+      "end": 130.0,
+      "score": 92,
+      "title": "What is REAL?! 🤯",
+      "title_alts": [
+        "Speed's Existential Crisis",
+        "Is this even real life?"
+      ],
+      "hook_line": "Bro, what is real bro?",
+      "hooks": [
+        "unexpected reveal",
+        "quotable line"
+      ],
+      "why_viral": "The repetitive, high-energy delivery of 'What is real?' creates a surreal, meme-worthy moment that viewers will find hilarious and highly shareable. It captures a genuine 'glitch in the matrix' vibe that performs exceptionally well on TikTok and Shorts platforms due to its chaotic and absurd nature.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 21",
+      "part_index": 21,
+      "stream_window": "09:52:07 - 10:27:07",
+      "abs_start": 35611.7,
+      "abs_end": 35657.0
+    },
+    {
+      "id": "pt21_c02",
+      "start": 213.02,
+      "end": 257.5,
+      "score": 85,
+      "title": "Is deer meat actually good? 🥩",
+      "title_alts": [
+        "Speed's Food Thoughts",
+        "The Truth About Deer Meat"
+      ],
+      "hook_line": "Wait for Brett... What is Brett even doing?",
+      "hooks": [
+        "hot take",
+        "relatable pain"
+      ],
+      "why_viral": "Speed's rambling, slightly confused monologue about the leanness of deer meat is classic, relatable streamer content. It invites audience interaction in the comments, as viewers love to correct or agree with streamers on food takes, driving high engagement metrics.",
+      "category": "story",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 21",
+      "part_index": 21,
+      "stream_window": "09:52:07 - 10:27:07",
+      "abs_start": 35740.02,
+      "abs_end": 35784.5
+    },
+    {
+      "id": "pt21_c03",
+      "start": 344.24,
+      "end": 390.02,
+      "score": 88,
+      "title": "We're skinning it?! 🦌",
+      "title_alts": [
+        "Speed's Hunting Adventure",
+        "Wait, we're doing what?"
+      ],
+      "hook_line": "Fuck yeah, Jack. What are we about to do with this deer?",
+      "hooks": [
+        "unexpected reveal",
+        "explosive reaction"
+      ],
+      "why_viral": "The transition from casual conversation to the shock of having to skin a deer provides a perfect comedic beat. Viewers love seeing streamers react to unexpected, gritty tasks in games, and Speed's disbelief adds an authentic layer of entertainment to the gameplay.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 21",
+      "part_index": 21,
+      "stream_window": "09:52:07 - 10:27:07",
+      "abs_start": 35871.24,
+      "abs_end": 35917.02
+    },
+    {
+      "id": "pt22_c01",
+      "start": 88.34,
+      "end": 133.98,
+      "score": 92,
+      "title": "Speed's 'Real Name' Reveal? 🤨",
+      "title_alts": [
+        "Speed's Identity Crisis 💀",
+        "Is Speed Actually Ronaldo? ⚽"
+      ],
+      "hook_line": "My real name is IShowRonaldo.",
+      "hooks": [
+        "unexpected reveal",
+        "quotable line"
+      ],
+      "why_viral": "Speed is notorious for his absurd persona, and claiming his real name is 'IShowRonaldo' while playing a high-profile game like GTA 6 creates a hilarious, meme-worthy moment that fans will clip and share across social media to mock his logic.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 22",
+      "part_index": 22,
+      "stream_window": "10:22:07 - 10:57:07",
+      "abs_start": 37415.34,
+      "abs_end": 37460.98
+    },
+    {
+      "id": "pt22_c02",
+      "start": 341.54,
+      "end": 371.9,
+      "score": 88,
+      "title": "63 Million Subs! 📈",
+      "title_alts": [
+        "Speed Hits 63M! 🚀",
+        "The Milestone Moment 🏆"
+      ],
+      "hook_line": "We're about to hit 63 million!",
+      "hooks": [
+        "explosive reaction",
+        "wholesome moment"
+      ],
+      "why_viral": "Milestone celebrations are a staple of streamer culture. Watching a massive creator like Speed react to hitting a huge subscriber count in real-time provides high-energy, feel-good content that encourages viewer engagement and community celebration.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 22",
+      "part_index": 22,
+      "stream_window": "10:22:07 - 10:57:07",
+      "abs_start": 37668.54,
+      "abs_end": 37698.9
+    },
+    {
+      "id": "pt22_c03",
+      "start": 410.34,
+      "end": 454.62,
+      "score": 85,
+      "title": "Can't Afford Me! 💸",
+      "title_alts": [
+        "Speed Gets Denied 🚫",
+        "GTA 6 NPC Roast 💀"
+      ],
+      "hook_line": "You ain't got the money to afford me.",
+      "hooks": [
+        "funny fail",
+        "unexpected reveal"
+      ],
+      "why_viral": "The interaction between Speed and the in-game NPC creates a funny 'fail' dynamic. Viewers love watching streamers get humbled by game mechanics or witty NPC dialogue, especially when it leads to Speed getting confused about how to progress.",
+      "category": "fail",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 22",
+      "part_index": 22,
+      "stream_window": "10:22:07 - 10:57:07",
+      "abs_start": 37737.34,
+      "abs_end": 37781.62
+    },
+    {
+      "id": "pt23_c01",
+      "start": 216.54,
+      "end": 231.54,
+      "score": 85,
+      "title": "That's Not a Vape, That's a Manifesting! 💨",
+      "title_alts": [
+        "Speed vs The Manifesting Stick",
+        "The Funniest GTA 6 NPC Interaction"
+      ],
+      "hook_line": "Hold on, when did you start vaping?",
+      "hooks": [
+        "funny fail",
+        "quotable line"
+      ],
+      "why_viral": "The comedic timing of the NPC claiming a 'manifesting stick' is just aromatherapy is peak GTA humor. Speed's genuine confusion and reaction to the absurdity of the dialogue makes this a perfect short-form clip that captures the chaotic energy of early access gameplay.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 23",
+      "part_index": 23,
+      "stream_window": "10:52:07 - 11:27:07",
+      "abs_start": 39343.54,
+      "abs_end": 39358.54
+    },
+    {
+      "id": "pt23_c02",
+      "start": 277.9,
+      "end": 326.58,
+      "score": 92,
+      "title": "IShowSpeed Joins a Cult in GTA 6?! 💀",
+      "title_alts": [
+        "Speed Gets Recruited into a Pyramid Scheme",
+        "Is this a Cult? GTA 6 Roleplay Gone Wrong"
+      ],
+      "hook_line": "Hold on, what kind of... is this a cult?",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail"
+      ],
+      "why_viral": "The absurdity of Speed accidentally stumbling into an in-game pyramid scheme while playing GTA 6 creates a hilarious, relatable moment of confusion. Viewers love seeing streamers get caught off-guard by bizarre NPC dialogue that sounds exactly like a real-life scam, making for high-engagement, shareable content.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 23",
+      "part_index": 23,
+      "stream_window": "10:52:07 - 11:27:07",
+      "abs_start": 39404.9,
+      "abs_end": 39453.58
+    },
+    {
+      "id": "pt24_c01",
+      "start": 0.0,
+      "end": 15.0,
+      "score": 85,
+      "title": "Speed's GTA 6 Reaction 🎮",
+      "title_alts": [
+        "Look at this shit, bruh!",
+        "Speed's early access energy"
+      ],
+      "hook_line": "Hey, hey, hey, hey, look at this shit, bruh!",
+      "hooks": [
+        "explosive reaction",
+        "quotable line"
+      ],
+      "why_viral": "The immediate, high-energy opening hook combined with Speed's signature chaotic reaction to in-game visuals creates an instant grab for viewers scrolling through their feed.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 24",
+      "part_index": 24,
+      "stream_window": "11:22:07 - 11:57:07",
+      "abs_start": 40927.0,
+      "abs_end": 40942.0
+    },
+    {
+      "id": "pt24_c02",
+      "start": 47.74,
+      "end": 63.72,
+      "score": 92,
+      "title": "The Gentrifier Song 🎵",
+      "title_alts": [
+        "Speed's Gentrifier Diss Track",
+        "I Can't Stand You Bro"
+      ],
+      "hook_line": "Uh oh, Jason! My gentrifier man, I wrote you a song man.",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail",
+        "quotable line"
+      ],
+      "why_viral": "Speed's spontaneous, unhinged musical performance directed at a random NPC in the game creates a hilarious, awkward, and highly shareable moment that captures his unique brand of chaotic humor.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 24",
+      "part_index": 24,
+      "stream_window": "11:22:07 - 11:57:07",
+      "abs_start": 40974.74,
+      "abs_end": 40990.72
+    },
+    {
+      "id": "pt24_c03",
+      "start": 205.52,
+      "end": 229.9,
+      "score": 88,
+      "title": "GTA NPC Confesses Love? 😳",
+      "title_alts": [
+        "Why is this NPC acting like this?",
+        "Speed gets hit on in GTA"
+      ],
+      "hook_line": "That shit was wild, bro. He was like, yo, I love you, bro.",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail"
+      ],
+      "why_viral": "The absurdity of an NPC dialogue triggering a 'love confession' in GTA leads to Speed's genuine confusion and comedic disbelief, making for a classic gaming clip that highlights the unpredictable nature of AI interactions.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 24",
+      "part_index": 24,
+      "stream_window": "11:22:07 - 11:57:07",
+      "abs_start": 41132.52,
+      "abs_end": 41156.9
+    },
+    {
+      "id": "pt25_c01",
+      "start": 12.0,
+      "end": 42.0,
+      "score": 95,
+      "title": "IShowSpeed Plays GTA 6?! 😱",
+      "title_alts": [
+        "Wait, is this actually GTA 6? 🎮",
+        "Speed reacts to early access GTA 6 gameplay!"
+      ],
+      "hook_line": "Wait, wait, wait... is this actually it? No way!",
+      "hooks": [
+        "explosive reaction",
+        "unexpected reveal"
+      ],
+      "why_viral": "The immediate high-energy reaction to a major pop culture event like GTA 6 creates instant curiosity. Viewers will stay to see if the gameplay is legitimate or a troll, leveraging the massive hype surrounding the franchise's release.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 25",
+      "part_index": 25,
+      "stream_window": "11:52:07 - 12:27:07",
+      "abs_start": 42739.0,
+      "abs_end": 42769.0
+    },
+    {
+      "id": "pt26_c01",
+      "start": 10.0,
+      "end": 45.0,
+      "score": 95,
+      "title": "SPEED PLAYS GTA 6?! 😱",
+      "title_alts": [
+        "IShowSpeed GTA 6 Reaction!",
+        "The Moment Speed Saw GTA 6"
+      ],
+      "hook_line": "Wait, is this actually GTA 6?!",
+      "hooks": [
+        "explosive reaction",
+        "unexpected reveal"
+      ],
+      "why_viral": "The combination of high-energy anticipation and the streamer's signature over-the-top reaction to a highly anticipated game creates immediate viewer curiosity and high retention. Viewers will stay to see if the gameplay is real or a troll, making it perfect for social media engagement.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 26",
+      "part_index": 26,
+      "stream_window": "12:22:07 - 12:57:07",
+      "abs_start": 44537.0,
+      "abs_end": 44572.0
+    },
+    {
+      "id": "pt27_c01",
+      "start": 10.0,
+      "end": 45.0,
+      "score": 95,
+      "title": "SPEED PLAYS GTA 6?! 😱",
+      "title_alts": [
+        "IShowSpeed GTA 6 Gameplay Reaction! 🎮",
+        "Wait, is this actually GTA 6? 🤯"
+      ],
+      "hook_line": "NO WAY, IS THIS ACTUALLY GTA 6?!",
+      "hooks": [
+        "explosive reaction",
+        "unexpected reveal"
+      ],
+      "why_viral": "The combination of high-energy streamer persona and the massive cultural hype surrounding GTA 6 creates an immediate curiosity gap. Viewers will stay to see if the gameplay is real or a prank, ensuring high retention through the shock factor of the streamer's over-the-top reaction.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 27",
+      "part_index": 27,
+      "stream_window": "12:52:07 - 13:27:07",
+      "abs_start": 46337.0,
+      "abs_end": 46372.0
+    },
+    {
+      "id": "pt28_c01",
+      "start": 12.0,
+      "end": 42.0,
+      "score": 95,
+      "title": "IShowSpeed Plays GTA 6?! 🎮🔥",
+      "title_alts": [
+        "Wait, is this actually GTA 6? 🤯",
+        "Speed reacts to 'GTA 6' early access!"
+      ],
+      "hook_line": "Wait, is this actually GTA 6? No way!",
+      "hooks": [
+        "explosive reaction",
+        "unexpected reveal"
+      ],
+      "why_viral": "The clip leverages the massive hype surrounding GTA 6. Viewers will immediately stop scrolling to see if the streamer actually has early access, creating high curiosity retention and engagement through the 'is it real or fake' debate in the comments.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 28",
+      "part_index": 28,
+      "stream_window": "13:22:07 - 13:57:07",
+      "abs_start": 48139.0,
+      "abs_end": 48169.0
+    },
+    {
+      "id": "pt29_c01",
+      "start": 10.0,
+      "end": 45.0,
+      "score": 95,
+      "title": "IShowSpeed Plays GTA 6?! 😱",
+      "title_alts": [
+        "GTA 6 EARLY ACCESS LEAKED?!",
+        "Speed's Reaction to GTA 6 is INSANE"
+      ],
+      "hook_line": "Wait, is this actually GTA 6 right now?",
+      "hooks": [
+        "explosive reaction",
+        "unexpected reveal"
+      ],
+      "why_viral": "The title and immediate visual hook of 'GTA 6 Gameplay' taps into massive viewer curiosity and FOMO. Speed's high-energy, over-the-top reaction creates an immediate emotional anchor that keeps viewers watching to see if the gameplay is legitimate or a troll.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "stack",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "part": "Part 29",
+      "part_index": 29,
+      "stream_window": "13:52:07 - 14:27:07",
+      "abs_start": 49937.0,
+      "abs_end": 49972.0
+    }
+  ],
+  "dedup_baseline": [
+    {
+      "id": "c01",
+      "start": 47.9,
+      "end": 78.9,
+      "score": 85,
+      "title": "GTA 6 Early Access Panic! 🚨",
+      "title_alts": [
+        "Speed is confused by GTA 6",
+        "Is this actually GTA 6?"
+      ],
+      "hook_line": "See that timer ticking down?",
+      "hooks": [
+        "unexpected reveal",
+        "hot take"
+      ],
+      "why_viral": "The confusion regarding whether the game is actually GTA 6 combined with the high-stakes 'nuclear makeover' timer creates immediate tension that hooks viewers who are desperate for any real GTA 6 gameplay footage.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "blur-fill",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "abs_start": 8574.9,
+      "abs_end": 8605.9
+    },
+    {
+      "id": "c02",
+      "start": 139.24,
+      "end": 154.24,
+      "score": 82,
+      "title": "Speed's 'Deep' Conversation 💀",
+      "title_alts": [
+        "Speed gets roasted by his friend",
+        "You're lucky you got me"
+      ],
+      "hook_line": "Because I didn't have a good example set for me.",
+      "hooks": [
+        "storytime",
+        "relatable pain"
+      ],
+      "why_viral": "The sudden shift from intense gaming to a weirdly vulnerable and then immediately roasted moment makes for a classic Speed clip where his ego is checked by his own friends in real-time.",
+      "category": "story",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "blur-fill",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "abs_start": 8666.24,
+      "abs_end": 8681.24
+    },
+    {
+      "id": "c03",
+      "start": 163.02,
+      "end": 185.72,
+      "score": 72,
+      "title": "Speed Singing Random Songs 🎶",
+      "title_alts": [
+        "Speed's off-key singing",
+        "He's really feeling the music"
+      ],
+      "hook_line": "Say, I think Cal is his actual friend, bro.",
+      "hooks": [
+        "unexpected reveal",
+        "funny fail"
+      ],
+      "why_viral": "Speed randomly breaking into a singing session while talking about game lore is the kind of unpredictable, chaotic behavior that keeps his audience entertained and waiting for the next weird moment.",
+      "category": "reaction",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "blur-fill",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "abs_start": 8690.02,
+      "abs_end": 8712.72
+    },
+    {
+      "id": "c04",
+      "start": 290.46,
+      "end": 316.58,
+      "score": 79,
+      "title": "Speed's Obsession with the Bed 🛌",
+      "title_alts": [
+        "Why does he keep saying that?",
+        "Speed is acting weird again"
+      ],
+      "hook_line": "Bro get on my bed!",
+      "hooks": [
+        "funny fail",
+        "quotable line"
+      ],
+      "why_viral": "Speed repeating the same bizarre phrase over and over until it becomes an annoying but hilarious meme is a staple of his content style that fans find incredibly funny and quotable.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "blur-fill",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "abs_start": 8817.46,
+      "abs_end": 8843.58
+    },
+    {
+      "id": "c05",
+      "start": 311.0,
+      "end": 334.5,
+      "score": 92,
+      "title": "Speed Sees Something He Shouldn't! 😳",
+      "title_alts": [
+        "Why is his booty out?! 💀",
+        "Speed's GTA 6 Glitch Moment"
+      ],
+      "hook_line": "Bro look at his tighty-whities!",
+      "hooks": [
+        "funny fail",
+        "unexpected reveal"
+      ],
+      "why_viral": "Speed's genuine shock and confusion over an in-game character's wardrobe malfunction creates a hilarious, high-energy reaction that viewers love to clip and share. The absurdity of the situation combined with his erratic commentary makes it perfect for short-form platforms.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "blur-fill",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "abs_start": 8838.0,
+      "abs_end": 8861.5
+    },
+    {
+      "id": "c06",
+      "start": 396.64,
+      "end": 418.78,
+      "score": 70,
+      "title": "Speed's 'Hakuna Matata' Moment 🦁",
+      "title_alts": [
+        "Speed needs a shower after that",
+        "What did he just do?"
+      ],
+      "hook_line": "Chat, are y'all ready to pick up our girlfriend Lucia?",
+      "hooks": [
+        "quotable line",
+        "funny fail"
+      ],
+      "why_viral": "The contrast between his confident planning to pick up his in-game girlfriend and his immediate realization that he needs a shower after a questionable action is peak Speed comedy.",
+      "category": "funny",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "blur-fill",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "abs_start": 8923.64,
+      "abs_end": 8945.78
+    },
+    {
+      "id": "c07",
+      "start": 832.12,
+      "end": 871.02,
+      "score": 88,
+      "title": "Speed Being a Romantic? 🌹",
+      "title_alts": [
+        "Romeo Speed is in the building",
+        "Buying flowers for Lucia"
+      ],
+      "hook_line": "Nice flowers... Just thinking about getting something for my girl.",
+      "hooks": [
+        "wholesome moment",
+        "quotable line"
+      ],
+      "why_viral": "Seeing a chaotic streamer like Speed attempt to be a 'smooth Romeo' while buying flowers for his in-game girlfriend provides a funny, wholesome contrast to his usual high-octane, aggressive streaming persona.",
+      "category": "story",
+      "signals": {},
+      "risk_flags": [],
+      "trim_notes": "",
+      "layout": "blur-fill",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "abs_start": 9359.12,
+      "abs_end": 9398.02
+    },
+    {
+      "id": "c08",
+      "start": 912.22,
+      "end": 944.88,
+      "score": 75,
+      "title": "Speed vs. The Game Logic 🚗",
+      "title_alts": [
+        "Joey won't deliver the car!",
+        "Speed is losing his mind"
+      ],
+      "hook_line": "Get a car, bro!",
+      "hooks": [
+        "rage",
+        "funny fail"
+      ],
+      "why_viral": "Watching Speed get genuinely frustrated at game mechanics and NPCs refusing to cooperate is a classic trope that highlights his explosive personality and inability to handle minor inconveniences in games.",
+      "category": "rage",
+      "signals": {},
+      "risk_flags": [
+        "profanity:high"
+      ],
+      "trim_notes": "",
+      "layout": "blur-fill",
+      "source_permission": "clip-policy",
+      "selector_engine": "gemini-3.1-flash-lite",
+      "abs_start": 9439.22,
+      "abs_end": 9471.88
+    }
+  ],
+  "errors": [
+    {
+      "part": "Part 26",
+      "stage": "ingest",
+      "error": "Command ['yt-dlp', '-f', 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best', '--merge-output-format', 'mp4', '-o', '/Users/rishavroy/Clipping GTA 6/cache/yt_qSyo5d-dVzA_overnight_pt26/source.mp4', 'https://www.youtube.com/watch?v=qSyo5d-dVzA', '--downloader', 'ffmpeg', '--download-sections', '*12:22:07-12:57:07'] returned non-zero exit status 1.",
+      "ts": 1795093785.0320861
+    }
+  ],
+  "last_updated": 1795094527.7055209,
+  "last_updated_iso": "2026-11-19T13:22:07.705531+00:00"
+}

@@ -9,6 +9,7 @@ import json
 import time
 import queue
 import shutil
+import subprocess
 import mimetypes
 import threading
 import urllib.parse
@@ -25,7 +26,7 @@ from clipit.stages.signals import run_signals
 from clipit.stages.candidates import run_candidates
 from clipit.stages.select import run_select
 from clipit.stages.refine import run_refine
-from clipit.models import ClipItem, FullTranscript
+from clipit.models import ClipItem, FullTranscript, WordTimestamp, TranscriptSegment
 from clipit.stages.render import run_render, render_single_clip, render_variant_file
 from clipit.stages.review import generate_review_html, run_quality_sentinel
 from clipit.stages.export import run_export
@@ -872,7 +873,6 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         dest_video = downloads_dir / f"{base_stem}.mp4"
         dest_txt = downloads_dir / f"{base_stem}_publishing_pack.txt"
 
-        import shutil
         try:
             shutil.copy2(target_video, dest_video)
             with open(dest_txt, "w", encoding="utf-8") as f:
@@ -912,7 +912,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         part_cache_v = None
         part_out_v = None
-        if part_num and part_num > 1:
+        if part_num and part_num >= 1:
             candidates = [
                 CACHE_DIR / f"{video_id}_pt{part_num:02d}",
                 CACHE_DIR / f"{video_id}_pt{part_num}",
@@ -955,6 +955,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             vision_info["text_position"] = str(data["text_position"])
         if "content_zoom" in data:
             vision_info["content_zoom"] = float(data["content_zoom"])
+        if "style" in data and data["style"]:
+            vision_info["style"] = str(data["style"])
         if "title" in data and data["title"]:
             clean_t = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", str(data["title"]), flags=re.IGNORECASE).strip()
             vision_info["title"] = clean_t
@@ -1021,6 +1023,104 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         if not source_video.exists():
             source_video = cache_v / "source.mp4"
 
+        is_clip_level_source = False
+        clip_source_p = active_cache_v / f"clip_source_{clip_id}.mp4"
+        if not source_video.exists() and clip_source_p.exists():
+            source_video = clip_source_p
+            is_clip_level_source = True
+
+        # If source.mp4 and clip_source are missing, check if a rendered _blur.mp4 variant exists locally!
+        # In _blur.mp4 (Reference Letterbox), the center rectangle (crop=1080:608:0:656,scale=1920:1080)
+        # is the pristine, untouched original 16:9 60fps stream video with zero subtitles superimposed on it.
+        if not source_video.exists():
+            blur_candidates = [
+                (part_out_v / f"{clip_id}_blur.mp4") if part_out_v else None,
+                out_v / f"{clip_id}_blur.mp4",
+                active_cache_v / f"{clip_id}_blur.mp4",
+                cache_v / f"{clip_id}_blur.mp4",
+            ]
+            blur_file = next((b for b in blur_candidates if b and b.exists()), None)
+            if blur_file:
+                print(f"[RE-RENDER] Extracting clean 16:9 source footage from local {blur_file.name} for {clip_id} with 0.50s video advance...")
+                try:
+                    active_cache_v.mkdir(parents=True, exist_ok=True)
+                    cmd = [
+                        "ffmpeg", "-y",
+                        "-ss", "0.50", "-i", str(blur_file),
+                        "-ss", "0.00", "-i", str(blur_file),
+                        "-filter_complex", "[0:v]crop=1080:608:0:656,scale=1920:1080[v]",
+                        "-map", "[v]", "-map", "1:a",
+                        "-c:v", "h264_videotoolbox", "-b:v", "8000k",
+                        "-c:a", "copy",
+                        "-avoid_negative_ts", "make_zero",
+                        str(clip_source_p)
+                    ]
+                    res = subprocess.run(cmd, capture_output=True, text=True)
+                    if res.returncode != 0:
+                        cmd[cmd.index("h264_videotoolbox")] = "libx264"
+                        subprocess.run(cmd, check=True, capture_output=True)
+                    if clip_source_p.exists():
+                        source_video = clip_source_p
+                        is_clip_level_source = True
+                except Exception as ext_err:
+                    print(f"[RE-RENDER] Failed extracting clean clip source: {ext_err}")
+
+        # If source.mp4 was purged for disk hygiene and no local rendered blur file exists, re-ingest on demand!
+        if not source_video.exists():
+            source_url = None
+            start_str = None
+            end_str = None
+
+            # 1. Check live_session.json in cache and out
+            for sess_p in (cache_v / "live_session.json", out_v / "live_session.json", CACHE_DIR / video_id / "live_session.json"):
+                if sess_p.exists():
+                    try:
+                        with open(sess_p, "r", encoding="utf-8") as f:
+                            sess_d = json.load(f)
+                            source_url = sess_d.get("url")
+                            for pt in sess_d.get("parts", []):
+                                if (part_num and pt.get("part_index") == part_num) or any(c.get("id") == clip_id for c in pt.get("clips", [])):
+                                    start_str = pt.get("start_str")
+                                    end_str = pt.get("end_str")
+                                    break
+                    except Exception:
+                        pass
+                if start_str and end_str:
+                    break
+
+            # 2. Check clip_dict stream_window
+            if not start_str and clip_dict and clip_dict.get("stream_window"):
+                parts = str(clip_dict["stream_window"]).split("-")
+                if len(parts) == 2:
+                    start_str = parts[0].strip()
+                    end_str = parts[1].strip()
+
+            # 3. Check info.json
+            if not source_url:
+                info_d = cache.load_json("info.json") or {}
+                if not info_d and active_cache_v != cache_v:
+                    root_c = CacheManager(video_id, base_dir=CACHE_DIR)
+                    info_d = root_c.load_json("info.json") or {}
+                source_url = info_d.get("source") or info_d.get("url")
+
+            if source_url:
+                print(f"[RE-RENDER] source.mp4 missing for {clip_id}. Automatically fetching stream window ({start_str} to {end_str}) on demand...")
+                try:
+                    from clipit.stages.ingest import run_ingest
+                    run_ingest(source_url, cache, start=start_str, end=end_str)
+                    source_video = active_cache_v / "source.mp4"
+                    if not source_video.exists():
+                        source_video = cache_v / "source.mp4"
+                except Exception as ingest_err:
+                    print(f"[RE-RENDER] Error on-demand fetching source: {ingest_err}")
+
+        if not source_video.exists():
+            self.send_json(
+                {"success": False, "error": f"Source video for {clip_id} is missing from cache and could not be fetched."},
+                status=HTTPStatus.INTERNAL_SERVER_ERROR
+            )
+            return
+
         t_data = cache.load_json("transcript.json")
         if not t_data and active_cache_v != cache_v:
             root_cache = CacheManager(video_id, base_dir=CACHE_DIR)
@@ -1029,7 +1129,43 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         if not t_data:
             self.send_error(HTTPStatus.NOT_FOUND, "Transcript not found in cache")
             return
-        transcript = FullTranscript(**t_data)
+
+        orig_clip_start = float(clip_dict.get("start", 0.0))
+        orig_clip_end = float(clip_dict.get("end", 0.0))
+        clip_dur = max(0.1, orig_clip_end - orig_clip_start)
+
+        if is_clip_level_source:
+            shifted_segments = []
+            for seg_d in t_data.get("segments", []):
+                new_words = []
+                for w_d in seg_d.get("words", []):
+                    w_st = float(w_d.get("start", 0.0))
+                    w_en = float(w_d.get("end", 0.0))
+                    if w_en >= orig_clip_start and w_st <= orig_clip_end:
+                        new_words.append(WordTimestamp(
+                            w=w_d.get("w", ""),
+                            start=max(0.0, w_st - orig_clip_start),
+                            end=max(0.0, w_en - orig_clip_start),
+                            prob=float(w_d.get("prob", 1.0))
+                        ))
+                if new_words:
+                    shifted_segments.append(TranscriptSegment(
+                        text=" ".join(w.w for w in new_words),
+                        start=new_words[0].start,
+                        end=new_words[-1].end,
+                        words=new_words
+                    ))
+            transcript = FullTranscript(
+                video_id=t_data.get("video_id", video_id),
+                duration=clip_dur,
+                text=" ".join(s.text for s in shifted_segments),
+                segments=shifted_segments,
+                language=t_data.get("language", "en")
+            )
+            clip_dict["start"] = 0.0
+            clip_dict["end"] = clip_dur
+        else:
+            transcript = FullTranscript(**t_data)
 
         # 5. Render with VideoToolbox hardware encoder
         render_target_dir = part_out_v if part_out_v else out_v
@@ -1052,6 +1188,8 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         filtered_clip = {k: v for k, v in clip_dict.items() if k in valid_keys}
         clip = ClipItem(**filtered_clip)
 
+        style_name = data.get("style") or vision_info.get("style") or "bold-yellow"
+
         try:
             render_single_clip(
                 clip=clip,
@@ -1061,14 +1199,22 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 cache=cache,
                 video_config=cfg.video,
                 codec="h264_videotoolbox",
+                style_name=style_name,
                 render_variants=True,
                 force=True,
             )
 
+            # Sync newly generated ASS subtitles from cache to render targets
+            for ext in (".ass", "_blur-fill.ass", "_reframed.ass"):
+                c_ass = cache.path(f"{clip_id}{ext}")
+                if c_ass.exists():
+                    if part_out_v:
+                        shutil.copy2(c_ass, part_out_v / f"{clip_id}{ext}")
+                    shutil.copy2(c_ass, out_v / f"{clip_id}{ext}")
+
             # Keep top-level out_v and part_out_v synchronized
             if part_out_v and part_out_v != out_v:
-                import shutil
-                for ext in (".mp4", "_blur.mp4", "_reframed.mp4", ".json"):
+                for ext in (".mp4", "_blur.mp4", "_reframed.mp4", ".json", ".ass", "_blur-fill.ass", "_reframed.ass"):
                     src_f = part_out_v / f"{clip_id}{ext}"
                     dst_f = out_v / f"{clip_id}{ext}"
                     if src_f.exists():
@@ -1086,29 +1232,42 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                             except Exception:
                                 pass
 
-            sidecar = {}
-            sidecar_p = out_v / f"{clip_id}.json"
-            if sidecar_p.exists():
-                with open(sidecar_p, "r", encoding="utf-8") as f:
-                    sidecar = json.load(f)
-                # Always persist the cleaned/custom title to sidecar
-                cleaned_title = vision_info.get("title") or clip_dict.get("title")
-                if cleaned_title:
-                    sidecar["title"] = cleaned_title
-                    with open(sidecar_p, "w", encoding="utf-8") as f:
-                        json.dump(sidecar, f, indent=2)
+            orig_metadata = {
+                "start": orig_clip_start,
+                "end": orig_clip_end,
+                "part": clip_dict.get("part"),
+                "part_index": clip_dict.get("part_index"),
+                "stream_window": clip_dict.get("stream_window"),
+                "abs_start": clip_dict.get("abs_start"),
+                "abs_end": clip_dict.get("abs_end"),
+                "selector_engine": clip_dict.get("selector_engine"),
+                "score": clip_dict.get("score"),
+                "why_viral": clip_dict.get("why_viral"),
+            }
+            cleaned_title = vision_info.get("title") or clip_dict.get("title")
 
-            if part_out_v and (part_out_v / f"{clip_id}.json").exists():
-                try:
-                    with open(part_out_v / f"{clip_id}.json", "r", encoding="utf-8") as f:
-                        psd = json.load(f)
-                    cleaned_title = vision_info.get("title") or clip_dict.get("title")
-                    if cleaned_title:
-                        psd["title"] = cleaned_title
-                        with open(part_out_v / f"{clip_id}.json", "w", encoding="utf-8") as f:
-                            json.dump(psd, f, indent=2)
-                except Exception:
-                    pass
+            sidecar = {}
+            for sc_target_dir in [render_target_dir, out_v, part_out_v]:
+                if sc_target_dir and sc_target_dir.exists():
+                    sc_f = sc_target_dir / f"{clip_id}.json"
+                    if sc_f.exists():
+                        try:
+                            with open(sc_f, "r", encoding="utf-8") as f:
+                                sd = json.load(f)
+                            if is_clip_level_source:
+                                sd["start"] = orig_clip_start
+                                sd["end"] = orig_clip_end
+                            if cleaned_title:
+                                sd["title"] = cleaned_title
+                            for mk, mv in orig_metadata.items():
+                                if mv is not None and mk not in sd:
+                                    sd[mk] = mv
+                            with open(sc_f, "w", encoding="utf-8") as f:
+                                json.dump(sd, f, indent=2)
+                            if not sidecar:
+                                sidecar = sd
+                        except Exception:
+                            pass
 
             if "variants" in sidecar:
                 for v in sidecar["variants"]:
@@ -1514,7 +1673,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         part_out = None
         part_cache = None
-        if part_num and part_num > 1:
+        if part_num and part_num >= 1:
             candidates_o = [
                 out_v / f"part_{part_num:02d}",
                 out_v / f"part_{part_num}",
@@ -1573,10 +1732,11 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
             if p_cache.is_dir() and p_cache != part_cache:
                 candidate_paths.append(p_cache / filename)
 
-        # Only fall back to root cache for alias if no part_num or part_num == 1
-        if not part_num or part_num == 1:
-            candidate_paths.append(CACHE_DIR / video_id / alias)
-        candidate_paths.append(READY_DIR / video_id / alias)
+        # Only fall back to root cache/ready for alias if no part_num or part_num == 1
+        for alias in alias_names:
+            if not part_num or part_num == 1:
+                candidate_paths.append(CACHE_DIR / video_id / alias)
+            candidate_paths.append(READY_DIR / video_id / alias)
 
         target = next((p for p in candidate_paths if p.exists() and p.is_file()), None)
 
@@ -1701,7 +1861,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
     def handle_youtube_upload(self, data: Dict[str, Any]):
         video_id = data.get("video_id")
         filename = data.get("filename")
-        title = data.get("title", "GTA 6 Viral Moment")
+        title = data.get("title", "Viral Highlight")
         description = data.get("description", "")
         tags = data.get("tags", ["#Shorts", "#Gaming"])
         privacy = data.get("privacy", "public")

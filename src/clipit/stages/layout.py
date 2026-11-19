@@ -178,9 +178,17 @@ def build_reference_stack_filter(
         s_src_w = source_w
         s_src_h = int(s_src_w / ar_top)
 
-    # Facecam framing centers on streamer box (independent of content focus)
-    s_src_x = max(0, min(source_w - s_src_w, int(center_sx - s_src_w // 2)))
-    s_src_y = max(0, min(source_h - s_src_h, int(center_sy - s_src_h // 2)))
+    # Facecam framing: corner-pinning & headroom preservation
+    # If streamer box hugs a corner, pin to the edge so black margin is never exposed
+    if raw_bx <= source_w * 0.18:
+        s_src_x = 0
+    elif (raw_bx + raw_bw) >= source_w * 0.82:
+        s_src_x = source_w - s_src_w
+    else:
+        s_src_x = max(0, min(source_w - s_src_w, int(center_sx - s_src_w // 2)))
+
+    # Vertical headroom bias: face detectors return brow to chin, so bias slightly upward to keep hair/forehead
+    s_src_y = max(0, min(source_h - s_src_h, int(center_sy - s_src_h * 0.42)))
 
     s_src_w -= s_src_w % 2
     s_src_h -= s_src_h % 2
@@ -416,4 +424,57 @@ def get_layout_filter(
     elif layout_name == "blur-fill":
         return build_blur_fill_filter(vision_info, source_w=source_w, source_h=source_h), None
 
-    return build_blur_fill_filter(vision_info, source_w=source_w, source_h=source_h), None
+
+class SmoothedCameraman:
+    """Handles smooth camera movement using the 'Heavy Tripod' algorithm.
+    - Safe zone: only moves if subject leaves 25% center safe zone.
+    - Jump confirmation: rejects single-frame detection noise/glitches.
+    - Instant scene cut reset: snaps immediately across shot transitions.
+    """
+    def __init__(self, crop_width: int, video_width: int, jump_confirm_frames: int = 3):
+        self.crop_width = crop_width
+        self.video_width = video_width
+        self.current_center_x = video_width / 2.0
+        self.target_center_x = video_width / 2.0
+        self.safe_zone_radius = crop_width * 0.25
+        self.jump_confirm_frames = jump_confirm_frames
+        self._pending_target = None
+        self._pending_count = 0
+        self._snap_pending = False
+
+    def begin_scene(self):
+        """Reset damping at a scene cut to instantly frame the new subject."""
+        self._pending_target = None
+        self._pending_count = 0
+        self._snap_pending = True
+
+    def update_target(self, new_center_x: float):
+        if self._snap_pending:
+            self._snap_pending = False
+            self._pending_target = None
+            self._pending_count = 0
+            self.target_center_x = new_center_x
+            self.current_center_x = new_center_x
+            return
+
+        if abs(new_center_x - self.target_center_x) > self.safe_zone_radius:
+            if self._pending_target is not None and abs(new_center_x - self._pending_target) <= self.safe_zone_radius:
+                self._pending_count += 1
+            else:
+                self._pending_target = new_center_x
+                self._pending_count = 1
+            if self._pending_count < self.jump_confirm_frames:
+                return
+
+        self._pending_target = None
+        self._pending_count = 0
+        self.target_center_x = new_center_x
+
+    def get_center_x(self, smooth_factor: float = 0.15) -> float:
+        diff = self.target_center_x - self.current_center_x
+        # Only move the camera if the target has moved outside the safe zone
+        if abs(diff) > self.safe_zone_radius:
+            effective_pull = diff - (self.safe_zone_radius if diff > 0 else -self.safe_zone_radius)
+            self.current_center_x += effective_pull * smooth_factor
+        return self.current_center_x
+

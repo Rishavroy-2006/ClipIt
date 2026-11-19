@@ -412,6 +412,146 @@ def test_youtube_integration():
         assert "title" in info
 
 
+def test_font_metric_and_line_fitter():
+    from clipit.stages.captions import measure_line_width, _dim_ass_color
+
+    w_short = measure_line_width("Anton", 80, ["HELLO", "WORLD"])
+    w_long = measure_line_width("Anton", 80, ["THIS", "IS", "A", "VERY", "LONG", "SENTENCE", "THAT", "MUST", "BE", "SPLIT"])
+    assert w_short < w_long
+    assert w_short > 0.0
+
+    # Color dimming tests
+    dim_white = _dim_ass_color("&H00FFFFFF", 0.75)
+    assert dim_white.startswith("&H00")
+    assert dim_white != "&H00FFFFFF"
+
+
+def test_hormozi_reveal_mode(tmp_path: Path):
+    from clipit.stages.captions import generate_clip_ass
+    from clipit.models import FullTranscript, TranscriptSegment, WordTimestamp, ClipItem
+
+    words = [
+        WordTimestamp(w="Stop", start=0.0, end=0.4, prob=0.98),
+        WordTimestamp(w="doing", start=0.4, end=0.8, prob=0.98),
+        WordTimestamp(w="this", start=0.8, end=1.2, prob=0.98),
+    ]
+    seg = TranscriptSegment(text="Stop doing this", start=0.0, end=1.2, words=words)
+    transcript = FullTranscript(video_id="v_test", duration=1.2, text="Stop doing this", segments=[seg], language="en")
+    clip = ClipItem(id="c01", start=0.0, end=1.2, score=95, title="Stop Doing This", hook_line="Stop Doing This", why_viral="Intense hook that stops scrolling instantly.")
+
+    out_ass = tmp_path / "hormozi.ass"
+    generate_clip_ass(clip, transcript, out_ass, style_path_or_name="hormozi")
+    assert out_ass.exists()
+
+    content = out_ass.read_text(encoding="utf-8")
+    assert "Montserrat ExtraBold" in content
+    # Progressive reveal creates {\alpha&HFF&} for upcoming words
+    assert r"{\alpha&HFF&}" in content
+
+
+def test_metadata_scrub():
+    from clipit.stages.render import METADATA_SCRUB
+    assert "-map_metadata" in METADATA_SCRUB
+    assert "-map_chapters" in METADATA_SCRUB
+
+
+def test_smoothed_cameraman():
+    from clipit.stages.layout import SmoothedCameraman
+
+    cam = SmoothedCameraman(crop_width=1080, video_width=1920, jump_confirm_frames=3)
+    initial_center = cam.current_center_x
+
+    # Target within 25% safe zone radius (270px) should NOT move the camera center
+    cam.update_target(initial_center + 100)
+    assert cam.get_center_x() == initial_center
+
+    # Sudden jump should require 3 confirmations before target_center_x accepts it
+    far_target = initial_center + 500
+    cam.update_target(far_target)
+    assert cam.target_center_x != far_target  # 1st detection: hold
+
+    cam.update_target(far_target)
+    assert cam.target_center_x != far_target  # 2nd detection: hold
+
+    cam.update_target(far_target)
+    assert cam.target_center_x == far_target   # 3rd detection: confirmed!
+
+    # Scene cut reset
+    cam.begin_scene()
+    new_shot_target = 300.0
+    cam.update_target(new_shot_target)
+    assert cam.current_center_x == new_shot_target  # Instant snap across cut!
+
+
+def test_punch_in_terms():
+    from clipit.stages.punch_in import find_emphasis_times, build_punch_in_terms
+
+    signals = [
+        {"timestamp": 1.5, "loudness_z": 0.5, "composite_score": 40},
+        {"timestamp": 5.0, "loudness_z": 2.5, "composite_score": 85},
+        {"timestamp": 8.0, "loudness_z": 2.2, "composite_score": 82},
+        {"timestamp": 25.0, "loudness_z": 2.8, "composite_score": 90},
+    ]
+
+    # Min gap 15s should keep 5.0 and 25.0, but drop 8.0
+    emphasis = find_emphasis_times(signals, clip_start=0.0, clip_end=30.0, min_gap_seconds=15.0)
+    assert len(emphasis) == 2
+    assert 5.0 in emphasis
+    assert 25.0 in emphasis
+
+    terms = build_punch_in_terms(emphasis)
+    assert len(terms) == 2
+    assert "between(on," in terms[0]
+
+
+def test_heading_styling_and_no_gta6_trailer(tmp_path: Path):
+    from clipit.stages.captions import generate_clip_ass
+    from clipit.models import FullTranscript, TranscriptSegment, WordTimestamp, ClipItem
+
+    words = [WordTimestamp(w="Test", start=0.0, end=1.0, prob=0.99)]
+    seg = TranscriptSegment(text="Test", start=0.0, end=1.0, words=words)
+    transcript = FullTranscript(video_id="v_test", duration=1.0, text="Test", segments=[seg], language="en")
+
+    # 1. Clip where creator is NOT in title -> should have badge + 2 lines, NO "GTA 6 TRAILER 2"
+    clip1 = ClipItem(
+        id="c01", start=0.0, end=1.0, score=90,
+        title="Lucia is a Menace!", hook_line="Lucia is a Menace!",
+        why_viral="Intense high stakes gaming reaction that stops scrolling immediately."
+    )
+    out1 = tmp_path / "c01_blur.ass"
+    generate_clip_ass(
+        clip1, transcript, out1, layout_name="blur-fill",
+        creator_name="IShowSpeed"
+    )
+    content1 = out1.read_text(encoding="utf-8")
+    assert "GTA 6 TRAILER 2" not in content1
+    assert "GTA 6" not in content1
+    assert "• ISHOWSPEED •" in content1
+    assert "LUCIA IS A" in content1
+    assert "MENACE!" in content1
+    assert "Style: TopHeader" in content1
+    # Check outline is 4, not bloated 8
+    assert ",4,2,8,40,40," in content1
+
+    # 2. Clip where creator is already in title -> should NOT duplicate creator tag
+    clip2 = ClipItem(
+        id="c02", start=0.0, end=1.0, score=90,
+        title="Speed Escapes The Cops", hook_line="Speed Escapes",
+        why_viral="Intense high stakes gaming reaction that stops scrolling immediately."
+    )
+    out2 = tmp_path / "c02_blur.ass"
+    generate_clip_ass(
+        clip2, transcript, out2, layout_name="blur-fill",
+        creator_name="IShowSpeed"
+    )
+    content2 = out2.read_text(encoding="utf-8")
+    assert "GTA 6 TRAILER 2" not in content2
+    assert "• ISHOWSPEED •" not in content2
+    assert "SPEED ESCAPES" in content2
+
+
+
+
 
 
 

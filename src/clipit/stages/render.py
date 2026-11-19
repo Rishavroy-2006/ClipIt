@@ -1,5 +1,7 @@
 """Render stage: Render vertical 1080x1920 MP4 clips with hardware acceleration, audio normalization, and subtitles."""
 
+import os
+import re
 import subprocess
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
@@ -10,6 +12,141 @@ from clipit.models import FullTranscript, ClipItem
 from clipit.stages.layout import get_layout_filter, detect_facecam_box, check_facecam_active
 from clipit.stages.captions import generate_clip_ass
 from clipit.stages.vision_reframing import analyze_clip_vision
+
+# Output args that strip container/stream metadata carried over from source VODs
+METADATA_SCRUB = [
+    "-map_metadata", "-1",
+    "-map_chapters", "-1",
+    "-map_metadata:s:v", "-1",
+    "-map_metadata:s:a", "-1",
+]
+
+
+
+def get_source_transcript_offset(
+    source_video: Path,
+    transcript: FullTranscript,
+    cache: CacheManager,
+    clip_start: float,
+    clip_end: Optional[float] = None,
+) -> float:
+    """Detect and return any timing offset (in seconds) between source.mp4 audio and transcript.json.
+
+    When VODs or live stream recordings are re-downloaded, concatenated, or container presentation
+    timestamps drift relative to the initial transcription, source.mp4 can have a non-zero timebase offset.
+    This function dynamically checks a 12-second audio sample of source.mp4 around a sequence of spoken words,
+    transcribes it, and calculates the robust median difference across matching words via difflib.SequenceMatcher.
+    If |offset| > 0.15s, it returns the offset so video/audio trimming aligns 100% with ASS subtitles.
+    Results are cached in timeline_offset.json for instantaneous subsequent renders.
+    """
+    if source_video.name.startswith("clip_source_"):
+        return 0.0
+
+    cached_calib = cache.load_json("timeline_offset.json")
+    if cached_calib and "offset" in cached_calib:
+        try:
+            return float(cached_calib["offset"])
+        except (ValueError, TypeError):
+            pass
+
+    try:
+        import difflib
+        import statistics
+
+        mid_pts = ((clip_start + clip_end) / 2.0) if clip_end and clip_end > clip_start else (clip_start + 15.0)
+
+        # Collect 10-15 words from transcript starting around mid_pts
+        trans_words = []
+        for seg in transcript.segments:
+            for w in seg.words:
+                if w.start >= mid_pts and len(trans_words) < 15:
+                    clean = re.sub(r"[^a-zA-Z]", "", w.w).lower()
+                    if len(clean) >= 3:
+                        trans_words.append((clean, w.start))
+            if len(trans_words) >= 15:
+                break
+
+        # Fallback to clip_start if mid_pts had no words
+        if not trans_words:
+            for seg in transcript.segments:
+                for w in seg.words:
+                    if w.start >= clip_start and len(trans_words) < 15:
+                        clean = re.sub(r"[^a-zA-Z]", "", w.w).lower()
+                        if len(clean) >= 3:
+                            trans_words.append((clean, w.start))
+                if len(trans_words) >= 15:
+                    break
+
+        if not trans_words:
+            return 0.0
+
+        # Extract a 14s slice around the first words
+        first_t = trans_words[0][1]
+        slice_start = max(0.0, first_t - 2.0)
+        temp_wav = cache.path(f"_sync_calib_{os.getpid()}.wav")
+        cmd = [
+            "ffmpeg", "-y",
+            "-ss", f"{slice_start:.3f}",
+            "-i", str(source_video.resolve()),
+            "-t", "14.0",
+            "-vn", "-ar", "16000", "-ac", "1",
+            str(temp_wav)
+        ]
+        subprocess.run(cmd, capture_output=True, check=True)
+
+        slice_words = []
+        try:
+            import mlx_whisper
+            res = mlx_whisper.transcribe(str(temp_wav), path_or_hf_repo="mlx-community/whisper-tiny", word_timestamps=True)
+            for seg in res.get("segments", []):
+                for w in seg.get("words", []):
+                    clean = re.sub(r"[^a-zA-Z]", "", w.get("word", "")).lower()
+                    if len(clean) >= 3:
+                        slice_words.append((clean, slice_start + float(w.get("start", 0.0))))
+        except Exception:
+            try:
+                from faster_whisper import WhisperModel
+                m = WhisperModel("tiny", device="cpu", compute_type="int8")
+                segs, _ = m.transcribe(str(temp_wav), word_timestamps=True)
+                for seg in segs:
+                    for w in seg.words:
+                        clean = re.sub(r"[^a-zA-Z]", "", w.word).lower()
+                        if len(clean) >= 3:
+                            slice_words.append((clean, slice_start + float(w.start)))
+            except Exception:
+                pass
+
+        if temp_wav.exists():
+            try:
+                temp_wav.unlink()
+            except Exception:
+                pass
+
+        t_tokens = [w[0] for w in trans_words]
+        s_tokens = [w[0] for w in slice_words]
+
+        matcher = difflib.SequenceMatcher(None, t_tokens, s_tokens)
+        diffs = []
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == "equal":
+                for k in range(i2 - i1):
+                    t_w, t_t = trans_words[i1 + k]
+                    s_w, s_t = slice_words[j1 + k]
+                    diff = s_t - t_t
+                    if abs(diff) < 5.0:  # Valid drift window
+                        diffs.append(diff)
+
+        if diffs:
+            median_diff = round(float(statistics.median(diffs)), 3)
+            # If offset is within 35ms (1 video frame), treat as zero
+            if abs(median_diff) <= 0.035:
+                median_diff = 0.0
+            cache.save_json("timeline_offset.json", {"offset": median_diff})
+            return median_diff
+    except Exception:
+        pass
+
+    return 0.0
 
 
 def get_source_stream_starts(source_video: Path) -> Tuple[float, float]:
@@ -118,6 +255,9 @@ def render_variant_file(
         import re
         clip.title = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", clip.title, flags=re.IGNORECASE).strip()
 
+    creator = info.get("uploader") or info.get("channel") or None
+    custom_topic = vision_info.get("topic") if vision_info else None
+
     generate_clip_ass(
         clip,
         transcript,
@@ -126,6 +266,8 @@ def render_variant_file(
         show_hook_banner=True,
         seam_y=seam_y if layout_name == "stack" else None,
         layout_name=layout_name,
+        creator_name=creator,
+        topic_name=custom_topic,
         text_position=text_pos,
         content_ratio=content_ratio,
         title_size=title_size,
@@ -148,21 +290,17 @@ def render_variant_file(
     clip_dur = max(0.1, clip.end - clip.start)
 
     # Input seeking with -copyts preserves container presentation timestamps (PTS).
-    # Live stream chunks (HLS / MPEG-TS) have non-zero container PTS where video_start often
-    # differs from audio_start (e.g. video_start = 3.050s, audio_start = 1.400s -> 1.650s skew).
     # Since audio.wav was extracted starting at sample 0 (at PTS audio_start), clip.start is relative to audio_start.
-    # To keep video, audio, and ASS kinetic subtitles in 100% microsecond lockstep:
-    #   - video trimming must start at (clip.start + video_start)
-    #   - audio trimming must start at (clip.start + audio_start)
-    video_start, audio_start = get_source_stream_starts(source_video)
-    video_target_pts = clip.start + video_start
-    audio_target_pts = clip.start + audio_start
-    fast_seek = max(0.0, min(video_target_pts, audio_target_pts) - 5.0)
+    # In MP4 and MPEG-TS containers, audio and video share the identical container presentation clock (PTS).
+    # Therefore, BOTH video and audio trimming must start at the exact same target PTS (clip.start + audio_start).
+    _, audio_start = get_source_stream_starts(source_video)
+    target_pts = clip.start + audio_start
+    fast_seek = max(0.0, target_pts - 5.0)
 
     # Force 1:1 square pixel aspect ratio via setsar=1 to avoid anamorphic container flags
     filter_complex = (
         f"{layout_filter};"
-        f"[base]trim=start={video_target_pts:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
+        f"[base]trim=start={target_pts:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
         f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v]"
     )
 
@@ -187,11 +325,11 @@ def render_variant_file(
         cmd.extend(["-crf", str(video_config.crf), "-preset", "fast"])
 
     audio_filter = (
-        f"atrim=start={audio_target_pts:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,"
+        f"atrim=start={target_pts:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,"
         f"aresample=async=1:first_pts=0,"
         f"highpass=f=80,equalizer=f=3000:t=q:w=1.5:g=2.5,"
         f"acompressor=threshold=-18dB:ratio=3:attack=10:release=120:makeup=2dB,"
-        f"loudnorm=I={video_config.audio_lufs}:LRA=9:TP=-1.0"
+        f"loudnorm=I={video_config.audio_lufs}:LRA=11:TP=-2.0"
     )
 
     cmd.extend([
@@ -201,8 +339,9 @@ def render_variant_file(
         "-af", audio_filter,
         "-avoid_negative_ts", "make_zero",
         "-movflags", "+faststart",
-        str(out_mp4.resolve()),
     ])
+    cmd.extend(METADATA_SCRUB)
+    cmd.append(str(out_mp4.resolve()))
 
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
@@ -224,11 +363,71 @@ def render_variant_file(
             "-af", audio_filter,
             "-avoid_negative_ts", "make_zero",
             "-movflags", "+faststart",
-            str(out_mp4.resolve()),
         ]
+        fallback_cmd.extend(METADATA_SCRUB)
+        fallback_cmd.append(str(out_mp4.resolve()))
         subprocess.run(fallback_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
+    # Post-render sync correction:
+    # H.264 VideoToolbox and B-frame encoders produce a container where the first video keyframe
+    # sits at a non-zero PTS (typically 1 frame = ~21ms at 47fps), while AAC audio starts at 0.
+    # Detect this offset and stream-copy remux to align both streams to PTS=0 without re-encoding.
+    _fix_av_start_offset(out_mp4)
+
     return out_mp4
+
+
+def _fix_av_start_offset(mp4_path: Path) -> None:
+    """Detect and fix video/audio start_time mismatch in a rendered MP4 via stream-copy remux.
+
+    This corrects the AAC/H.264 codec priming delay (typically ~21ms) where the video stream
+    starts at a non-zero PTS while audio starts at 0. The fix is a lossless stream-copy remux
+    using -itsoffset to advance audio by the video start offset, aligning both to PTS=0.
+    """
+    try:
+        import json as _json
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_streams", "-of", "json", str(mp4_path)],
+            capture_output=True, text=True, timeout=10
+        )
+        if probe.returncode != 0:
+            return
+        data = _json.loads(probe.stdout)
+        v_start = a_start = 0.0
+        for s in data.get("streams", []):
+            try:
+                if s.get("codec_type") == "video":
+                    v_start = float(s.get("start_time", 0))
+                elif s.get("codec_type") == "audio":
+                    a_start = float(s.get("start_time", 0))
+            except (ValueError, TypeError):
+                pass
+        offset = v_start - a_start
+        # Only apply if offset is meaningful (>5ms) — avoids unnecessary remux on already-aligned files
+        if abs(offset) < 0.005:
+            return
+        tmp_path = mp4_path.with_suffix(".tmp_sync.mp4")
+        # Delay audio by offset seconds so it aligns with the video stream start
+        # Then -avoid_negative_ts make_zero normalises both streams to start at PTS=0
+        remux_cmd = [
+            "ffmpeg", "-y",
+            "-i", str(mp4_path),
+            "-itsoffset", f"{offset:.6f}",
+            "-i", str(mp4_path),
+            "-map", "0:v", "-map", "1:a",
+            "-c", "copy",
+            "-avoid_negative_ts", "make_zero",
+            "-movflags", "+faststart",
+        ]
+        remux_cmd.extend(METADATA_SCRUB)
+        remux_cmd.append(str(tmp_path))
+        result = subprocess.run(remux_cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode == 0 and tmp_path.exists() and tmp_path.stat().st_size > 100_000:
+            tmp_path.replace(mp4_path)
+        elif tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+    except Exception:
+        pass  # Never crash render on sync correction failure — the rendered file is still valid
 
 
 def render_single_clip(
@@ -256,15 +455,19 @@ def render_single_clip(
     if clip.title:
         import re
         clip.title = re.sub(r"^\[?Part\s*\d+\]?:?\s*", "", clip.title, flags=re.IGNORECASE).strip()
-    has_facecam = vision_info.get("has_facecam", bool(face_box))
-
-    # Inherit global facecam coordinates from cache if local frame was ambiguous
-    if not has_facecam:
-        global_fc = cache.load_json("facecam.json") or {}
-        if global_fc.get("has_facecam"):
-            has_facecam = True
-            if "streamer_box" not in vision_info and "streamer_box" in global_fc:
-                vision_info["streamer_box"] = global_fc["streamer_box"]
+    if "has_facecam" in vision_info:
+        has_facecam = bool(vision_info["has_facecam"])
+    else:
+        has_facecam = bool(face_box)
+        # Inherit global facecam coordinates from cache if local frame was ambiguous
+        if not has_facecam:
+            global_fc = cache.load_json("facecam.json") or {}
+            if global_fc.get("has_facecam"):
+                has_facecam = True
+                if "streamer_box" not in vision_info and "streamer_box" in global_fc:
+                    vision_info["streamer_box"] = global_fc["streamer_box"]
+                elif "streamer_box" not in vision_info and "box" in global_fc:
+                    vision_info["streamer_box"] = global_fc["box"]
 
     variants_list: List[Dict[str, Any]] = []
 
