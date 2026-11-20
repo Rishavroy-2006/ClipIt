@@ -92,6 +92,10 @@ class VideoConfig(BaseModel):
     final_codec: str = "libx264"
     crf: int = 18
     audio_lufs: float = -14.0
+    audio_hook_enabled: bool = True
+    audio_hook_voice: str = "en-US-ChristopherNeural"
+    audio_hook_rate: str = "+15%"
+    audio_hook_ducking: float = 0.35
 
     @model_validator(mode="after")
     def resolve_codec(self):

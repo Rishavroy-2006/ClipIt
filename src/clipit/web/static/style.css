@@ -4237,6 +4237,60 @@ input[type=url]:focus {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
+/* Entry Spoken Audio Hook Bar */
+.audio-hook-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 12px 0 14px;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.audio-hook-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audio-hook-icon {
+  font-size: 1.35rem;
+}
+
+.audio-hook-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #fde68a;
+}
+
+.audio-hook-desc {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.audio-hook-select {
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.audio-hook-select:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
 .live-sentinel-bar {
   display: flex;
   align-items: center;

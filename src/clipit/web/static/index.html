@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Hanken+Grotesk:wght@400;500;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261118_5" />
+  <link rel="stylesheet" href="style.css?v=20261120_6" />
 </head>
 
 <body>
@@ -86,6 +86,26 @@
                 <button type="button" class="cam-opt" data-cam="none">No Facecam</button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Entry Spoken Audio Hook -->
+        <div class="audio-hook-bar" id="audioHookBar">
+          <div class="audio-hook-info">
+            <span class="audio-hook-icon">🎙️</span>
+            <div>
+              <div class="audio-hook-title">Spoken Entry Audio Hook (AI Voiceover)</div>
+              <div class="audio-hook-desc">Speaks catchy viral hook title at start with background stream audio ducking.</div>
+            </div>
+          </div>
+          <div class="audio-hook-controls">
+            <select id="audioHookVoice" class="audio-hook-select" aria-label="Audio Hook Voice">
+              <option value="en-US-ChristopherNeural" selected>⚡ Christopher (Energetic Viral)</option>
+              <option value="en-US-AndrewNeural">🔥 Andrew (Warm / Confident)</option>
+              <option value="en-US-GuyNeural">🎙️ Guy (Streamer / Casual)</option>
+              <option value="en-US-JennyNeural">✨ Jenny (Bright / Punchy)</option>
+              <option value="off">🚫 Disabled (No Audio Hook)</option>
+            </select>
           </div>
         </div>
 
@@ -722,6 +742,22 @@
             </div>
           </div>
 
+          <!-- Spoken Entry Audio Hook in Crop Editor -->
+          <div class="crop-ctrl-group" id="cropAudioHookGroup">
+            <div class="crop-slider-header">
+              <label for="cropAudioHookVoice">🎙️ Spoken Entry Audio Hook</label>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+              <select id="cropAudioHookVoice" class="audio-hook-select" style="flex:1;width:100%;" aria-label="Spoken Audio Hook Voice">
+                <option value="en-US-ChristopherNeural" selected>⚡ Christopher (Energetic Viral)</option>
+                <option value="en-US-AndrewNeural">🔥 Andrew (Warm / Confident)</option>
+                <option value="en-US-GuyNeural">🎙️ Guy (Streamer / Casual)</option>
+                <option value="en-US-JennyNeural">✨ Jenny (Bright / Punchy)</option>
+                <option value="off">🚫 Disabled (No Audio Hook)</option>
+              </select>
+            </div>
+          </div>
+
           <div class="crop-ai-hint" id="cropAiHint">
             <span class="hint-icon">⚡</span>
             <span id="cropAiHintText">Facecam positioned at Bottom-Left corner.</span>
@@ -902,7 +938,7 @@
   </div>
 
   <div id="toast" role="status"></div>
-  <script src="app.js?v=20261118_5"></script>
+  <script src="app.js?v=20261120_6"></script>
   <!-- impeccable-live-start -->
   <script src="http://localhost:8400/live.js?token=89a1bd76-c60f-40ad-9f96-850a065f29a8"></script>
   <!-- impeccable-live-end -->

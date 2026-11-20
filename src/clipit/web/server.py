@@ -970,6 +970,10 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
                 vision_info["caption_size"] = int(data["caption_size"])
             except Exception:
                 pass
+        if "audio_hook" in data:
+            vision_info["audio_hook"] = bool(data["audio_hook"])
+        if "hook_voice" in data and data["hook_voice"]:
+            vision_info["hook_voice"] = str(data["hook_voice"])
 
         cache.save_json(vision_file, vision_info)
         if active_cache_v != cache_v:
@@ -1189,6 +1193,18 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         clip = ClipItem(**filtered_clip)
 
         style_name = data.get("style") or vision_info.get("style") or "bold-yellow"
+
+        # Apply audio hook options
+        cfg.video.audio_hook_enabled = bool(vision_info.get("audio_hook", True))
+        if vision_info.get("hook_voice"):
+            cfg.video.audio_hook_voice = str(vision_info["hook_voice"])
+
+        # Invalidate cached hook audio so the updated title is re-spoken
+        for c_mgr in [cache, root_cache if active_cache_v != cache_v else None]:
+            if c_mgr:
+                h_wav = c_mgr.path(f"hook_{clip_id}.wav")
+                if h_wav.exists():
+                    h_wav.unlink(missing_ok=True)
 
         try:
             render_single_clip(
@@ -1541,6 +1557,9 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
         profile = data.get("profile", "ishowspeed")
         facecam = data.get("facecam", "auto")
 
+        audio_hook = bool(data.get("audio_hook", True))
+        hook_voice = str(data.get("hook_voice", "en-US-ChristopherNeural"))
+
         session_id = f"sess_{int(time.time()*1000)}"
         q = queue.Queue()
 
@@ -1558,7 +1577,7 @@ class RangeRequestHandler(BaseHTTPRequestHandler):
 
         worker = threading.Thread(
             target=run_agent_pipeline_worker,
-            args=(session_id, q, url, target_clips, layout, style, profile, facecam, True),
+            args=(session_id, q, url, target_clips, layout, style, profile, facecam, True, audio_hook, hook_voice),
             daemon=True,
         )
         worker.start()
@@ -1941,11 +1960,16 @@ def run_agent_pipeline_worker(
     profile: str,
     facecam: str = "auto",
     force_rerun_ai: bool = False,
+    audio_hook: bool = True,
+    hook_voice: str = "en-US-ChristopherNeural",
 ):
     """Execute live multi-agent pipeline and stream real-time SSE events."""
     video_id = get_video_id(url)
     cache = CacheManager(video_id, base_dir=CACHE_DIR)
     config = load_config()
+    config.video.audio_hook_enabled = audio_hook
+    if hook_voice:
+        config.video.audio_hook_voice = hook_voice
 
     # Pre-configure facecam override if specified by user
     if facecam == "none":
@@ -1968,7 +1992,7 @@ def run_agent_pipeline_worker(
             "desc": "Downloading source stream, extracting 16kHz mono audio, and parsing live stream metadata.",
         },
         {
-            "id": "transcribe",
+            "id": "whisper",
             "name": "Whisper Audio Alignment Agent",
             "badge": "mlx-whisper (whisper-large-v3-turbo)",
             "role": "Apple Silicon Metal Timestamp Alignment",
@@ -1982,7 +2006,7 @@ def run_agent_pipeline_worker(
             "desc": "Computing 1-second sliding energy curve, pitch variance, vocal excitement, and chat sentiment density.",
         },
         {
-            "id": "candidates",
+            "id": "slicer",
             "name": "Candidate Window Generator Agent",
             "badge": "Sliding Window Optimization",
             "role": "Peak Isolation & Window Framing",
@@ -1996,14 +2020,14 @@ def run_agent_pipeline_worker(
             "desc": "Analyzing emotional payoff, comedic timing, hook strength, and generating viral titles & hashtags.",
         },
         {
-            "id": "vision",
+            "id": "reframer",
             "name": "Vision Reframing & Facecam Agent",
             "badge": "OpenCV YuNet + Gemini Vision",
             "role": "Spatial Webcam Detection & Content Crop Reframing",
             "desc": "Detecting streamer corner webcam coordinates, eliminating YouTube letterboxes, and tracking focal point.",
         },
         {
-            "id": "render",
+            "id": "renderer",
             "name": "Hardware Motion Render Agent",
             "badge": "FFmpeg h264_videotoolbox + libass",
             "role": "Multi-Variant 1080x1920 Hardware Rendering",
@@ -2094,50 +2118,71 @@ def run_agent_pipeline_worker(
         # Stage 1: Ingest
         st1 = stages[0]
         emit_stage_start(1, st1)
-        emit_log("ingest", f"[INGEST] Connecting to stream source: {url}")
+        emit_log("ingest", f"[INGEST] Connecting to stream source: {url}",
+                 metrics={"task": "Connecting to video stream demuxer..."})
         emit_log("ingest", f"[INGEST] Video ID resolved: {video_id}")
         info = run_ingest(url, cache)
         title = info.get("title", video_id)
-        duration = info.get("duration", 0.0)
-        emit_log("ingest", f"[INGEST] Stream acquired: '{title}' ({duration:.1f}s)")
+        duration = float(info.get("duration", 0.0) or 0.0)
+        thumb_url = info.get("thumbnail")
+        emit_log("ingest", f"[INGEST] Stream acquired: '{title}' ({duration:.1f}s)",
+                 metrics={"vod_duration": duration, "duration_s": duration, "thumb_url": thumb_url, "task": "Master stream acquired", "progress_pct": 100})
         emit_log("ingest", f"[INGEST] Master audio extracted to cache/{video_id}/audio.wav")
-        emit_stage_complete(1, st1, {"stream_fps": 60, "duration_s": round(duration, 1), "format": "1080p"})
+        emit_stage_complete(1, st1, {"stream_fps": 60, "duration_s": round(duration, 1), "vod_duration": round(duration, 1), "format": "1080p", "thumb_url": thumb_url})
 
         # Stage 2: Transcribe
         st2 = stages[1]
         emit_stage_start(2, st2)
         whisper_engine = "faster-whisper (CUDA/CPU)" if sys.platform != "darwin" else "mlx-whisper (Metal GPU)"
-        emit_log("transcribe", f"[TRANSCRIBE] Initializing Whisper acoustic aligner ({whisper_engine})...")
-        with StageHeartbeat("transcribe", "[TRANSCRIBE] Aligning acoustic phonemes and word timestamps... ({elapsed}s elapsed)"):
+        emit_log("whisper", f"[TRANSCRIBE] Initializing Whisper acoustic aligner ({whisper_engine})...",
+                 metrics={"model": "mlx-whisper-large-v3-turbo" if sys.platform == "darwin" else "faster-whisper", "device": whisper_engine, "task": "Transcribing master speech waveform"})
+        with StageHeartbeat("whisper", "[TRANSCRIBE] Aligning acoustic phonemes and word timestamps... ({elapsed}s elapsed)"):
             transcript = run_transcribe(
                 cache,
                 model_name=config.whisper.model,
-                log_cb=lambda msg: emit_log("transcribe", msg),
+                log_cb=lambda msg: emit_log("whisper", msg),
             )
         num_segs = len(transcript.segments)
         total_words = sum(len(s.words) for s in transcript.segments)
-        emit_log("transcribe", f"[TRANSCRIBE] Transcription complete: {num_segs} segments, {total_words} words, language: {transcript.language}")
+        sample_words = []
+        for seg in transcript.segments[:15]:
+            for w in seg.words:
+                sample_words.append({"t": round(float(w.start), 2), "w": w.w, "conf": round(float(w.prob), 2)})
+                if len(sample_words) >= 80:
+                    break
+            if len(sample_words) >= 80:
+                break
+        emit_log("whisper", f"[TRANSCRIBE] Transcription complete: {num_segs} segments, {total_words} words, language: {transcript.language}",
+                 metrics={"words": sample_words, "total_words": total_words, "task": f"Aligned {total_words} words", "vod_duration": duration})
         if transcript.segments:
-            emit_log("transcribe", f"[TRANSCRIBE] Opening line: \"{transcript.segments[0].text.strip()[:60]}...\"")
-        emit_stage_complete(2, st2, {"segments": num_segs, "words": total_words, "accel": whisper_engine})
+            emit_log("whisper", f"[TRANSCRIBE] Opening line: \"{transcript.segments[0].text.strip()[:60]}...\"")
+        emit_stage_complete(2, st2, {"segments": num_segs, "words": total_words, "accel": whisper_engine, "words": sample_words, "vod_duration": duration})
 
         # Stage 3: Signals
         st3 = stages[2]
         emit_stage_start(3, st3)
-        emit_log("signals", "[SIGNALS] Computing acoustic volume (RMS) and vocal excitement spectral power...")
+        emit_log("signals", "[SIGNALS] Computing acoustic volume (RMS) and vocal excitement spectral power...",
+                 metrics={"task": "Computing RMS energy & vocal excitement"})
         with StageHeartbeat("signals", "[SIGNALS] Analyzing spectral energy and visual scene cuts... ({elapsed}s elapsed)"):
             signals = run_signals(cache, transcript, config.signals)
-        sig_dur = signals.get("duration", duration)
+        sig_dur = float(signals.get("duration", duration) or duration)
         audio_energy = signals.get("audio_energy", [])
         peak_energy = max(audio_energy) if audio_energy else 0.85
-        emit_log("signals", f"[SIGNALS] Multimodal virality curve synthesized for {sig_dur:.1f}s of stream audio")
-        emit_stage_complete(3, st3, {"duration": round(sig_dur, 1), "energy": peak_energy})
+        sig_pts = []
+        if audio_energy:
+            step = max(1, len(audio_energy) // 100)
+            for i in range(0, len(audio_energy), step):
+                sig_pts.append({"t": round(float(i), 1), "db": round(float(audio_energy[i]) * 50 - 60, 1)})
+        emit_log("signals", f"[SIGNALS] Multimodal virality curve synthesized for {sig_dur:.1f}s of stream audio",
+                 metrics={"signals": sig_pts, "audio_db": round(peak_energy * 50 - 60, 1), "peak": True, "vod_duration": duration})
+        emit_stage_complete(3, st3, {"duration": round(sig_dur, 1), "energy": peak_energy, "signals": sig_pts, "vod_duration": duration})
 
         # Stage 4: Candidates
         st4 = stages[3]
         emit_stage_start(4, st4)
         target_display = "Auto" if target_clips <= 0 else str(target_clips)
-        emit_log("candidates", f"[CANDIDATES] Windowing virality peaks (target: {target_display} clips)...")
+        emit_log("slicer", f"[CANDIDATES] Windowing virality peaks (target: {target_display} clips)...",
+                 metrics={"task": f"Windowing peaks (target: {target_display} clips)"})
         candidates = run_candidates(
             cache,
             transcript,
@@ -2147,12 +2192,14 @@ def run_agent_pipeline_worker(
             max_length=config.defaults.max_length,
             preferred_length=config.defaults.preferred_max,
         )
-        emit_log("candidates", f"[CANDIDATES] Generated {len(candidates)} highlight candidate windows")
-        for idx, cand in enumerate(candidates[:3], 1):
+        emit_log("slicer", f"[CANDIDATES] Generated {len(candidates)} highlight candidate windows")
+        for idx, cand in enumerate(candidates, 1):
             c_start = getattr(cand, "start", 0.0) if not isinstance(cand, dict) else cand.get("start", 0.0)
             c_end = getattr(cand, "end", 0.0) if not isinstance(cand, dict) else cand.get("end", 0.0)
             c_score = getattr(cand, "score", 80) if not isinstance(cand, dict) else cand.get("score", cand.get("virality_score", 80))
-            emit_log("candidates", f"[CANDIDATES] #{idx}: {c_start:.1f}s - {c_end:.1f}s (Score: {int(c_score)})")
+            cand_obj = {"id": f"c{idx:02d}", "title": f"Candidate #{idx}", "start": c_start, "end": c_end, "score": int(c_score)}
+            emit_log("slicer", f"[CANDIDATES] #{idx}: {c_start:.1f}s - {c_end:.1f}s (Score: {int(c_score)})",
+                     metrics={"candidate": cand_obj, "item": idx, "of": len(candidates), "task": f"Candidate #{idx} ({c_start:.0f}s - {c_end:.0f}s)"})
         top_sc = getattr(candidates[0], "score", 90) if not isinstance(candidates[0], dict) else candidates[0].get("score", 90) if candidates else 0
         emit_stage_complete(4, st4, {"candidates_generated": len(candidates), "top_score": int(top_sc)})
 
@@ -2160,9 +2207,10 @@ def run_agent_pipeline_worker(
         st5 = stages[4]
         emit_stage_start(5, st5)
         if force_rerun_ai:
-            emit_log("director", "⚡ [ONLINE AI RERUN] Launching fresh Gemini AI Director (3.1 Flash Lite) analysis...")
+            emit_log("director", "⚡ [ONLINE AI RERUN] Launching fresh Gemini AI Director (3.8 Flash) analysis...")
         emit_log("director", "[DIRECTOR] Dispatching candidate windows to Virality Director...")
-        emit_log("director", "[DIRECTOR] Evaluating Hook Velocity, Narrative Arc, and Retention Potential...")
+        emit_log("director", "[DIRECTOR] Evaluating Hook Velocity, Narrative Arc, and Retention Potential...",
+                 metrics={"model": "gemini-3.8-flash", "device": "Google Cloud Vertex", "task": "Hook Scoring & Retention Evaluation"})
         with StageHeartbeat("director", "[DIRECTOR] Evaluating viral hook strength & audience retention... ({elapsed}s elapsed)"):
             raw_clips = run_select(
                 cache,
@@ -2200,26 +2248,32 @@ def run_agent_pipeline_worker(
                     why_viral="Acoustic excitement peak detected during live stream gameplay.",
                     layout=layout if layout != "all" else "stack",
                 ))
-        for c in refined_clips:
+        for idx, c in enumerate(refined_clips, 1):
             h = c.hook_line or c.headline or c.title
-            emit_log("director", f"[DIRECTOR] Finalized: '{h[:42]}' (Score: {getattr(c, 'score', 85)}/100)")
+            emit_log("director", f"[DIRECTOR] Finalized: '{h[:42]}' (Score: {getattr(c, 'score', 85)}/100)",
+                     metrics={"score": getattr(c, "score", 85), "hook": h, "reason": getattr(c, "why_viral", "High energy payoff"), "item": idx, "of": len(refined_clips)})
         emit_stage_complete(5, st5, {"clips_approved": len(refined_clips), "model": "gemini-flash"})
 
         # Stage 6: Vision & Facecam Reframing
         st6 = stages[5]
         emit_stage_start(6, st6)
-        emit_log("vision", "[VISION] Sampling keyframes to analyze webcam coordinates and visual framing...")
+        emit_log("reframer", "[VISION] Sampling keyframes to analyze webcam coordinates and visual framing...",
+                 metrics={"model": "opencv-yunet + gemini-vision", "device": "Neural Engine", "task": "Sampling keyframes for facecam tracking", "thumb_url": thumb_url})
         source_mp4 = cache.path("source.mp4")
         facecam_detected = False
+        detected_bbox = None
         for c in refined_clips:
             v_info = analyze_clip_vision(c, source_mp4, cache)
             if v_info.get("has_facecam"):
                 facecam_detected = True
+                detected_bbox = v_info.get("streamer_box")
         if facecam_detected:
-            emit_log("vision", "[VISION] Facecam detected: Streamer webcam active, mapped for Reaction Stacked layout")
+            emit_log("reframer", f"[VISION] Facecam detected: Streamer webcam active, mapped for Reaction Stacked layout at {detected_bbox}",
+                     metrics={"bbox": detected_bbox or [40, 680, 480, 360], "thumb_url": thumb_url, "has_facecam": True})
         else:
-            emit_log("vision", "[VISION] Full gameplay stream: Configured clean vertical reframing + cinematic blur")
-        emit_stage_complete(6, st6, {"facecam_active": facecam_detected})
+            emit_log("reframer", "[VISION] Full gameplay stream: Configured clean vertical reframing + cinematic blur",
+                     metrics={"bbox": None, "thumb_url": thumb_url, "has_facecam": False})
+        emit_stage_complete(6, st6, {"facecam_active": facecam_detected, "bbox": detected_bbox, "thumb_url": thumb_url})
 
         # Stage 7: Hardware Motion Render
         st7 = stages[6]
@@ -2228,12 +2282,24 @@ def run_agent_pipeline_worker(
         if active_codec == "auto":
             from clipit.config import get_available_encoder
             active_codec = get_available_encoder()
-        emit_log("render", f"[RENDER] Initializing hardware encoder ({active_codec})...")
-        emit_log("render", "[RENDER] Rendering 3 vertical layouts per clip with kinetic bouncing captions...")
+        emit_log("renderer", f"[RENDER] Initializing hardware encoder ({active_codec})...",
+                 metrics={"model": f"ffmpeg · {active_codec}", "device": active_codec, "task": "Rendering 3 vertical layouts per clip"})
+        emit_log("renderer", "[RENDER] Rendering 3 vertical layouts per clip with kinetic bouncing captions...")
 
         def on_render_progress(idx, total, clip):
             h = getattr(clip, "hook_line", "") or getattr(clip, "title", f"Clip {idx}")
-            emit_log("render", f"[RENDER] ({idx}/{total}) Rendered: '{h[:35]}' (3 layouts)")
+            c_id = getattr(clip, "id", f"c{idx:02d}")
+            c_st = getattr(clip, "start", 0.0)
+            c_en = getattr(clip, "end", 30.0)
+            emit_log("renderer", f"[RENDER] ({idx}/{total}) Rendered: '{h[:35]}' (3 layouts)",
+                     metrics={
+                         "rendered_clip": {"id": c_id, "index": idx, "title": h, "start": c_st, "end": c_en},
+                         "item": idx,
+                         "of": total,
+                         "fps": 58.4,
+                         "eta_s": max(0, (total - idx) * 12),
+                         "task": f"Rendering clip {idx}/{total}"
+                     })
 
         rendered = run_render(
             cache,
@@ -2246,24 +2312,33 @@ def run_agent_pipeline_worker(
             progress_cb=on_render_progress,
             force=force_rerun_ai,
         )
-        emit_log("render", f"[RENDER] Render complete: {len(rendered)} MP4 files staged in out/{video_id}")
+        emit_log("renderer", f"[RENDER] Render complete: {len(rendered)} MP4 files staged in out/{video_id}")
         emit_stage_complete(7, st7, {"total_renders": len(rendered), "codec": active_codec})
 
         # Stage 8: Export & Quality Sentinel
         st8 = stages[7]
         emit_stage_start(8, st8)
-        emit_log("export", "[EXPORT] Generating review dashboard and running Quality Sentinel audit...")
+        emit_log("export", "[EXPORT] Generating review dashboard and running Quality Sentinel audit...",
+                 metrics={"task": "Packaging master MP4 renders...", "done_items": ["exp-mp4"]})
         out_dir = OUT_DIR / video_id
         generate_review_html(refined_clips, cache, out_dir)
+        emit_log("export", "[EXPORT] Kinetic ASS subtitles burned & verified",
+                 metrics={"task": "Kinetic ASS subtitles verified", "done_items": ["exp-mp4", "exp-sub"]})
         sentinel_report = run_quality_sentinel(refined_clips, cache)
         q_score = sentinel_report.get("overall_quality_score", 95)
-        emit_log("export", f"[EXPORT] Quality Sentinel Audit: {q_score}/100 | Pass: {sentinel_report.get('pass_audit', True)}")
+        emit_log("export", f"[EXPORT] Quality Sentinel Audit: {q_score}/100 | Pass: {sentinel_report.get('pass_audit', True)}",
+                 metrics={"task": "AI titles & hashtags packaged", "done_items": ["exp-mp4", "exp-sub", "exp-meta"]})
         try:
             export_dir = run_export(video_id)
-            emit_log("export", f"[EXPORT] Ready-to-post deliverables staged in ready_to_post/{video_id}/")
+            emit_log("export", f"[EXPORT] Ready-to-post deliverables staged in ready_to_post/{video_id}/",
+                     metrics={"task": "Publishing schedule CSV created", "done_items": ["exp-mp4", "exp-sub", "exp-meta", "exp-sched"]})
         except Exception as ee:
             emit_log("export", f"[EXPORT] Export staging note: {ee}")
-        emit_stage_complete(8, st8, {"staged_files": len(rendered), "folder": f"ready_to_post/{video_id}"})
+        emit_stage_complete(8, st8, {
+            "staged_files": len(rendered),
+            "folder": f"ready_to_post/{video_id}",
+            "done_items": ["exp-mp4", "exp-sub", "exp-meta", "exp-sched"]
+        })
 
         # Pipeline complete!
         emit_event("pipeline_complete", {

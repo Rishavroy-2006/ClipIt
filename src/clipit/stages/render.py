@@ -213,6 +213,7 @@ def render_variant_file(
     face_box: Optional[Tuple[int, int, int, int]] = None,
     style_name: str = "bold-yellow",
     vision_info: Optional[Dict[str, Any]] = None,
+    hook_audio: Optional[Path] = None,
     force: bool = False,
 ) -> Path:
     """Render a specific layout variant of a clip."""
@@ -297,21 +298,63 @@ def render_variant_file(
     target_pts = clip.start + audio_start
     fast_seek = max(0.0, target_pts - 5.0)
 
-    # Force 1:1 square pixel aspect ratio via setsar=1 to avoid anamorphic container flags
-    filter_complex = (
-        f"{layout_filter};"
-        f"[base]trim=start={target_pts:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
-        f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v]"
-    )
+    # Audio hook (spoken title entry hook) resolution & ducking
+    hook_dur = 0.0
+    if hook_audio is None and getattr(video_config, "audio_hook_enabled", True):
+        from clipit.stages.audio_hook import get_or_generate_audio_hook, get_hook_duration
+        topic = custom_topic or "GTA 6"
+        voice = getattr(video_config, "audio_hook_voice", "en-US-ChristopherNeural")
+        rate = getattr(video_config, "audio_hook_rate", "+15%")
+        hook_audio = get_or_generate_audio_hook(
+            clip=clip, cache=cache, topic=topic, voice=voice, rate=rate
+        )
 
-    cmd = [
-        "ffmpeg", "-y",
+    if hook_audio and hook_audio.exists():
+        from clipit.stages.audio_hook import get_hook_duration
+        hook_dur = get_hook_duration(hook_audio)
+
+    inputs = [
         "-ss", f"{fast_seek:.3f}",
         "-copyts",
         "-i", str(source_video.resolve()),
+    ]
+
+    # Force 1:1 square pixel aspect ratio via setsar=1 to avoid anamorphic container flags
+    if hook_audio and hook_audio.exists() and hook_dur > 0.2:
+        inputs.extend(["-i", str(hook_audio.resolve())])
+        duck_vol = getattr(video_config, "audio_hook_ducking", 0.35)
+        filter_complex = (
+            f"{layout_filter};"
+            f"[base]trim=start={target_pts:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
+            f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v];"
+            f"[0:a]atrim=start={target_pts:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0,"
+            f"volume=enable='between(t,0,{hook_dur:.2f})':volume={duck_vol:.2f},"
+            f"volume=enable='between(t,{hook_dur:.2f},{hook_dur+0.35:.2f})':volume=0.75[stream_ducked];"
+            f"[1:a]asetpts=PTS-STARTPTS,aresample=48000,highpass=f=80,equalizer=f=3200:t=q:w=1.2:g=3.0,volume=1.35[hook_clean];"
+            f"[stream_ducked][hook_clean]amix=inputs=2:duration=first:dropout_transition=1,"
+            f"highpass=f=80,equalizer=f=3000:t=q:w=1.5:g=2.5,"
+            f"acompressor=threshold=-18dB:ratio=3:attack=10:release=120:makeup=2dB,"
+            f"loudnorm=I={video_config.audio_lufs}:LRA=11:TP=-2.0[a]"
+        )
+        audio_map = "[a]"
+    else:
+        filter_complex = (
+            f"{layout_filter};"
+            f"[base]trim=start={target_pts:.3f}:duration={clip_dur:.3f},setpts=PTS-STARTPTS,"
+            f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}',setsar=1,setpts=PTS-STARTPTS[v];"
+            f"[0:a]atrim=start={target_pts:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0,"
+            f"highpass=f=80,equalizer=f=3000:t=q:w=1.5:g=2.5,"
+            f"acompressor=threshold=-18dB:ratio=3:attack=10:release=120:makeup=2dB,"
+            f"loudnorm=I={video_config.audio_lufs}:LRA=11:TP=-2.0[a]"
+        )
+        audio_map = "[a]"
+
+    cmd = [
+        "ffmpeg", "-y",
+        *inputs,
         "-filter_complex", filter_complex,
         "-map", "[v]",
-        "-map", "0:a?",
+        "-map", audio_map,
         "-c:v", codec,
     ]
 
@@ -324,19 +367,10 @@ def render_variant_file(
     else:
         cmd.extend(["-crf", str(video_config.crf), "-preset", "fast"])
 
-    audio_filter = (
-        f"atrim=start={target_pts:.3f}:duration={clip_dur:.3f},asetpts=PTS-STARTPTS,"
-        f"aresample=async=1:first_pts=0,"
-        f"highpass=f=80,equalizer=f=3000:t=q:w=1.5:g=2.5,"
-        f"acompressor=threshold=-18dB:ratio=3:attack=10:release=120:makeup=2dB,"
-        f"loudnorm=I={video_config.audio_lufs}:LRA=11:TP=-2.0"
-    )
-
     cmd.extend([
         "-c:a", "aac",
         "-b:a", "192k",
         "-ar", "48000",
-        "-af", audio_filter,
         "-avoid_negative_ts", "make_zero",
         "-movflags", "+faststart",
     ])
@@ -349,18 +383,15 @@ def render_variant_file(
         # Fallback to libx264 if videotoolbox fails on an edge case
         fallback_cmd = [
             "ffmpeg", "-y",
-            "-ss", f"{fast_seek:.3f}",
-            "-copyts",
-            "-i", str(source_video.resolve()),
+            *inputs,
             "-filter_complex", filter_complex,
             "-map", "[v]",
-            "-map", "0:a?",
+            "-map", audio_map,
             "-c:v", "libx264",
             "-crf", "18", "-preset", "fast",
             "-c:a", "aac",
             "-b:a", "192k",
             "-ar", "48000",
-            "-af", audio_filter,
             "-avoid_negative_ts", "make_zero",
             "-movflags", "+faststart",
         ]
@@ -471,13 +502,24 @@ def render_single_clip(
 
     variants_list: List[Dict[str, Any]] = []
 
+    # Audio entry hook resolution: generate punchy spoken title hook once per clip
+    hook_audio = None
+    if getattr(video_config, "audio_hook_enabled", True):
+        from clipit.stages.audio_hook import get_or_generate_audio_hook
+        topic = (vision_info.get("topic") if vision_info else None) or "GTA 6"
+        voice = getattr(video_config, "audio_hook_voice", "en-US-ChristopherNeural")
+        rate = getattr(video_config, "audio_hook_rate", "+15%")
+        hook_audio = get_or_generate_audio_hook(
+            clip=clip, cache=cache, topic=topic, voice=voice, rate=rate, force=force
+        )
+
     # Variant 1: Stacked Reaction (Streamer top, content bottom, captions across seam)
     p1 = output_dir / f"{clip.id}.mp4"
     render_variant_file(
         clip=clip, source_video=source_video, out_mp4=p1, layout_name="stack",
         transcript=transcript, cache=cache, video_config=video_config,
         codec=codec, fonts_dir=fonts_dir, face_box=face_box, style_name=style_name, vision_info=vision_info,
-        force=force,
+        hook_audio=hook_audio, force=force,
     )
     variants_list.append({
         "id": "stack",
@@ -494,7 +536,7 @@ def render_single_clip(
             clip=clip, source_video=source_video, out_mp4=p2, layout_name="blur-fill",
             transcript=transcript, cache=cache, video_config=video_config,
             codec=codec, fonts_dir=fonts_dir, face_box=face_box, style_name=style_name, vision_info=vision_info,
-            force=force,
+            hook_audio=hook_audio, force=force,
         )
         variants_list.append({
             "id": "blur-fill",
@@ -510,7 +552,7 @@ def render_single_clip(
             clip=clip, source_video=source_video, out_mp4=p3, layout_name="reframed",
             transcript=transcript, cache=cache, video_config=video_config,
             codec=codec, fonts_dir=fonts_dir, face_box=face_box, style_name=style_name, vision_info=vision_info,
-            force=force,
+            hook_audio=hook_audio, force=force,
         )
         variants_list.append({
             "id": "reframed",
@@ -524,6 +566,10 @@ def render_single_clip(
     clip_dict = clip.model_dump()
     clip_dict["has_facecam"] = has_facecam
     clip_dict["variants"] = variants_list
+    clip_dict["has_audio_hook"] = bool(hook_audio and hook_audio.exists())
+    if hook_audio and hook_audio.exists():
+        from clipit.stages.audio_hook import clean_spoken_hook
+        clip_dict["spoken_hook"] = clean_spoken_hook(clip.title, topic=(vision_info.get("topic") if vision_info else "GTA 6"))
     out_json = output_dir / f"{clip.id}.json"
     with open(out_json, "w", encoding="utf-8") as f:
         import json

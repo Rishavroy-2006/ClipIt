@@ -469,6 +469,8 @@ $('#launch').onclick = async () => {
     return toast('Enter a valid stream URL starting with https://');
   }
   const isSentinel = $('#liveModeToggle') && $('#liveModeToggle').checked;
+  const hookVoice = $('#audioHookVoice') ? $('#audioHookVoice').value : 'en-US-ChristopherNeural';
+  const hasAudioHook = hookVoice !== 'off';
   $('#launch').disabled = true;
   try {
     const targetPayload = S.target === 'auto' ? 0 : S.target;
@@ -491,7 +493,9 @@ $('#launch').onclick = async () => {
         layout: S.layout,
         style: $('#style').value,
         profile: S.profile,
-        facecam: $('#face').value
+        facecam: $('#face').value,
+        audio_hook: hasAudioHook,
+        hook_voice: hookVoice
       });
       startRun(r.session_id, url);
     }
@@ -561,6 +565,32 @@ function resetPipelineState() {
   S.pipelineEvents = [];
 }
 
+const STAGE_KEYS = ['ingest', 'whisper', 'signals', 'slicer', 'director', 'reframer', 'renderer', 'export'];
+
+const STAGE_ALIASES = {
+  'ingest': 'ingest',
+  'demux': 'ingest',
+  'transcribe': 'whisper',
+  'whisper': 'whisper',
+  'aligner': 'whisper',
+  'audio': 'whisper',
+  'signals': 'signals',
+  'candidates': 'slicer',
+  'slicer': 'slicer',
+  'select': 'director',
+  'director': 'director',
+  'gemini': 'director',
+  'refine': 'director',
+  'vision': 'reframer',
+  'reframer': 'reframer',
+  'facecam': 'reframer',
+  'render': 'renderer',
+  'renderer': 'renderer',
+  'motion': 'renderer',
+  'export': 'export',
+  'packager': 'export'
+};
+
 const STAGE_MAP = {
   'ingest': { idx: 0, name: 'Stream Ingestion Agent', focus: 'fv-ingest' },
   'whisper': { idx: 1, name: 'Whisper Audio Alignment Agent', focus: 'fv-whisper' },
@@ -574,13 +604,15 @@ const STAGE_MAP = {
 
 function getStageKey(idOrIdx) {
   if (typeof idOrIdx === 'number') {
-    const keys = ['ingest', 'whisper', 'signals', 'slicer', 'director', 'reframer', 'renderer', 'export'];
-    return keys[idOrIdx] || null;
+    if (idOrIdx >= 0 && idOrIdx < STAGE_KEYS.length) return STAGE_KEYS[idOrIdx];
+    if (idOrIdx >= 1 && idOrIdx <= STAGE_KEYS.length) return STAGE_KEYS[idOrIdx - 1];
+    return null;
   }
   if (!idOrIdx) return null;
-  const str = String(idOrIdx).toLowerCase();
-  for (const k of Object.keys(STAGE_MAP)) {
-    if (str.includes(k)) return k;
+  const str = String(idOrIdx).toLowerCase().trim();
+  if (STAGE_ALIASES[str]) return STAGE_ALIASES[str];
+  for (const [alias, key] of Object.entries(STAGE_ALIASES)) {
+    if (str.includes(alias) || alias.includes(str)) return key;
   }
   return null;
 }
@@ -696,9 +728,20 @@ function updateTimelinePlayhead(sec) {
 
 function drawTimeline() {
   if (!tlCanvas || !tlCtx) return;
+  const wrap = $('#tlWrap');
+  if (wrap && wrap.clientWidth > 100) {
+    tlCanvas.width = wrap.clientWidth;
+  }
   const W = tlCanvas.width;
   const H = tlCanvas.height;
   tlCtx.clearRect(0, 0, W, H);
+
+  if (S.pipeline.vodDuration && S.pipeline.vodDuration > 0) {
+    const tlDur = $('#tlDurationTag');
+    if (tlDur && (!tlDur.textContent || tlDur.textContent.includes('00:00:00 / 00:00:00'))) {
+      tlDur.textContent = `00:00:00 / ${fmt(S.pipeline.vodDuration)}`;
+    }
+  }
 
   const dur = S.pipeline.vodDuration || 3600; // default to 1hr if unknown
 
@@ -997,12 +1040,14 @@ function updateFocusPane(stageId, metrics = {}) {
 }
 
 function updateIngestView(m) {
-  if (m.vod_duration) {
-    S.pipeline.vodDuration = m.vod_duration;
+  const dur = m.vod_duration || m.duration_s || m.duration;
+  if (dur) {
+    S.pipeline.vodDuration = dur;
     const durEl = $('#fvIngestDur');
-    if (durEl) durEl.textContent = fmt(m.vod_duration);
+    if (durEl) durEl.textContent = fmt(dur);
     const tlDur = $('#tlDurationTag');
-    if (tlDur) tlDur.textContent = `00:00:00 / ${fmt(m.vod_duration)}`;
+    if (tlDur) tlDur.textContent = `00:00:00 / ${fmt(dur)}`;
+    drawTimeline();
   }
   if (m.thumb_url) {
     const img = $('#fvIngestImg');
@@ -1047,6 +1092,9 @@ function updateWhisperView(m) {
 }
 
 function updateSignalsView(m) {
+  if (m.signals && Array.isArray(m.signals) && m.signals.length > 0) {
+    S.pipeline.signals = m.signals;
+  }
   const db = m.db ?? m.audio_db;
   const chat = m.chat_velocity ?? m.velocity;
   const isPeak = m.peak || (db != null && db > -14) || (chat != null && chat > 80);
@@ -1182,9 +1230,13 @@ function updateExportView(m) {
       const el = $('#' + id);
       if (el) {
         el.classList.add('done');
-        el.querySelector('i').textContent = '✔';
+        const icon = el.querySelector('i');
+        if (icon) icon.textContent = '✔';
       }
     });
+    if (m.done_items.length >= 4 && statusEl) {
+      statusEl.textContent = 'Packaged & Ready';
+    }
   }
 }
 
@@ -1396,17 +1448,17 @@ function startRun(sid, url, resetUI = true) {
   });
 
   on('stage_start', d => {
-    const k = getStageKey(d.stage_id);
+    const k = getStageKey(d.stage_id || d.stage_index);
     if (k) {
       setStageStatus(k, 'running');
       updateFocusPane(k, {});
     }
-    addStructuredLog(`▶ ${d.name || STAGES[idx(d.stage_id)]}`, k, 'agent');
-    updateTaskHud(`Starting ${d.name || STAGES[idx(d.stage_id)]}…`, null, null, null);
+    addStructuredLog(`▶ ${d.name || STAGES[idx(d.stage_id || d.stage_index)]}`, k, 'agent');
+    updateTaskHud(`Starting ${d.name || STAGES[idx(d.stage_id || d.stage_index)]}…`, null, null, null);
   });
 
   on('agent_log', d => {
-    const k = getStageKey(d.stage_id) || S.pipeline.activeStage;
+    const k = getStageKey(d.stage_id || d.stage_index) || S.pipeline.activeStage;
     const logStr = (d.log || '').toString();
     addStructuredLog(logStr, k, logStr.includes('[ERROR]') ? 'error' : (logStr.startsWith('▶') ? 'agent' : 'info'));
 
@@ -1427,18 +1479,60 @@ function startRun(sid, url, resetUI = true) {
   });
 
   on('stage_complete', d => {
-    const k = getStageKey(d.stage_id);
+    const k = getStageKey(d.stage_id || d.stage_index);
     if (k) {
       setStageStatus(k, 'done');
+      if (d.metrics) {
+        if (d.metrics.vod_duration || d.metrics.duration_s || d.metrics.duration) {
+          S.pipeline.vodDuration = d.metrics.vod_duration || d.metrics.duration_s || d.metrics.duration;
+          const tlDur = $('#tlDurationTag');
+          if (tlDur) tlDur.textContent = `00:00:00 / ${fmt(S.pipeline.vodDuration)}`;
+        }
+        updateFocusPane(k, d.metrics);
+      }
+      if (k === 'export') {
+        ['exp-mp4', 'exp-sub', 'exp-meta', 'exp-sched'].forEach(id => {
+          const el = $('#' + id);
+          if (el) {
+            el.classList.add('done');
+            const icon = el.querySelector('i');
+            if (icon) icon.textContent = '✔';
+          }
+        });
+        const statusEl = $('#fvExportStatus');
+        if (statusEl) statusEl.textContent = 'Packaged & Ready';
+      }
     }
     $('#bar').style.width = (d.progress_pct || 0) + '%';
     const pctEl = $('#pipeProgressPct');
     if (pctEl) pctEl.textContent = `${Math.round(d.progress_pct || 0)}%`;
     addStructuredLog(`✔ Completed stage: ${STAGE_MAP[k]?.name || d.stage_id}`, k, 'agent');
+    updateAgentDoneCount();
+    drawTimeline();
   });
 
   on('pipeline_complete', d => {
     if (d.video_id) S.vid = d.video_id;
+
+    // Ensure all 8 agents in roster are marked done
+    for (let i = 0; i < 8; i++) {
+      const k = getStageKey(i);
+      if (k) setStageStatus(k, 'done');
+    }
+    updateAgentDoneCount();
+
+    // Ensure all export checklist items are marked done
+    ['exp-mp4', 'exp-sub', 'exp-meta', 'exp-sched'].forEach(id => {
+      const el = $('#' + id);
+      if (el) {
+        el.classList.add('done');
+        const icon = el.querySelector('i');
+        if (icon) icon.textContent = '✔';
+      }
+    });
+    const statusEl = $('#fvExportStatus');
+    if (statusEl) statusEl.textContent = 'Packaged & Ready';
+    drawTimeline();
 
     if (isLive) {
       addStructuredLog(`✔ ${d.message || 'Stream part complete. Clips rendered.'} · Sentinel is monitoring live stream for next chunk...`, 'system', 'agent');
@@ -2545,6 +2639,10 @@ function openCropEditor(c) {
     $('#cropZoomSlider').value = Math.round(cropState.contentZoom * 100);
     $('#cropZoomVal').textContent = cropState.contentZoom.toFixed(1) + 'x';
   }
+  const hookSelect = $('#cropAudioHookVoice');
+  if (hookSelect) {
+    hookSelect.value = c.has_audio_hook === false ? 'off' : (c.hook_voice || 'en-US-ChristopherNeural');
+  }
   if ($('#cropFacecamToggle')) $('#cropFacecamToggle').checked = cropState.hasFacecam;
   if ($('#cropSplitSlider')) {
     $('#cropSplitSlider').value = cropState.splitPct;
@@ -3414,6 +3512,9 @@ if ($('#cropApplyBtn')) $('#cropApplyBtn').onclick = async () => {
   if (btnText) btnText.textContent = 'Re-rendering (fetching stream if needed)…';
 
   try {
+    const hookVoice = $('#cropAudioHookVoice') ? $('#cropAudioHookVoice').value : 'en-US-ChristopherNeural';
+    const hasAudioHook = hookVoice !== 'off';
+
     const res = await post('/api/rerender-clip', {
       video_id: S.vid,
       clip_id: c.id,
@@ -3428,6 +3529,8 @@ if ($('#cropApplyBtn')) $('#cropApplyBtn').onclick = async () => {
       title: cropState.title,
       title_size: cropState.titleSize,
       caption_size: cropState.captionSize,
+      audio_hook: hasAudioHook,
+      hook_voice: hookVoice,
     });
 
     if (res && res.success) {
